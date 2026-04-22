@@ -6,7 +6,7 @@
 |---|---|---|
 | Rust (stable) | Language toolchain | https://rustup.rs |
 | Docker + Compose | Local databases | https://docs.docker.com/get-docker |
-| sqlx-cli | Running migrations | `cargo install sqlx-cli --no-default-features --features rustls,postgres` |
+| sqlx-cli | Running migrations | `cargo install sqlx-cli --no-default-features --features postgres` (or use `make init`) |
 
 Verify everything is in place:
 ```bash
@@ -22,17 +22,15 @@ sqlx --version
 ## First-Time Setup
 
 ```bash
-# 1. Copy environment config
-cp .env.example .env
+# Everything in one command: copies .env, installs sqlx-cli, starts DBs,
+# runs migrations, starts the API
+make run
+```
 
-# 2. Start databases and run migrations
-make dev
-
-# 3. Build all crates to verify everything compiles
-cargo build --all
-
-# 4. Run the API
-cargo run -p api
+Or step by step:
+```bash
+make init         # copy .env, check/install dependencies
+make dev          # start DBs + migrate + start API
 ```
 
 The API will be available at `http://localhost:8080`.
@@ -63,11 +61,14 @@ All variables are in `.env` (gitignored, copied from `.env.example`).
 ## Make Commands
 
 ```
+make init         First-time setup: copy .env, check/install dependencies
+make run          Full start: init + dev (first-time friendly)
+make dev          Start DBs + migrate + start API
+make api          Start the API server only
 make up           Start Postgres + Memgraph in background
 make down         Stop all services (data persists in volumes)
 make reset-db     Wipe all volumes, restart services, re-run migrations
 make migrate      Run pending Postgres migrations only
-make dev          up + migrate — full setup in one command
 make ci           Full CI pipeline: lint then test
 make lint         cargo clippy + cargo fmt --check (read-only)
 make fmt          cargo fmt --all (writes files)
