@@ -2,13 +2,26 @@
 
 ## Overview
 
-graph_and_pull is a social network built around a dual-database architecture. The core insight is that a social network has two fundamentally different data access patterns that map poorly to a single database:
+graph_and_pull is a spike for **Peer Network** — a social media platform where
+feed ranking is driven entirely by the social graph and explicit user
+interactions, not AI algorithms.
 
-1. **Traversal queries** — "who do my followers follow?", "shortest path between two users", "what content is trending in my network?" These are graph problems. They perform well when the database understands relationships natively.
+The system uses a dual-database architecture. A social network has two
+fundamentally different data access patterns that map poorly to a single
+database:
 
-2. **Lookup queries** — "give me the profile for user X", "give me the content of post Y". These are key-value / relational lookups. They perform well in a traditional RDBMS.
+1. **Traversal queries** — "what should I see next?", "how is this person
+   connected to me?", "what's happening in my part of the graph?" These are
+   graph problems. They perform well when the database understands
+   relationships natively.
 
-Storing everything in one database forces a compromise. Storing graph topology in a graph DB and metadata in Postgres lets each database do what it was built for.
+2. **Lookup queries** — "give me the profile for user X", "give me the
+   content of post Y". These are key-value / relational lookups. They perform
+   well in a traditional RDBMS.
+
+Storing everything in one database forces a compromise. Storing graph topology
+in a graph DB and metadata in Postgres lets each database do what it was built
+for.
 
 ---
 
@@ -16,43 +29,70 @@ Storing everything in one database forces a compromise. Storing graph topology i
 
 ### 1. Graph DB owns topology, Postgres owns content
 
-The rule is simple: if a piece of data is only needed to *display* something, it goes in Postgres. If a piece of data is needed to *navigate or weight* the graph, it goes in Memgraph.
+If a piece of data is needed to **navigate or weight** the graph, it goes in
+Memgraph. If it is needed to **display** something, it goes in Postgres.
 
 | Data | Where | Why |
 |---|---|---|
-| `User.id` | Both (UUID is the key) | Identity |
-| `User.bio`, `User.avatar_url` | Postgres | Display only |
-| `(User)-[:FOLLOWS]->(User)` | Memgraph | Graph topology |
-| `Post.id` | Both | Identity |
-| `Post.content`, `Post.media_urls` | Postgres | Display only |
-| `(User)-[:LIKED]->(Post)` | Memgraph | Graph signal |
-| `(User)-[:CREATED]->(Post)` | Memgraph | Authorship edge |
-| `(Post)-[:TAGGED_WITH]->(Hashtag)` | Memgraph | Graph signal |
+| Node ID (UUID) | Both | Shared key between databases |
+| User bio, avatar, display name | Postgres | Display only |
+| Post content, media URLs | Postgres | Display only |
+| Actor edges (sentiment, relevance) | Memgraph | Graph topology + ranking |
+| Structural edges (containment, tagging) | Memgraph | Graph topology |
+| Cached author_id on nodes | Both | Derived from earliest incoming edge, cached for fast lookup |
+
+See [Edge Tensor Model](edge-tensor-model.md) for the full node/edge
+specification.
 
 ### 2. UUIDs as the shared key
 
-Every entity gets a UUID at creation time. This UUID is stored in both databases and is the only way they reference each other. The graph engine never needs to know a username; the Postgres store never needs to know the follow graph.
+Every entity gets a UUID at creation time. This UUID is stored in both
+databases and is the only way they reference each other. The graph engine
+never needs to know a username; the Postgres store never needs to know the
+graph topology.
 
-### 3. Counts live on graph nodes
+### 3. All ranking comes from the graph
 
-Follower counts, like counts, and comment counts are stored as **properties on graph nodes** in Memgraph — not in Postgres. They are updated atomically with the corresponding edge in a single Cypher transaction. This means:
-- During traversal, counts are available as node properties for free (no aggregation query)
-- No cross-database consistency problem (no dual-write for counts)
-- Memgraph is the single source of truth for all graph state including counts
+There are no materialized counters, no popularity scores, no algorithm-driven
+signals stored as node properties. Feed ranking is computed from the
+[edge tensor model](edge-tensor-model.md) using the
+[feed ranking algorithm](feed-ranking.md):
 
-### 4. Writes are dual (content + topology)
+- **Personal relevance** (`h`) — weighted opinion from your connections
+- **Importance** (`i`) — strength of your connections to those who reacted
+- **Controversy** (`j`) — net opinion independent of you
+- **Popularity** (`k`) — raw interaction count
 
-When a user follows another user:
-- Memgraph: create `(User)-[:FOLLOWS]->(User)` edge + increment both users' counters — single transaction
-- Postgres: nothing
+These are computed at query time from the edges, not pre-aggregated.
+
+### 4. Edges are the source of truth
+
+All graph state lives in edges. Edges are:
+- **Directional** — A -> B and B -> A are independent
+- **Multi-dimensional** — 2 user dimensions + system dimensions
+- **Append-only** — new layers on top, never delete or overwrite
+- **Uniform** — actor and structural edges have the same tensor shape
+
+There are no named relationship types like FOLLOWS, LIKED, or CREATED. All
+edges are uniform tensors. The meaning is derived from the node types at each
+end and the dimension values. See [Edge Tensor Model](edge-tensor-model.md).
+
+### 5. Writes are dual (content + topology)
 
 When a user creates a post:
 - Postgres: insert row into `posts` table (content + metadata)
-- Memgraph: create `(:Post {id, like_count: 0, comment_count: 0})` node + `(User)-[:CREATED]->(Post)` edge
+- Memgraph: create Post node + actor edge from User to Post (layer 1 =
+  authorship, with sentiment/relevance values)
 
-When a user likes a post:
-- Memgraph: create `(User)-[:LIKED]->(Post)` edge + increment `post.like_count` — single transaction
+When a user interacts with a post (e.g. likes it):
+- Memgraph: create actor edge from User to Post (or add layer if edge exists)
+  with the user's sentiment and relevance values
 - Postgres: nothing
+
+When a user interacts with another user:
+- Memgraph: create/update actor edge from User to User with sentiment and
+  closeness values
+- Postgres: nothing (unless profile display data changes)
 
 ---
 
@@ -87,7 +127,7 @@ The PostgreSQL access layer. Responsibilities:
 ### `crates/common`
 
 Shared types with no external dependencies. Responsibilities:
-- Domain model structs (`User`, `Post`, `Comment`, etc.)
+- Domain model structs (node types, edge types)
 - Shared error types
 - No database or HTTP logic
 
@@ -98,26 +138,27 @@ Shared types with no external dependencies. Responsibilities:
 A GraphQL query for a personalized feed shows how the two databases compose:
 
 ```
-Client → POST /graphql { feed(limit: 20) }
+Client -> POST /graphql { feed(limit: 20) }
 
 1. API receives query, calls graph-engine
-2. graph-engine: Cypher query to Memgraph
-   MATCH (me:User {id: $my_id})-[:FOLLOWS]->(followed:User)-[:CREATED]->(p:Post)
-   RETURN p.id, followed.id
-   ORDER BY p.created_at DESC LIMIT 20
-   → returns: [(post_id, author_id), ...]
+2. graph-engine: Cypher queries to Memgraph
+   - Traverse outgoing edges from the viewing user
+   - For each reachable target node, compute ranking metrics
+     (h, i, j, k) from the tensor edge dimensions
+   - Sort by R (hops), then order by h -> h+i -> h+i+j -> h+i+j+k
+   - Return ranked list of node IDs
 
-3. API calls postgres-store with post_ids + author_ids
-4. postgres-store: SQL query to Postgres
-   SELECT * FROM posts WHERE id = ANY($1)
-   SELECT * FROM users WHERE id = ANY($2)
-   → returns: post content + author metadata
+3. API calls postgres-store with the ranked node IDs
+4. postgres-store: SQL queries to Postgres
+   - Fetch display metadata for the ranked nodes (post content,
+     user profiles, media, etc.)
 
-5. API merges results, resolves GraphQL fields
+5. API merges results, preserving the graph-determined order
 6. Returns JSON to client
 ```
 
-The graph engine decides *which* posts to show (topology-based ranking). Postgres tells us *what* those posts contain.
+The graph engine decides *which* nodes to show and in *what order* (topology
++ edge-weight-based ranking). Postgres tells us *what* those nodes contain.
 
 ---
 
@@ -136,4 +177,5 @@ Local dev (Docker Compose):
 └──────────────────────────────────────────────────────────┘
 ```
 
-Volumes are named (`postgres_data`, `memgraph_data`) so data persists across `make down` / `make up`. Use `make reset-db` to wipe everything.
+Volumes are named (`postgres_data`, `memgraph_data`) so data persists across
+`make down` / `make up`. Use `make reset-db` to wipe everything.

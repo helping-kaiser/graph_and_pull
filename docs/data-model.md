@@ -1,17 +1,32 @@
-# Data Model
+# Data Model — PostgreSQL
+
+This document covers the **PostgreSQL schema** — the metadata/display layer.
+
+For the graph model (nodes, edges, tensor dimensions, append-only layers),
+see [Edge Tensor Model](edge-tensor-model.md).
+
+> **Note:** This schema is a starting point. The production Peer Network
+> backend has an existing Postgres schema with additional display data tables
+> that will need to be reviewed and integrated. See:
+> https://github.com/peer-network/peer_backend/tree/main/sql_files_for_import
 
 ## The Boundary Rule
 
-> If the data is needed to **navigate or weight** the graph → Memgraph.
-> If the data is needed to **display** something → Postgres.
+> If the data is needed to **navigate or weight** the graph -> Memgraph.
+> If the data is needed to **display** something -> Postgres.
 
-UUIDs are the shared key. Both databases store the same ID for the same entity; neither database stores the other's fields.
+UUIDs are the shared key. Both databases store the same ID for the same
+entity; neither database stores the other's fields.
 
 ---
 
 ## PostgreSQL Schema
 
-Postgres holds all human-readable metadata. It knows nothing about the social graph.
+Postgres holds all human-readable metadata. It knows nothing about the social
+graph, edge weights, or feed ranking. Every table here exists to answer the
+question: "given a UUID, what do I render on screen?"
+
+### Actor metadata
 
 ```sql
 -- Users: identity and profile display data
@@ -26,10 +41,26 @@ CREATE TABLE users (
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Posts: content authored by users
+-- Companies: business/organization profiles
+CREATE TABLE companies (
+    id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    name          TEXT        NOT NULL,
+    handle        TEXT        NOT NULL UNIQUE,
+    description   TEXT,
+    avatar_url    TEXT,
+    website_url   TEXT,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+### Content metadata
+
+```sql
+-- Posts: content authored by users or companies
 CREATE TABLE posts (
     id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    author_id  UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    author_id  UUID        NOT NULL,  -- references users.id or companies.id
     content    TEXT        NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -46,14 +77,40 @@ CREATE TABLE media_attachments (
     display_order SMALLINT     NOT NULL DEFAULT 0
 );
 
--- Comments: threaded replies on posts
+-- Comments: responses to posts or other comments
+-- Comments are full nodes in the graph (can be liked, replied to)
 CREATE TABLE comments (
     id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     post_id           UUID        NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    author_id         UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    author_id         UUID        NOT NULL,  -- references users.id or companies.id
     parent_comment_id UUID        REFERENCES comments(id),
     content           TEXT        NOT NULL,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Chats: conversation containers
+CREATE TABLE chats (
+    id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    name       TEXT,       -- null for 1:1 chats
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Chat messages: individual messages within a chat
+CREATE TABLE chat_messages (
+    id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    chat_id    UUID        NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+    author_id  UUID        NOT NULL,  -- references users.id or companies.id
+    content    TEXT        NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Items: physical or digital goods (future)
+CREATE TABLE items (
+    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    name        TEXT        NOT NULL,
+    description TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Hashtag registry (name lookup + metadata)
@@ -64,112 +121,38 @@ CREATE TABLE hashtags (
 );
 ```
 
-### What is intentionally NOT in Postgres
+---
 
-- Counts (followers, likes, comments) — stored as graph node properties in Memgraph (see below)
-- Follow / like / block relationships — graph-only (edges in Memgraph)
-- Feed ordering logic — graph-only
-- Recommendation signals — graph-only
+## What is intentionally NOT in Postgres
+
+- **Edge data** (sentiment, relevance, closeness, layers) — graph-only
+- **Feed ordering / ranking** — graph-only
+- **Interaction history** (who liked what, who interacted with whom) —
+  graph-only (encoded in tensor edges)
+- **Counts** (followers, likes, comments) — derived from graph edges at query
+  time, not materialized
+- **Membership / ownership state** — graph-only (junction nodes: ChatMember,
+  CompanyMember, ItemOwnership)
 
 ---
 
-## Graph Model (Memgraph / Cypher)
+## Notes
 
-Memgraph stores the social topology and all counts. Nodes hold the UUID (the link back to Postgres) plus materialized counters. Relationships hold timestamps and optional weights.
+### author_id is a cached derivation
 
-### Nodes
+The `author_id` columns on `posts`, `comments`, and `chat_messages` are
+**caches** of a fact that lives in the graph. The true author is the actor
+whose incoming edge to the node has the earliest layer 1 timestamp (see
+[Edge Tensor Model — Authorship](edge-tensor-model.md#7-authorship)). The
+Postgres column exists because "who wrote this?" is asked on every render and
+scanning all incoming edges every time would be expensive.
 
-```cypher
-(:User {
-    id:              String,   -- UUID, matches users.id in Postgres
-    follower_count:  Int,      -- materialized, updated on FOLLOWS edge changes
-    following_count: Int       -- materialized, updated on FOLLOWS edge changes
-})
+### posts.author_id does not use a foreign key
 
-(:Post {
-    id:            String,     -- UUID, matches posts.id in Postgres
-    like_count:    Int,        -- materialized, updated on LIKED edge changes
-    comment_count: Int         -- materialized, updated on COMMENTED edge changes
-})
-
-(:Hashtag { name: String })   -- lowercase name, matches hashtags.name
-```
-
-### Why counts live on graph nodes
-
-Counts are graph signals used for ranking (e.g. sorting posts by most-liked). Most reads reach a node via graph traversal, so the counts are available as node properties for free — no separate aggregation query needed. On mutations, the count is updated atomically with the edge in a single Cypher transaction:
-
-```cypher
--- Example: liking a post — edge + count in one transaction
-MATCH (u:User {id: $user_id}), (p:Post {id: $post_id})
-CREATE (u)-[:LIKED {at: datetime()}]->(p)
-SET p.like_count = p.like_count + 1
-```
-
-This eliminates cross-database consistency issues (no dual-write to Postgres) and keeps the graph as the single source of truth for both topology and counts. For the minority of reads that bypass the graph (e.g. opening a direct link), a single node lookup by indexed ID returns the counts instantly.
-
-### Relationships
-
-```cypher
--- Social graph
-(:User)-[:FOLLOWS   { since: DateTime }                  ]->(:User)
-(:User)-[:BLOCKED                                        ]->(:User)
-
--- Content authorship
-(:User)-[:CREATED   { at: DateTime }                     ]->(:Post)
-
--- Interactions (graph signals for ranking)
-(:User)-[:LIKED     { at: DateTime }                     ]->(:Post)
-(:User)-[:COMMENTED { comment_id: String, at: DateTime } ]->(:Post)
-(:User)-[:SHARED    { at: DateTime }                     ]->(:Post)
-
--- Taxonomy
-(:Post)-[:TAGGED_WITH                                    ]->(:Hashtag)
-(:User)-[:INTERESTED_IN { weight: Float }               ]->(:Hashtag)
-```
-
-### Why store `comment_id` on the COMMENTED edge?
-
-Comments are a frequent interaction and a strong graph signal, but their content lives in Postgres. The `comment_id` on the edge lets us retrieve the comment body from Postgres when needed, without duplicating content in the graph.
-
----
-
-## Example Cypher Queries
-
-### Feed: posts from people I follow (counts included for free)
-```cypher
-MATCH (me:User {id: $my_id})-[:FOLLOWS]->(followed:User)-[:CREATED]->(p:Post)
-WHERE NOT (me)-[:BLOCKED]->(followed)
-RETURN p.id, p.like_count, p.comment_count, followed.id, followed.follower_count
-ORDER BY p.like_count DESC
-LIMIT $limit
-```
-
-### Suggested users: friends of friends I don't follow yet
-```cypher
-MATCH (me:User {id: $my_id})-[:FOLLOWS]->(friend)-[:FOLLOWS]->(suggestion)
-WHERE suggestion.id <> $my_id
-  AND NOT (me)-[:FOLLOWS]->(suggestion)
-RETURN suggestion.id, count(friend) AS mutual_count
-ORDER BY mutual_count DESC
-LIMIT $limit
-```
-
-### Shortest path between two users
-```cypher
-MATCH path = shortestPath(
-    (a:User {id: $from_id})-[:FOLLOWS*..6]-(b:User {id: $to_id})
-)
-RETURN [node IN nodes(path) | node.id] AS user_ids
-```
-
-### Degree of separation
-```cypher
-MATCH path = shortestPath(
-    (a:User {id: $from_id})-[:FOLLOWS*]-(b:User {id: $to_id})
-)
-RETURN length(path) AS degrees
-```
+`posts.author_id` can reference either `users.id` or `companies.id`. A
+standard FK constraint can't point to two tables. Options for enforcement
+(check constraint, polymorphic FK, or application-level validation) are a
+design decision for implementation time.
 
 ---
 
@@ -177,6 +160,8 @@ RETURN length(path) AS degrees
 
 1. UUIDs are generated in the **API layer** (Rust), not by the database.
 2. The same UUID is written to Postgres and Memgraph in the same request.
-3. Postgres uses `UUID` as the primary key type with a `DEFAULT gen_random_uuid()` fallback, but the API always supplies it explicitly.
+3. Postgres uses `UUID` as the primary key type with a `DEFAULT
+   gen_random_uuid()` fallback, but the API always supplies it explicitly.
 4. Memgraph nodes store the UUID as a `String` property named `id`.
-5. Memgraph indexes: `CREATE INDEX ON :User(id)`, `CREATE INDEX ON :Post(id)`.
+5. Memgraph indexes: `CREATE INDEX ON :User(id)`, `CREATE INDEX ON :Post(id)`,
+   etc. for all node types.

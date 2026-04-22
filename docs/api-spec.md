@@ -1,5 +1,13 @@
 # API Specification
 
+> **OUTDATED — pending redesign.** This spec was written before the
+> [Edge Tensor Model](edge-tensor-model.md) was designed. The GraphQL schema
+> below does not reflect the current node types (Company, Chat, ChatMessage,
+> Item, junction nodes), the uniform tensor edge model (no more named
+> relationships like "follow" or "like"), or the append-only edge principle
+> (no "unlike" or "delete" operations). A full API redesign session is needed
+> to map the tensor model to a GraphQL schema.
+
 The API is a GraphQL endpoint served by Axum + async-graphql.
 
 - **Endpoint**: `POST /graphql`

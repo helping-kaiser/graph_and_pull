@@ -1,13 +1,24 @@
 # graph_and_pull
 
-A graph social network built in Rust — exploring how dedicated graph databases model social relationships and how pull-based content discovery emerges naturally from graph topology.
+A spike for **Peer Network** — exploring how a graph-driven social media
+platform can replace AI content algorithms with transparent, user-controlled
+feed ranking based on the social graph.
+
+No AI algorithms. No push marketing. No black boxes. Every user's feed is
+computed from their own position in the graph and the weighted edges they
+create through explicit interactions.
+
+See [CLAUDE.md](CLAUDE.md) for the full set of project principles.
 
 ## Architecture
 
 Two databases, each doing what it does best:
 
-- **Memgraph** — the social graph: users, follows, likes, post authorship, hashtags. All traversal and recommendation queries run here in Cypher.
-- **PostgreSQL** — metadata: user profiles, post content, media URLs, biographies. Everything needed to render a page, nothing needed to weight the graph.
+- **Memgraph** — the social graph: nodes (users, companies, posts, comments,
+  chats, items, hashtags, junction nodes), directional tensor edges, and all
+  traversal/ranking queries in Cypher.
+- **PostgreSQL** — metadata: profiles, post content, media URLs, display data.
+  Everything needed to render a page, nothing needed to weight the graph.
 
 ```
 ┌─────────────┐     GraphQL      ┌────────────────────────────────────────┐
@@ -27,7 +38,9 @@ Two databases, each doing what it does best:
                    └─────────────────────┘             └───────────────────────┘
 ```
 
-The shared key between both databases is the **UUID** assigned at creation time. Memgraph nodes store only IDs and relationship weights; PostgreSQL stores everything needed to display them.
+The shared key between both databases is the **UUID** assigned at creation
+time. Memgraph stores graph topology (nodes + tensor edges). PostgreSQL stores
+everything needed to display content.
 
 ## Crate Structure
 
@@ -41,9 +54,9 @@ The shared key between both databases is the **UUID** assigned at creation time.
 ## Quick Start
 
 ```bash
-cp .env.example .env
-make dev          # start Postgres + Memgraph, run migrations
-cargo run -p api
+make run          # first-time: init + start DBs + migrate + start API
+make dev          # returning: start DBs + migrate + start API
+make api          # just the API (if DBs already running)
 ```
 
 Memgraph Lab (visual graph browser): http://localhost:3000
@@ -51,11 +64,14 @@ Memgraph Lab (visual graph browser): http://localhost:3000
 ## Make Commands
 
 ```
-make up           start all services
+make init         first-time setup: copy .env, check/install dependencies
+make run          full start: init + dev (first-time friendly)
+make dev          start DBs + migrate + start API
+make api          start the API server
+make up           start all services (Postgres + Memgraph)
 make down         stop all services
 make reset-db     wipe all data and re-migrate
 make migrate      run pending Postgres migrations
-make dev          up + migrate, ready to run the API
 make ci           full CI pipeline (lint + test)
 make lint         clippy + fmt check
 make fmt          format all code
@@ -65,13 +81,21 @@ make logs         follow docker compose logs
 
 ## Documentation
 
-- [Architecture](docs/architecture.md) — system design, data flow, design principles
-- [Data Model](docs/data-model.md) — Postgres schema + graph node/edge definitions
-- [Edge Tensor Model](docs/edge-tensor-model.md) — multi-dimensional directional edges, node types, append-only layers
+### Design
+
+- [Edge Tensor Model](docs/edge-tensor-model.md) — the core: node types, multi-dimensional directional edges, append-only layers, junction nodes
 - [Feed Ranking](docs/feed-ranking.md) — ranking algorithm for ordering target nodes from a root node's perspective
-- [API Spec](docs/api-spec.md) — GraphQL schema and query examples
-- [Development Guide](docs/development.md) — local setup, tools, workflows
+- [Architecture](docs/architecture.md) — system design, dual-database split, data flow
+- [Data Model](docs/data-model.md) — PostgreSQL schema (display metadata)
 - [Graph DB Decision Record](docs/graph-db-options.md) — why Memgraph, alternatives considered
+
+### API
+
+- [API Spec](docs/api-spec.md) — **outdated, pending redesign** to align with tensor model
+
+### Development
+
+- [Development Guide](docs/development.md) — local setup, tools, workflows
 
 ## Tech Stack
 
