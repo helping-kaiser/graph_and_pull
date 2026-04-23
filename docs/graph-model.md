@@ -40,7 +40,7 @@ Nodes are either **actor nodes** (entities that take actions and create edges),
 | Node type | Description |
 |-----------|-------------|
 | **User** | A person on the platform. |
-| **Company** | A business, organization, band, solo artist profile — any collective or professional entity. Can author content, be followed, post items. Central to the economic model — companies pay for ads and receive ad revenue. |
+| **Company** | A business, organization, band, solo artist profile — any collective or professional entity. Fully equivalent to Users as actors: can do everything Users can (author content, be followed, post items, create edges toward other nodes, be members of other companies). See [companies.md](companies.md). |
 
 ### Content nodes
 

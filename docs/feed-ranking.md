@@ -317,3 +317,70 @@ This needs a dedicated design session. The solution must:
 3. Allow users to revisit content manually.
 4. Surface content again when something meaningful changes (new interactions
    from people the user cares about).
+
+---
+
+## 9. Where ranking and filtering live
+
+The ranking algorithm above produces a personalized view of the graph
+from one actor's perspective. It deliberately does not specify where
+that computation runs — and for good reason.
+
+### The graph itself cannot be sorted
+
+The graph is composed of actor actions: edges with dimensions, nodes
+with properties. "Sorted" only has meaning from a specific actor's
+perspective — there is no universal ordering. Every actor gets their
+own view based on their position and connections.
+
+### Central realtime ranking doesn't scale
+
+Every actor's view is personalized. If the backend had to compute
+every user's feed on demand, it would blow up with any real user
+count — per-actor compute multiplied by a live user base is not a
+manageable backend workload.
+
+### Resolution: compute closer to the viewer
+
+Sorting, ordering, and filtering happen **off the hot path of the
+central backend**. The backend serves each actor their relevant
+subgraph (e.g. N hops deep); ranking runs on the viewer's own device
+or on a chosen delegate.
+
+- **Client-side (default).** The actor's device downloads its
+  relevant subgraph and runs ranking locally. It already needs the
+  graph data to display it — doing the math locally is the natural
+  fit, and the client has plenty of cycles for the math.
+- **Worker / miner nodes (future).** Users who want to save battery
+  can delegate ranking to a third-party miner. Aligned with the
+  decentralization vision — anyone can run one; no central authority
+  is required. The miner returns the ordered list; the user's device
+  still holds authority over filter preferences.
+
+### Filtering sits alongside ranking, on the viewer's side
+
+Every node type — Post, Comment, Chat, ChatMessage, Item, future
+additions — is independently filterable. A user who wants only posts
+gets only posts; one who wants posts and chats gets both.
+
+The filter is user-controlled in the frontend. The ranking pipeline
+is indifferent to it; the filter decides what to render from the
+ranked output.
+
+### What this means for the algorithm spec
+
+The algorithm in §1–§6 describes **how** ranking works, not
+**where** it runs. Whether a client, a Rust worker, or a future
+miner implements it, the rules are the same. The spec stays
+unified; the deployment doesn't.
+
+### What this is not
+
+- **Not per-item suppression.** Muting a specific post, message, or
+  chat is a different mechanism (actor edges plus, for chats,
+  community moderation voting — see [chats.md §6](chats.md)).
+  Per-item mutes live on the graph as edges.
+- **Not a cache-everything strategy.** The backend can't meaningfully
+  precompute ranked feeds because they're fully personalized. It can
+  cache the raw graph slice delivered to each actor; the ranking
+  computation itself is always per-viewer.
