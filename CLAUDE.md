@@ -67,7 +67,7 @@ Crate structure:
 
 Read these before making changes to data models or algorithms:
 
-- [Edge Tensor Model](docs/edge-tensor-model.md) — the edge/node system. All
+- [Graph Model](docs/graph-model.md) — the edge/node system. All
   edges are 2-dimensional directional tensors with append-only layers.
 - [Feed Ranking](docs/feed-ranking.md) — how target nodes are ranked from a
   root node's perspective.

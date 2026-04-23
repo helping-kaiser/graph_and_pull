@@ -15,7 +15,7 @@ the outside.
 In CoGra, a chat is a **public node on the graph**. Its existence, its
 member list, and its message count are visible to every actor on the
 graph (see the transparency principle in
-[edge-tensor-model.md §1](edge-tensor-model.md)). **Topology is always
+[graph-model.md §1](graph-model.md)). **Topology is always
 public**; what's private is the *content* of individual messages, if
 the chat chose to encrypt them.
 
@@ -35,7 +35,7 @@ A chat's behavior is defined by two independent choices:
 
 ### Join policy — who can become a member
 
-Specified in [edge-tensor-model.md §6](edge-tensor-model.md) as the
+Specified in [graph-model.md §6](graph-model.md) as the
 two-edge approval pattern. Four shapes:
 
 - **Open** — anyone joins, no approval required.
@@ -116,7 +116,7 @@ add what you meant to write.
 > **Aside worth flagging.** Append-only layers apply to nodes and their
 > attributes, not only to edges. Changing a username is a new layer,
 > not a new user. This broader principle deserves its own home — either
-> an extension of [edge-tensor-model.md §1](edge-tensor-model.md) or a
+> an extension of [graph-model.md §1](graph-model.md) or a
 > dedicated `layers.md`. Queued as a follow-up.
 
 ---
@@ -173,7 +173,7 @@ property without changing the graph model.
 
 Open public chats face an obvious question: without an admin, who
 stops a bad message from dominating? CoGra's answer reuses the
-no-push principle from [edge-tensor-model.md §8](edge-tensor-model.md):
+no-push principle from [graph-model.md §8](graph-model.md):
 
 **The chat moves away from a message. It never moves the message
 away.**
@@ -194,7 +194,7 @@ containers only move themselves. Nothing gets pushed off.
 Even open chats can have roles. Joining may be free, but **other roles
 (admin, mod) are given** — they're carried as properties on the
 ChatMember junction node (see
-[edge-tensor-model.md §2](edge-tensor-model.md)). An admin's
+[graph-model.md §2](graph-model.md)). An admin's
 disavowal may weigh more than a regular member's. How exactly
 admin/mod powers compose with community voting is an
 implementation-level design concern (thresholds, veto, tie-breaking)
@@ -204,7 +204,7 @@ that sits on top of the primitives described here.
 
 ## 7. Join flows
 
-*(This content was moved from [edge-tensor-model.md §6](edge-tensor-model.md).
+*(This content was moved from [graph-model.md §6](graph-model.md).
 The generic two-edge approval pattern these flows instantiate remains
 there as a graph-level primitive.)*
 
@@ -251,7 +251,7 @@ Membership is encoded in the two-edge approval pattern:
 Append-only means the existing approval edge cannot be removed once
 created. State transitions are instead **encoded as new layers on the
 structural edges themselves** — the formal rule is in
-[edge-tensor-model.md §6](edge-tensor-model.md) ("Revocation and
+[graph-model.md §6](graph-model.md) ("Revocation and
 state transitions"). For a chat membership:
 
 - **Voluntary leave.** The user adds a new layer on their actor edge

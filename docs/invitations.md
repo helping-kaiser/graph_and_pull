@@ -16,7 +16,7 @@ New Actor -[sentiment: +X, closeness: +Y]-> Inviter    (layer 1: "they invited m
 ```
 
 Both are normal actor edges (see
-[edge-tensor-model.md §5](edge-tensor-model.md) for the edge catalog).
+[graph-model.md §5](graph-model.md) for the edge catalog).
 Neither is special-cased in the graph model.
 
 ## Why two edges
@@ -27,7 +27,7 @@ in the graph, no feed to calculate. The inviter edge gives them a
 starting position.
 
 Both directions are needed because edges are strictly directional (see
-[edge-tensor-model.md §1](edge-tensor-model.md)):
+[graph-model.md §1](graph-model.md)):
 
 - The inviter's edge toward the new actor expresses the inviter's
   opinion (they liked this person enough to bring them in).

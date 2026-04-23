@@ -1,7 +1,8 @@
-# Edge Tensor Model
+# Graph Model
 
-How edges work in the Peer Network graph. This is the foundation that the
-[feed ranking algorithm](feed-ranking.md) operates on.
+How edges, nodes, and their properties work in the Peer Network graph.
+This is the foundation that the [feed ranking algorithm](feed-ranking.md)
+operates on.
 
 ---
 

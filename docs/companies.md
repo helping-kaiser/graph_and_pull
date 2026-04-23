@@ -36,13 +36,13 @@ Every company has, or at some point had, at least one
 active members** is a company that has gone out of business — the
 history is preserved (members come and go via state transitions on
 the structural edges, per
-[edge-tensor-model.md §6](edge-tensor-model.md)), but no one
+[graph-model.md §6](graph-model.md)), but no one
 currently acts on the company's behalf.
 
 ## Membership: CompanyMember
 
 A `CompanyMember` is a junction node (see
-[edge-tensor-model.md §2](edge-tensor-model.md)) connecting **Company
+[graph-model.md §2](graph-model.md)) connecting **Company
 to User or Company**. A company can be a member of another company —
 subsidiaries, holdings, partner firms, coalitions of bands under a
 label. CompanyMember is not restricted to human members.
@@ -58,12 +58,12 @@ node itself (not in edge dimensions):
 
 Role properties stay on the junction node rather than being encoded in
 edge dimensions — see
-[edge-tensor-model.md §2](edge-tensor-model.md) for the reasoning.
+[graph-model.md §2](graph-model.md) for the reasoning.
 
 ## Approval flow
 
 CompanyMember uses the **two-edge approval pattern** described in
-[edge-tensor-model.md §6](edge-tensor-model.md):
+[graph-model.md §6](graph-model.md):
 
 1. Actor (User or Company) creates an actor edge toward a new
    **CompanyMember** node.
@@ -86,7 +86,7 @@ properties on the approving actors' own CompanyMember nodes.
 Departures follow the general state-transition rule for junction
 approval pairs — new layers on the structural edges encode the flip,
 and the relationship is active iff both top layers have `dim1 > 0`.
-See [edge-tensor-model.md §6](edge-tensor-model.md) for the formal
+See [graph-model.md §6](graph-model.md) for the formal
 rule, and [chats.md §8](chats.md) for the chat-side version of the
 same mechanism applied to ChatMember. For CompanyMember: a member
 voluntarily leaving adds a negative layer to their actor edge and the
