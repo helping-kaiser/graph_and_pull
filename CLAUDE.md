@@ -155,3 +155,8 @@ All config in `.env` (copied from `.env.example`). Key vars:
 Commit messages: concise, imperative mood, describe the *why* not just the
 *what*. Example: "add ChatMember junction node to support role-based chat
 membership" not "update data model".
+
+**Short commits, long PRs.** Commit body is at most a few lines — subject
+plus the minimum why. Option comparisons, section-by-section change lists,
+and full design rationale belong in the **PR description**, not the
+commit. Reviewers read PRs; `git log` stays readable.
