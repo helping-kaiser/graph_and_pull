@@ -60,7 +60,7 @@ junction between a Chat and the content within it).
 | Node type | Connects | Why it's a node |
 |-----------|----------|-----------------|
 | **ChatMember** | Chat <-> User/Company | Has roles (admin, mod, member). Entry can require multi-sig approval (invite-only chats). Can be interacted with (vote to kick, promote to admin). |
-| **CompanyMember** | Company <-> User | Has roles (founder, shareholder, worker, band member). Multi-sig for adding/removing members. Ownership stakes. |
+| **CompanyMember** | Company <-> User/Company | Has roles (founder, shareholder, worker, band member, subsidiary). Multi-sig for adding/removing members. Ownership stakes. Companies can be members of other companies (holdings, subsidiaries, label rosters). |
 | **ItemOwnership** | Item <-> User/Company | Represents ownership claim. Multi-sig for transfer (acquirer requests, current owner approves). Full ownership history. |
 
 Junction nodes eliminate the need for parallel edges between the same two
@@ -275,20 +275,8 @@ approval pattern described above.
 
 ### Company Membership (CompanyMember)
 
-Same two-edge pattern as ChatMember. A CompanyMember node carries `role`
-and any role-attached quantities (e.g. `ownership_pct` for a shareholder)
-as properties on the node. Approval policies for adding or promoting
-members are governed by role requirements — a new shareholder may require
-approval from existing founders and/or a threshold of current
-shareholders.
-
-1. Actor creates an actor edge toward a new **CompanyMember** node.
-2. System creates `CompanyMember -> Company` (claim).
-3. Required approving actors create actor edges toward the same
-   CompanyMember node.
-4. Once the company's approval policy is satisfied, system creates
-   `Company -> CompanyMember` (approval).
-5. Actor is an active member.
+Company-specific flows are explained in [docs/companies.md](companies.md).
+They follow the same two-edge approval pattern described above.
 
 ### Ownership Transfer (ItemOwnership)
 
@@ -432,13 +420,7 @@ These are known unknowns that need to be resolved as the project progresses:
    "implicit signal" and "explicit action"? This ties into the transparency
    principle — implicit signals feel like surveillance.
 
-4. **Company vs User distinction**: Companies can do most things users can
-   (author posts, own items, connect to hashtags). What can't they do? Can a
-   Company follow a User? Can Companies have sentiment toward each other? The
-   boundary between Company and User node types needs clarification —
-   especially for the economic model where companies are ad-revenue sources.
-
-5. **State transitions on junction relationships under append-only**: How
+4. **State transitions on junction relationships under append-only**: How
    are departures encoded — a member leaving a chat, getting kicked from a
    company, an ItemOwnership being superseded by the next transfer? The
    `Parent -> Junction` approval edge cannot be deleted (append-only), so

@@ -77,6 +77,8 @@ Read these before making changes to data models or algorithms:
   earliest incoming edge.
 - [Invitations](docs/invitations.md) — the two-edge onboarding pattern
   for new actors.
+- [Companies](docs/companies.md) — companies as actors (equivalent to
+  users); CompanyMember flow; no preferential ad revenue.
 - [Data Model](docs/data-model.md) — Postgres schema + graph definitions.
 
 ---
