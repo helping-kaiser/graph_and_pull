@@ -65,6 +65,15 @@ Jakob -[actor edge]-> ChatMember_Jakob_Chat1 -[structural]-> Chat1   (membership
 Jakob -[actor edge]-> Chat1                                          (opinion)
 ```
 
+**Junction nodes carry typed properties.** Role (`admin`, `mod`, `member`,
+`founder`, `shareholder`, `worker`, etc.) and any role-attached quantities
+(e.g. `ownership_pct` on a shareholder CompanyMember) are stored as
+properties on the junction node itself, not encoded in edge dimensions.
+Categorical data belongs in categorical fields; quantities need more range
+and resolution than the bipolar `[-1, +1]` edge dimensions provide.
+Multi-sig weighting for approvals is then derived from these role
+properties when actor edges toward the junction are evaluated.
+
 ---
 
 ## 3. Edge Categories
@@ -90,6 +99,27 @@ Why give structural edges the same shape instead of making them different:
   at each hop.
 - Structural edges may carry meaningful weight in the future (e.g. a pinned
   comment's `Comment -> Post` edge could be weighted differently).
+
+### Structural edge pairs
+
+Structural edges are **not paired for query convenience**. Memgraph (and
+openCypher generally) indexes relationships at both endpoints, so a single
+one-directional edge is traversable in either direction with equal
+efficiency. Adding a reverse edge just so a query reads more naturally
+would double storage for no gain.
+
+Structural edge pairs **are valid when each direction encodes a distinct
+fact**. The canonical example is approval-required junctions:
+
+- `ChatMember -> Chat` — "this membership claims to be about this chat"
+  (exists from the moment the request is made).
+- `Chat -> ChatMember` — "this chat has accepted this member" (only exists
+  after the approval policy is satisfied).
+
+These are two different facts, so two edges is correct. In contrast,
+`Comment -> Post` does not need a `Post -> Comment` companion: the reverse
+would carry the same fact and just duplicate storage. See §8 for the full
+junction approval pattern.
 
 ---
 
@@ -174,9 +204,17 @@ Structural edges are system-created. Dimensions are `(0.0, 0.0)`.
 | Comment -> Post | This comment is on this post |
 | Comment -> Comment | This comment is a reply to that comment |
 | ChatMessage -> Chat | This message belongs to this chat |
-| ChatMember -> Chat | This membership belongs to this chat |
-| CompanyMember -> Company | This membership belongs to this company |
-| ItemOwnership -> Item | This ownership claim relates to this item |
+| ChatMember -> Chat | This membership claims to be about this chat (claim) |
+| CompanyMember -> Company | This membership claims to be about this company (claim) |
+| ItemOwnership -> Item | This ownership claim relates to this item (claim) |
+
+**Approval completion** (paired with the claim edges above — see §8):
+
+| Edge type | Meaning |
+|-----------|---------|
+| Chat -> ChatMember | This chat has accepted this member |
+| Company -> CompanyMember | This company has accepted this member |
+| Item -> ItemOwnership | This item's ownership transfer to this claim is complete |
 
 **Tagging:**
 
@@ -239,47 +277,107 @@ of truth.
 
 ## 8. Junction Node Flows
 
-Junction nodes enable multi-signature approval flows and role management
-without parallel edges.
+Junction nodes enable approval-required relationships and role management
+without parallel edges. All three junction types — ChatMember,
+CompanyMember, ItemOwnership — share a common shape.
 
-### Ownership Transfer (ItemOwnership)
+### The two-edge approval pattern
 
-1. **User B** (acquirer) creates an actor edge toward a new **ItemOwnership**
-   node. The system creates a structural edge from the ItemOwnership node to
-   the Item. Status: pending.
-2. **User A** (current owner) creates an actor edge toward the same
-   ItemOwnership node with positive sentiment (approval).
-3. Ownership is now transferred. User A's original ItemOwnership node
-   receives a layer update reflecting the transfer.
+A junction relationship is created in two steps:
 
-No one can take ownership without the current owner's explicit approval.
-The full transfer history is preserved in the layer stacks.
+1. **Claim edge** — when the relationship is initiated, the system creates
+   a structural edge from the junction node toward its parent (e.g.
+   `ChatMember -> Chat`). The claim exists as long as the junction node
+   exists.
+2. **Approval edge** — when the relationship's approval policy is
+   satisfied (all required actor edges toward the junction node exist), the
+   system creates the reverse structural edge (e.g. `Chat -> ChatMember`).
+   The presence of this edge marks the relationship as *active*.
+
+**State is encoded in the graph topology itself** — no status flag is
+needed:
+
+- Only the claim edge exists → pending.
+- Both edges exist → active.
+
+The **approval policy** for each relationship is "N actor edges from
+specific roles required toward the junction node." Open chats have N = 1
+(the joining user); invite-only and request-entry chats have N = 2 (user +
+admin, in either order); governance-heavy joins can require larger N with
+weighted multi-sig (weights derived from role properties on the approving
+actors' own junction nodes).
 
 ### Chat Membership (ChatMember)
 
-**Open chat:**
+Three chat types, differing only in the approval policy:
+
+**Open chat** — no approval required.
 1. User creates an actor edge toward a new **ChatMember** node.
-2. System creates a structural edge from ChatMember to the Chat.
-3. User is now a member.
+2. System creates `ChatMember -> Chat` (claim).
+3. Policy satisfied immediately; system creates `Chat -> ChatMember`
+   (approval).
+4. User is an active member.
 
-**Invite-only chat:**
-1. Existing member/admin creates an actor edge toward a new **ChatMember**
-   node for the invitee.
-2. The invitee creates an actor edge toward the same ChatMember node
-   (accepting the invite).
-3. System creates the structural edge. User is now a member.
+**Invite-only chat** — admin invites, user accepts.
+1. Admin (or other member with invite rights) creates an actor edge toward
+   a new **ChatMember** node for the invitee.
+2. System creates `ChatMember -> Chat` (claim, pending).
+3. Invitee creates an actor edge toward the same ChatMember node
+   (accepting).
+4. Policy satisfied (both required edges exist); system creates
+   `Chat -> ChatMember` (approval).
+5. User is an active member.
 
-**Roles** (admin, mod, member) are expressed through the dimension values on
-the edges pointing to the ChatMember node. An admin's approval edge carries
-different weight than a regular member's.
+**Request-entry chat** — user requests, admin approves.
+1. User creates an actor edge toward a new **ChatMember** node (request).
+2. System creates `ChatMember -> Chat` (claim, pending).
+3. An admin creates an actor edge toward the same ChatMember node
+   (approving).
+4. Policy satisfied; system creates `Chat -> ChatMember` (approval).
+5. User is an active member.
+
+The invite-only and request-entry flows are topologically identical — the
+only difference is which party initiates. Multi-sig variants (e.g. two
+admins required) are just a higher N in the approval policy.
 
 ### Company Membership (CompanyMember)
 
-Same pattern as ChatMember but with business-relevant roles:
-- Founder, shareholder, worker, band member, etc.
-- Multi-sig for adding/removing members based on role requirements.
-- Ownership stakes and governance can be expressed through the dimension
-  values on edges pointing to CompanyMember nodes.
+Same two-edge pattern as ChatMember. A CompanyMember node carries `role`
+and any role-attached quantities (e.g. `ownership_pct` for a shareholder)
+as properties on the node. Approval policies for adding or promoting
+members are governed by role requirements — a new shareholder may require
+approval from existing founders and/or a threshold of current
+shareholders.
+
+1. Actor creates an actor edge toward a new **CompanyMember** node.
+2. System creates `CompanyMember -> Company` (claim).
+3. Required approving actors create actor edges toward the same
+   CompanyMember node.
+4. Once the company's approval policy is satisfied, system creates
+   `Company -> CompanyMember` (approval).
+5. Actor is an active member.
+
+### Ownership Transfer (ItemOwnership)
+
+Each transfer creates a **new** ItemOwnership node. Historic ItemOwnership
+nodes are never removed — they form an append-only chain of the item's
+ownership history.
+
+1. **Acquirer** (User/Company) creates an actor edge toward a new
+   **ItemOwnership** node.
+2. System creates `ItemOwnership -> Item` (claim, pending).
+3. **Current owner** creates an actor edge toward the same ItemOwnership
+   node with positive sentiment (approval).
+4. Policy satisfied; system creates `Item -> ItemOwnership` (approval).
+5. Transfer is complete; the new ItemOwnership is now the active one.
+
+No one can take ownership without the current owner's explicit approval.
+Earlier ItemOwnership nodes still have their `Item -> ItemOwnership` edges
+from when they were current — the **current** owner is identified by the
+most recent `Item -> ItemOwnership` approval edge (analogous to how
+authorship is derived from the earliest incoming edge in §7). See §13 for
+the open question on how superseded states — and departures like leaving a
+chat or company — are encoded under append-only.
 
 ---
 
@@ -467,11 +565,16 @@ These are known unknowns that need to be resolved as the project progresses:
    boundary between Company and User node types needs clarification —
    especially for the economic model where companies are ad-revenue sources.
 
-8. **Junction node role encoding**: How are roles (admin, mod, member,
-   founder, shareholder) encoded? Through dimension values on edges pointing
-   to the junction node? As properties on the junction node itself? The
-   dimension approach keeps things in the graph; the property approach is
-   simpler to query.
+8. **State transitions on junction relationships under append-only**: How
+   are departures encoded — a member leaving a chat, getting kicked from a
+   company, an ItemOwnership being superseded by the next transfer? The
+   `Parent -> Junction` approval edge cannot be deleted (append-only), so
+   "no longer active" needs a different representation. Candidates: a new
+   layer on the approval edge marking revocation (requires structural edges
+   to carry state in layers, which they currently don't); a dedicated
+   "revoked" actor edge from admin/system; a separate junction-node
+   property; deriving "current" purely from timestamps (works for
+   sequential cases like ItemOwnership but not for leaving a chat).
 
 9. **Invitation default values**: What sentiment/closeness values should the
    auto-created edge from the new actor toward the inviter have? Too high
