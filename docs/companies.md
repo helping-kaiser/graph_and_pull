@@ -34,9 +34,9 @@ decides — actor type does not.
 Every company has, or at some point had, at least one
 [CompanyMember](#membership-companymember). A company with **zero
 active members** is a company that has gone out of business — the
-history is preserved (members come and go via state transitions on the
-structural edges, per
-[edge-tensor-model.md §10 Q#4](edge-tensor-model.md)), but no one
+history is preserved (members come and go via state transitions on
+the structural edges, per
+[edge-tensor-model.md §6](edge-tensor-model.md)), but no one
 currently acts on the company's behalf.
 
 ## Membership: CompanyMember
@@ -83,7 +83,14 @@ properties on the approving actors' own CompanyMember nodes.
 
 ## Leaving / being removed
 
-Departures use the same leading proposal described in
-[chats.md §8](chats.md) — state transitions encoded as new layers on
-the structural edges. Formal cross-junction resolution is pending (see
-[edge-tensor-model.md §10 Q#4](edge-tensor-model.md)).
+Departures follow the general state-transition rule for junction
+approval pairs — new layers on the structural edges encode the flip,
+and the relationship is active iff both top layers have `dim1 > 0`.
+See [edge-tensor-model.md §6](edge-tensor-model.md) for the formal
+rule, and [chats.md §8](chats.md) for the chat-side version of the
+same mechanism applied to ChatMember. For CompanyMember: a member
+voluntarily leaving adds a negative layer to their actor edge and the
+system cascades to `CompanyMember -> Company`; removal by the company
+(firing, dismissal) adds a negative layer to the approving actors'
+actor edges and, once the policy threshold is met, the system
+cascades to `Company -> CompanyMember`.

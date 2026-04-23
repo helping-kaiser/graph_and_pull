@@ -466,15 +466,6 @@ These are known unknowns that need to be resolved as the project progresses:
    "implicit signal" and "explicit action"? This ties into the transparency
    principle — implicit signals feel like surveillance.
 
-4. **State transitions on junction relationships under append-only**: How
-   are departures encoded — a member leaving a chat, getting kicked from a
-   company, an ItemOwnership being superseded by the next transfer? The
-   `Parent -> Junction` approval edge cannot be deleted (append-only), so
-   "no longer active" needs a different representation. Leading proposal:
-   encode state transitions as new layers on the structural edges themselves
-   (see [chats.md §8](chats.md) for the membership-specific version). Formal
-   resolution should apply uniformly to ChatMember, CompanyMember, and
-   ItemOwnership.
 
 
 ---

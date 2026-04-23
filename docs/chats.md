@@ -249,9 +249,10 @@ Membership is encoded in the two-edge approval pattern:
 ### Departures (leaving, kicked, revoked)
 
 Append-only means the existing approval edge cannot be removed once
-created. The leading proposal — pending formal resolution of
-[edge-tensor-model.md §10 Q#4](edge-tensor-model.md) — is to **encode
-state transitions as new layers on the structural edges themselves**:
+created. State transitions are instead **encoded as new layers on the
+structural edges themselves** — the formal rule is in
+[edge-tensor-model.md §6](edge-tensor-model.md) ("Revocation and
+state transitions"). For a chat membership:
 
 - **Voluntary leave.** The user adds a new layer on their actor edge
   toward the ChatMember (negative sentiment = withdrawing their claim)
@@ -263,15 +264,10 @@ state transitions as new layers on the structural edges themselves**:
   the system adds a new layer on `Chat -> ChatMember` reflecting that
   the chat no longer accepts the member.
 
-In both cases, the **current** state is derived from the top layer of
-each edge. The full history — including the moment of departure and
-who triggered it — stays visible, as everywhere else in the graph.
-
-Formal resolution will specify exactly which structural edges carry
-state layers, what their dimension encodings mean, and how the
-pattern extends uniformly to CompanyMember and ItemOwnership. That
-resolution is deliberately scoped as a separate design block so the
-answer applies across every junction type, not just ChatMember.
+In both cases, the relationship is active iff both edges' top layers
+have `dim1 > 0`. The full history — including the moment of
+departure and who triggered it — stays visible, as everywhere else
+in the graph.
 
 ---
 
