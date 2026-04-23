@@ -111,13 +111,9 @@ Edits are append-only. A correction writes a new version into the
 Postgres row rather than overwriting the old one. Past versions remain
 readable. This is consistent with the project-wide append-only
 principle: you cannot retroactively erase what you wrote, you can only
-add what you meant to write.
-
-> **Aside worth flagging.** Append-only layers apply to nodes and their
-> attributes, not only to edges. Changing a username is a new layer,
-> not a new user. This broader principle deserves its own home — either
-> an extension of [graph-model.md §1](graph-model.md) or a
-> dedicated `layers.md`. Queued as a follow-up.
+add what you meant to write. See [layers.md](layers.md) for the
+project-wide append-only rule across edges, node properties, and
+Postgres-side display content.
 
 ---
 
