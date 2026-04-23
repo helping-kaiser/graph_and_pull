@@ -100,9 +100,9 @@ Every edge, regardless of category, has the same shape:
 ```
 Edge {
     // --- 2 dimensions (meaning varies by edge type) ---
-    dimension_1: f64,   // actor edges: e.g. sentiment [-1.0, +1.0]
+    dimension_1: f64,   // actor edges: e.g. sentiment, range [-1.0, +1.0]
                         // structural edges: 0.0
-    dimension_2: f64,   // actor edges: e.g. relevance [-1.0, +1.0]
+    dimension_2: f64,   // actor edges: e.g. relevance, range [-1.0, +1.0]
                         // structural edges: 0.0
 
     // --- System dimensions (same for all edge types) ---
@@ -110,6 +110,13 @@ Edge {
     layer:       u32,       // which layer this is (1 = first interaction)
 }
 ```
+
+**Range is uniform.** Both dimensions are `f64` in `[-1.0, +1.0]` for every
+actor edge, regardless of what the dimension represents. Uniformity is a
+first-class design goal: the ranking algorithm never branches on dimension
+type, and the math stays consistent across every edge in the graph. See
+§9 for how negative values are interpreted when a dimension wouldn't
+obviously have a negative meaning.
 
 An edge between two nodes is a **stack of layers**. Each interaction appends a
 new layer. The "current" state of the edge is the top layer. The full history
@@ -289,6 +296,26 @@ The same numeric value means different things in different contexts:
 But because both are `f64` in `[-1.0, +1.0]`, the ranking algorithm can
 compute over them uniformly. The *interpretation* differs; the *math* doesn't.
 
+### Range and polarity
+
+Every actor-edge dimension is bipolar in `[-1.0, +1.0]`:
+
+- `0.0` = no opinion / no interaction / neutral.
+- Positive = the "forward" meaning (like, approve, close, want, relevant).
+- Negative = the **active opposite**, not merely the absence.
+
+The polarity matters most where the forward meaning sounds like a one-sided
+scale — most notably **closeness**. A closeness of `0.0` means "we don't
+interact"; a negative closeness means "I am actively avoiding this person"
+(muted, blocked, ghosted). The two are distinct signals, and collapsing
+negative closeness into `0.0` would discard real information. The same
+reading extends to relevance (negative = "I actively don't want this in my
+feed") and to approval dimensions on junction nodes (negative = active
+rejection, not abstention).
+
+Holding the full `[-1.0, +1.0]` range for every dimension also keeps the
+ranking math uniform and avoids per-dimension clamping or branching logic.
+
 ### Independence of dimensions
 
 The two dimensions are independent. Examples:
@@ -424,36 +451,32 @@ These are known unknowns that need to be resolved as the project progresses:
 
 4. **View/seen tracking**: See section 12. Needs a dedicated solution.
 
-5. **Edge weight ranges**: Currently specified as `[-1.0, +1.0]`. Should some
-   dimensions be `[0.0, +1.0]` instead? (e.g., closeness might not have a
-   meaningful negative — you either interact or you don't.)
-
-6. **Minimum interaction for edge creation**: Does viewing a post for 3
+5. **Minimum interaction for edge creation**: Does viewing a post for 3
    seconds create an edge? Does scrolling past it? Where is the line between
    "implicit signal" and "explicit action"? This ties into the transparency
    principle — implicit signals feel like surveillance.
 
-7. **Chat and ChatMessage ranking**: How do chats fit into the feed? Are they
+6. **Chat and ChatMessage ranking**: How do chats fit into the feed? Are they
    ranked alongside posts and comments, or do they have their own separate
    ranking context? A chat is a persistent container; a ChatMessage is
    ephemeral-feeling. The ranking dynamics likely differ from public content.
 
-8. **Company vs User distinction**: Companies can do most things users can
+7. **Company vs User distinction**: Companies can do most things users can
    (author posts, own items, connect to hashtags). What can't they do? Can a
    Company follow a User? Can Companies have sentiment toward each other? The
    boundary between Company and User node types needs clarification —
    especially for the economic model where companies are ad-revenue sources.
 
-9. **Junction node role encoding**: How are roles (admin, mod, member,
+8. **Junction node role encoding**: How are roles (admin, mod, member,
    founder, shareholder) encoded? Through dimension values on edges pointing
    to the junction node? As properties on the junction node itself? The
    dimension approach keeps things in the graph; the property approach is
    simpler to query.
 
-10. **Invitation default values**: What sentiment/closeness values should the
-    auto-created edge from the new actor toward the inviter have? Too high
-    and it biases the new user's feed heavily toward one person. Too low and
-    the new user has a weak starting position in the graph.
+9. **Invitation default values**: What sentiment/closeness values should the
+   auto-created edge from the new actor toward the inviter have? Too high
+   and it biases the new user's feed heavily toward one person. Too low and
+   the new user has a weak starting position in the graph.
 
 ---
 
