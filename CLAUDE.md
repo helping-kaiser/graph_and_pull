@@ -73,6 +73,14 @@ Read these before making changes to data models or algorithms:
   root node's perspective.
 - [Chats](docs/chats.md) — chats/messages as first-class public content;
   privacy via E2EE of content only.
+- [Authorship](docs/authorship.md) — how authorship is derived from the
+  earliest incoming edge.
+- [Invitations](docs/invitations.md) — the two-edge onboarding pattern
+  for new actors.
+- [Companies](docs/companies.md) — companies as actors (equivalent to
+  users); CompanyMember flow; no preferential ad revenue.
+- [Items](docs/items.md) — items as content; ItemOwnership transfer
+  flow.
 - [Data Model](docs/data-model.md) — Postgres schema + graph definitions.
 
 ---

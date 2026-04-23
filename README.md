@@ -86,6 +86,10 @@ make logs         follow docker compose logs
 - [Edge Tensor Model](docs/edge-tensor-model.md) — the core: node types, multi-dimensional directional edges, append-only layers, junction nodes
 - [Feed Ranking](docs/feed-ranking.md) — ranking algorithm for ordering target nodes from a root node's perspective
 - [Chats](docs/chats.md) — chats and messages as first-class public content; privacy via end-to-end encryption of content only
+- [Authorship](docs/authorship.md) — how authorship is derived from the earliest incoming edge
+- [Invitations](docs/invitations.md) — the two-edge onboarding pattern for new actors
+- [Companies](docs/companies.md) — companies as actors; CompanyMember flow; economic role (not preferential)
+- [Items](docs/items.md) — items as content nodes; ItemOwnership transfer flow
 - [Architecture](docs/architecture.md) — system design, dual-database split, data flow
 - [Data Model](docs/data-model.md) — PostgreSQL schema (display metadata)
 - [Graph DB Decision Record](docs/graph-db-options.md) — why Memgraph, alternatives considered

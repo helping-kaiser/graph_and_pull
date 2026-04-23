@@ -60,7 +60,7 @@ junction between a Chat and the content within it).
 | Node type | Connects | Why it's a node |
 |-----------|----------|-----------------|
 | **ChatMember** | Chat <-> User/Company | Has roles (admin, mod, member). Entry can require multi-sig approval (invite-only chats). Can be interacted with (vote to kick, promote to admin). |
-| **CompanyMember** | Company <-> User | Has roles (founder, shareholder, worker, band member). Multi-sig for adding/removing members. Ownership stakes. |
+| **CompanyMember** | Company <-> User/Company | Has roles (founder, shareholder, worker, band member, subsidiary). Multi-sig for adding/removing members. Ownership stakes. Companies can be members of other companies (holdings, subsidiaries, label rosters). |
 | **ItemOwnership** | Item <-> User/Company | Represents ownership claim. Multi-sig for transfer (acquirer requests, current owner approves). Full ownership history. |
 
 Junction nodes eliminate the need for parallel edges between the same two
@@ -125,7 +125,7 @@ fact**. The canonical example is approval-required junctions:
 
 These are two different facts, so two edges is correct. In contrast,
 `Comment -> Post` does not need a `Post -> Comment` companion: the reverse
-would carry the same fact and just duplicate storage. See §8 for the full
+would carry the same fact and just duplicate storage. See §6 for the full
 junction approval pattern.
 
 ---
@@ -152,7 +152,7 @@ Edge {
 actor edge, regardless of what the dimension represents. Uniformity is a
 first-class design goal: the ranking algorithm never branches on dimension
 type, and the math stays consistent across every edge in the graph. See
-§9 for how negative values are interpreted when a dimension wouldn't
+§7 for how negative values are interpreted when a dimension wouldn't
 obviously have a negative meaning.
 
 An edge between two nodes is a **stack of layers**. Each interaction appends a
@@ -218,7 +218,7 @@ Structural edges are system-created. Dimensions are `(0.0, 0.0)`.
 | CompanyMember -> Company | This membership claims to be about this company (claim) |
 | ItemOwnership -> Item | This ownership claim relates to this item (claim) |
 
-**Approval completion** (paired with the claim edges above — see §8):
+**Approval completion** (paired with the claim edges above — see §6):
 
 | Edge type | Meaning |
 |-----------|---------|
@@ -235,57 +235,7 @@ Structural edges are system-created. Dimensions are `(0.0, 0.0)`.
 
 ---
 
-## 6. Invitations
-
-When an actor (User or Company) invites a new actor to the platform, **two
-actor edges** are created:
-
-```
-Inviter -[sentiment: +X, closeness: +Y]-> New Actor   (layer 1: "I invited them")
-New Actor -[sentiment: +X, closeness: +Y]-> Inviter   (layer 1: "they invited me")
-```
-
-Both are normal actor edges. This ensures the new actor has **at least one
-outgoing edge** from the moment they join — without it, they would have zero
-hops to anywhere in the graph and no way to calculate a feed.
-
-The initial dimension values for the new actor's edge toward the inviter are a
-design decision (likely moderate positive defaults — you presumably like the
-person who invited you). The new actor can update this edge over time like any
-other.
-
----
-
-## 7. Authorship
-
-There is no special authorship mechanism. Authorship is a **derived fact**:
-the author of a node is the actor whose incoming edge has the earliest
-layer 1 timestamp. A node cannot exist without someone creating it, so the
-very first edge ever created toward a node identifies the author.
-
-The dimension values on the author's edge are just normal opinion values —
-the author's initial feelings about their own content (typically high positive
-sentiment and relevance).
-
-**Example:** Jakob creates a post. His actor edge `Jakob -> Post_X` is
-layer 1, with the earliest timestamp of any incoming edge on Post_X. That
-makes Jakob the author. Later, Alice likes the same post — her edge
-`Alice -> Post_X` also has a layer 1, but its timestamp is later than
-Jakob's. The author is always the earliest.
-
-**Caching:** Looking up "who authored this?" by scanning all incoming layer 1
-timestamps on every view would be expensive. The author ID should be cached:
-- **On the node itself** as a property (`author_id`) — keeps the info in the
-  graph for traversal queries.
-- **In Postgres metadata** (e.g. `posts.author_id`) — for display queries
-  that don't need the graph.
-
-Both are derived caches. The graph (earliest incoming layer 1) is the source
-of truth.
-
----
-
-## 8. Junction Node Flows
+## 6. Junction Node Flows
 
 Junction nodes enable approval-required relationships and role management
 without parallel edges. All three junction types — ChatMember,
@@ -325,46 +275,19 @@ approval pattern described above.
 
 ### Company Membership (CompanyMember)
 
-Same two-edge pattern as ChatMember. A CompanyMember node carries `role`
-and any role-attached quantities (e.g. `ownership_pct` for a shareholder)
-as properties on the node. Approval policies for adding or promoting
-members are governed by role requirements — a new shareholder may require
-approval from existing founders and/or a threshold of current
-shareholders.
-
-1. Actor creates an actor edge toward a new **CompanyMember** node.
-2. System creates `CompanyMember -> Company` (claim).
-3. Required approving actors create actor edges toward the same
-   CompanyMember node.
-4. Once the company's approval policy is satisfied, system creates
-   `Company -> CompanyMember` (approval).
-5. Actor is an active member.
+Company-specific flows are explained in [docs/companies.md](companies.md).
+They follow the same two-edge approval pattern described above.
 
 ### Ownership Transfer (ItemOwnership)
 
-Each transfer creates a **new** ItemOwnership node. Historic ItemOwnership
-nodes are never removed — they form an append-only chain of the item's
-ownership history.
-
-1. **Acquirer** (User/Company) creates an actor edge toward a new
-   **ItemOwnership** node.
-2. System creates `ItemOwnership -> Item` (claim, pending).
-3. **Current owner** creates an actor edge toward the same ItemOwnership
-   node with positive sentiment (approval).
-4. Policy satisfied; system creates `Item -> ItemOwnership` (approval).
-5. Transfer is complete; the new ItemOwnership is now the active one.
-
-No one can take ownership without the current owner's explicit approval.
-Earlier ItemOwnership nodes still have their `Item -> ItemOwnership` edges
-from when they were current — the **current** owner is identified by the
-most recent `Item -> ItemOwnership` approval edge (analogous to how
-authorship is derived from the earliest incoming edge in §7). See §13 for
-the open question on how superseded states — and departures like leaving a
-chat or company — are encoded under append-only.
+Item-specific flows are explained in [docs/items.md](items.md). They
+follow the same two-edge approval pattern described above, with the
+additional property that transfers form an append-only chain of
+ItemOwnership nodes per item.
 
 ---
 
-## 9. Dimension Semantics
+## 7. Dimension Semantics
 
 ### Why the dimensions differ per edge type
 
@@ -412,7 +335,7 @@ The two dimensions are independent. Examples:
 
 ---
 
-## 10. Directionality: Inbound Edges Don't Affect Your Graph
+## 8. Directionality: Inbound Edges Don't Affect Your Graph
 
 This is a critical design decision for anti-spam and anti-manipulation:
 
@@ -437,7 +360,7 @@ Two independent edges. Removing one does not remove the other.
 
 ---
 
-## 11. Append-Only History
+## 9. Append-Only History
 
 Each edge is not a single value but a stack of layers:
 
@@ -458,92 +381,30 @@ Jakob -> Post_X:
 **Layer count as a signal:** The number of layers on an edge is itself
 meaningful. An edge with 50 layers represents a deep, frequently-revisited
 relationship. An edge with 1 layer is a passing interaction. How exactly to
-use this signal is an open question (see section 13).
+use this signal is an open question (see section 10).
 
 ---
 
-## 12. Time Considerations
-
-### Time decay (OPEN DESIGN QUESTION)
-
-Time decay must exist in some form but is not yet fully designed. Known
-constraints:
-
-- Old content can become newly relevant (a friend comments on a post I liked
-  years ago — I should see the comment, and the post becomes slightly more
-  relevant again).
-- New content can be irrelevant (a brand new post from someone 5 hops away
-  that no one I know has interacted with).
-- **Recency is not importance.** Time is a factor but not a dominant one.
-
-### The "already seen" problem (OPEN DESIGN QUESTION)
-
-Users should not be re-shown content they've already seen unless something
-meaningful happened (e.g., a friend commented on it). This creates a problem:
-
-**Option A: "View" edges (0, 0 sentiment/relevance edges for any node visited)**
-- Pro: Clean graph-native solution. "I've seen this" is just another edge.
-- Con: Explodes the edge count. Instead of sorting through 3 posts a friend
-  liked, you sort through 10,000 posts they've viewed. Computation cost
-  becomes untenable.
-
-**Option B: Separate "seen" store outside the graph**
-- Pro: Doesn't pollute the graph. Can use a compact data structure (bloom
-  filter, bitset, Redis set).
-- Con: Breaks the "everything is in the graph" purity. Adds a third data
-  store.
-
-**Option C: Client-side "seen" tracking**
-- Pro: Aligns with the decentralized feed calculation vision (the client
-  already has a subgraph). The client knows what it's shown the user.
-- Con: Doesn't sync across devices without additional infrastructure.
-
-**Option D: View edges with aggressive compaction**
-- Pro: Graph-native. Only recent view edges are kept as individual layers;
-  older ones are compacted into a summary.
-- Con: Compaction logic adds complexity. Defining "recent" is another design
-  decision.
-
-This needs a dedicated design session. The solution must:
-1. Not flood the graph with low-signal edges.
-2. Not be a black box.
-3. Allow users to revisit content manually.
-4. Surface content again when something meaningful changes (new interactions
-   from people the user cares about).
-
----
-
-## 13. Open Questions
+## 10. Open Questions
 
 These are known unknowns that need to be resolved as the project progresses:
 
-1. **Time decay function**: What shape? Exponential? Linear? Step function?
-   How does it interact with the ranking algorithm's `R`, `h`, `i`, `j`, `k`?
-
-2. **Layer count usage**: The number of layers on an edge is a signal, but
+1. **Layer count usage**: The number of layers on an edge is a signal, but
    how does it factor into ranking? Is it a modifier on the dimension values?
    A separate ranking parameter?
 
-3. **Cross-type dimension comparability**: When the ranking algorithm
+2. **Cross-type dimension comparability**: When the ranking algorithm
    traverses `User -> User -> Comment -> Post`, it crosses three edge types
    with different dimension meanings. How exactly are
    sentiment-toward-a-user and sentiment-toward-a-post combined? The math is
    uniform (both are floats) but the semantics differ.
 
-4. **View/seen tracking**: See section 12. Needs a dedicated solution.
-
-5. **Minimum interaction for edge creation**: Does viewing a post for 3
+3. **Minimum interaction for edge creation**: Does viewing a post for 3
    seconds create an edge? Does scrolling past it? Where is the line between
    "implicit signal" and "explicit action"? This ties into the transparency
    principle — implicit signals feel like surveillance.
 
-6. **Company vs User distinction**: Companies can do most things users can
-   (author posts, own items, connect to hashtags). What can't they do? Can a
-   Company follow a User? Can Companies have sentiment toward each other? The
-   boundary between Company and User node types needs clarification —
-   especially for the economic model where companies are ad-revenue sources.
-
-7. **State transitions on junction relationships under append-only**: How
+4. **State transitions on junction relationships under append-only**: How
    are departures encoded — a member leaving a chat, getting kicked from a
    company, an ItemOwnership being superseded by the next transfer? The
    `Parent -> Junction` approval edge cannot be deleted (append-only), so
@@ -553,14 +414,10 @@ These are known unknowns that need to be resolved as the project progresses:
    resolution should apply uniformly to ChatMember, CompanyMember, and
    ItemOwnership.
 
-8. **Invitation default values**: What sentiment/closeness values should the
-   auto-created edge from the new actor toward the inviter have? Too high
-   and it biases the new user's feed heavily toward one person. Too low and
-   the new user has a weak starting position in the graph.
 
 ---
 
-## 14. Relationship to Feed Ranking
+## 11. Relationship to Feed Ranking
 
 The [feed ranking algorithm](feed-ranking.md) currently operates on simple
 signed (+/-) edges. The tensor model described here is the next evolution:
