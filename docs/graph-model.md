@@ -29,60 +29,30 @@ And the graph itself is:
 
 ---
 
-## 2. Node Types
+## 2. Node Categories
 
-Nodes are either **actor nodes** (entities that take actions and create edges),
-**content nodes** (entities that are acted upon), or **junction nodes**
-(entities that represent relationships which themselves can be interacted with).
+Nodes fall into three categories:
 
-### Actor nodes
+- **Actor nodes** — entities that take actions and create edges
+  (User, Company).
+- **Content nodes** — entities that are acted upon (Post, Comment,
+  Chat, ChatMessage, Item, Hashtag).
+- **Junction nodes** — entities that represent relationships which
+  themselves can be interacted with (ChatMember, CompanyMember,
+  ItemOwnership). They have roles, need approval flows, and
+  eliminate parallel edges between the same two nodes: a user's
+  *membership* in a chat and their *opinion* of that chat are
+  edges to different nodes.
 
-| Node type | Description |
-|-----------|-------------|
-| **User** | A person on the platform. |
-| **Company** | A business, organization, band, solo artist profile — any collective or professional entity. Fully equivalent to Users as actors: can do everything Users can (author content, be followed, post items, create edges toward other nodes, be members of other companies). See [companies.md](companies.md). |
+**Junction nodes carry typed properties** (role, `ownership_pct`,
+etc.) as properties on the junction node itself, not encoded in
+edge dimensions. Categorical data belongs in categorical fields;
+quantities need more range than the bipolar `[-1, +1]` edge
+dimensions provide.
 
-### Content nodes
-
-| Node type | Description |
-|-----------|-------------|
-| **Post** | Content authored by a user or company (text, image, video). |
-| **Comment** | A response to a post or another comment. Is a full node because comments can be liked, disliked, and replied to. |
-| **Chat** | A conversation container (group or 1:1). |
-| **ChatMessage** | A single message within a chat. |
-| **Item** | A physical or digital good (future). |
-| **Hashtag** | A topic tag. Also covers concepts like places (e.g. `#berlin`) — if places ever need dedicated properties they can become their own node type later. |
-
-### Junction nodes
-
-Junction nodes represent relationships that have **roles**, need **approval
-flows** (multi-sig), and can themselves be **interacted with** (liked,
-voted on, etc.). They follow the same pattern as ChatMessage (which is a
-junction between a Chat and the content within it).
-
-| Node type | Connects | Why it's a node |
-|-----------|----------|-----------------|
-| **ChatMember** | Chat <-> User/Company | Has roles (admin, mod, member). Entry can require multi-sig approval (invite-only chats). Can be interacted with (vote to kick, promote to admin). |
-| **CompanyMember** | Company <-> User/Company | Has roles (founder, shareholder, worker, band member, subsidiary). Multi-sig for adding/removing members. Ownership stakes. Companies can be members of other companies (holdings, subsidiaries, label rosters). |
-| **ItemOwnership** | Item <-> User/Company | Represents ownership claim. Multi-sig for transfer (acquirer requests, current owner approves). Full ownership history. |
-
-Junction nodes eliminate the need for parallel edges between the same two
-nodes. A user's **membership** in a chat and their **opinion** of that chat
-are edges to different nodes:
-
-```
-Jakob -[actor edge]-> ChatMember_Jakob_Chat1 -[structural]-> Chat1   (membership)
-Jakob -[actor edge]-> Chat1                                          (opinion)
-```
-
-**Junction nodes carry typed properties.** Role (`admin`, `mod`, `member`,
-`founder`, `shareholder`, `worker`, etc.) and any role-attached quantities
-(e.g. `ownership_pct` on a shareholder CompanyMember) are stored as
-properties on the junction node itself, not encoded in edge dimensions.
-Categorical data belongs in categorical fields; quantities need more range
-and resolution than the bipolar `[-1, +1]` edge dimensions provide.
-Multi-sig weighting for approvals is then derived from these role
-properties when actor edges toward the junction are evaluated.
+See [nodes.md](nodes.md) for the full catalog — what each node
+type is, its graph-side properties, and where its display content
+lives in Postgres.
 
 ---
 
