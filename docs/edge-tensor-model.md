@@ -98,14 +98,18 @@ Created by actor nodes (User, Company) toward any other node. Express
 ### Structural edges
 
 Express **containment or belonging** between nodes. Created by the system,
-not by actors. The 2 dimensions are `(0.0, 0.0)` — neutral structural links.
+not by actors. By default the 2 dimensions are `(0.0, 0.0)` — neutral
+structural links.
 
 Why give structural edges the same shape instead of making them different:
 - The ranking algorithm traverses paths that cross both edge types (e.g.
   `User -> User -> Comment -> Post`). Uniform shape means no branching logic
   at each hop.
-- Structural edges may carry meaningful weight in the future (e.g. a pinned
-  comment's `Comment -> Post` edge could be weighted differently).
+- Structural edges can carry meaningful weight where the shape calls for
+  it. The concrete case today is state-bearing approval-pattern edges on
+  junction nodes — see §6 for how revocation and state transitions are
+  encoded in structural edge layers. A pinned comment's `Comment -> Post`
+  weight could work similarly.
 
 ### Structural edge pairs
 
@@ -266,6 +270,64 @@ specific roles required toward the junction node." Open chats have N = 1
 admin, in either order); governance-heavy joins can require larger N with
 weighted multi-sig (weights derived from role properties on the approving
 actors' own junction nodes).
+
+### Revocation and state transitions
+
+Because edges are append-only, the approval edge created when a
+junction relationship becomes active cannot be removed. "No longer
+active" is therefore encoded as **new layers on the two structural
+edges of the approval pair** — not by deletion.
+
+**Dimension semantics on state-bearing structural edges.** For the
+claim and approval edges of a junction approval pair, `dim1` carries
+the edge's current stance; `dim2` is reserved (default `0`, available
+for future use such as reason codes):
+
+- `dim1 > 0` — **affirmed** (claim stands / parent accepts).
+- `dim1 = 0` — **abstained / neutral**.
+- `dim1 < 0` — **revoked / withdrawn**.
+
+Layer 1 of each edge is created by the system with `(+1, 0)` — the
+edge is created because someone affirmed it. Revocation adds a new
+layer with `dim1 < 0`. Re-affirming after a revocation adds another
+new layer with `dim1 > 0`. Append-only is preserved; the full state
+history is visible in the layer stacks.
+
+**Relationship state is derived from both top layers.** A junction
+relationship is **active** iff both paired edges' top layers have
+`dim1 > 0`. Any negative top layer on either edge makes the
+relationship inactive. The pending state (claim edge only, no
+approval edge yet) still applies — it's a separate case from revoked.
+
+**Who triggers state transitions.** The system is still the only
+entity that writes to structural edges. It reacts to actor-edge
+changes:
+
+- **Voluntary leave / withdrawal.** Actor adds a new negative-sentiment
+  layer on their actor edge toward the junction node. System adds a
+  new layer on the **claim-side** structural edge with `dim1 < 0`.
+- **Removal by approving actor (kick / firing / non-renewal).**
+  Approving actor adds a new negative-sentiment layer on their actor
+  edge toward the junction node. System evaluates the approval policy;
+  if the revocation threshold is met, system adds a new layer on the
+  **approval-side** structural edge with `dim1 < 0`.
+- **System-initiated** (auto-expiry, violation handling, etc.). System
+  adds the appropriate negative layer directly.
+
+**Intermediate states are not materialized.** For multi-sig policies
+where N > 1 admins must act to kick a member, the approval-side
+structural edge stays at its top layer until the policy threshold is
+met. Partial progress is visible on individual actor edges; the
+structural edge reflects only the policy-resolved state.
+
+**Cascading updates across structural edges.** A state change on one
+structural edge can trigger the system to add a corresponding layer on
+another structural edge when consistency requires it. This is a
+general mechanism — the canonical case today is ItemOwnership
+supersession (see [items.md](items.md)), where creating a new approval
+edge causes the previous one to be marked revoked so that exactly one
+ownership is active at a time. Future junction or content patterns
+may use the same cascade shape.
 
 ### Chat Membership (ChatMember)
 

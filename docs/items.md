@@ -41,25 +41,25 @@ ItemOwnership uses the **two-edge approval pattern** described in
 No one can take ownership without the current owner's explicit
 approval — there is no "take" operation in the graph.
 
-## Identifying the current owner
+## Supersession: exactly one active ItemOwnership per item
 
-Earlier ItemOwnership nodes keep their `Item -> ItemOwnership` edges
-from when they were current — append-only applies, so those edges
-aren't removed when a transfer happens. The **current** owner is
-identified by whichever ItemOwnership has the most recent
-`Item -> ItemOwnership` approval edge.
+When a transfer completes and the new `Item -> ItemOwnership` approval
+edge is created, the system **automatically** adds a new layer on the
+**previous** ItemOwnership's `Item -> ItemOwnership` approval edge
+with `dim1 < 0` — marking it revoked/superseded. This uses the
+general state-transition mechanism on structural edges described in
+[edge-tensor-model.md §6](edge-tensor-model.md).
 
-This is analogous to how authorship is derived from the *earliest*
-incoming edge on a node (see [authorship.md](authorship.md)) — except
-here we care about the *latest* approval rather than the earliest
-claim.
+The invariant is: **at most one ItemOwnership per item has a positive
+top layer on its approval edge at any time.** Identifying the current
+owner is therefore a single-edge query — "find the ItemOwnership
+whose `Item -> ItemOwnership` top layer has `dim1 > 0`" — with no
+timestamp comparisons required.
 
-## Leaving / superseded ownership
+The cascade is why this works under append-only: the old approval
+edge isn't removed, it just has a newer layer that flips its state to
+revoked.
 
-The sequential-chain shape means ItemOwnership departures are
-relatively simple: a new ItemOwnership supersedes the old one by being
-the most recent approved claim. That said, formal encoding of
-"this ItemOwnership is no longer current" — so the graph is explicit
-rather than relying only on timestamp comparisons — is part of the
-cross-junction state-transition question. See
-[edge-tensor-model.md §10 Q#4](edge-tensor-model.md).
+An item with **no** active ItemOwnership (no positive top layer on
+any `Item -> ItemOwnership` edge) is considered abandoned. The
+history of all previous owners remains visible in the layer stacks.
