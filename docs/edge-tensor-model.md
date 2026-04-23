@@ -210,6 +210,9 @@ Structural edges are system-created. Dimensions are `(0.0, 0.0)`.
 |-----------|---------|
 | Comment -> Post | This comment is on this post |
 | Comment -> Comment | This comment is a reply to that comment |
+| Comment -> Chat | This comment is on this chat as a whole |
+| Comment -> ChatMessage | This comment is on this specific message |
+| Comment -> Item | This comment is on this item |
 | ChatMessage -> Chat | This message belongs to this chat |
 | ChatMember -> Chat | This membership claims to be about this chat (claim) |
 | CompanyMember -> Company | This membership claims to be about this company (claim) |
