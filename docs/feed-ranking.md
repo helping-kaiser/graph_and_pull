@@ -262,3 +262,58 @@ Both posts tie on `h` (`0`), on `h + i` (`0`), and diverge on `h + i + j`
   the sort phase and the tie-breaker chain completes the resolution.
 - The `User -> User -> Post` scenario is a specific example of this rule, not
   the rule itself.
+
+---
+
+## 7. Time and recency (OPEN DESIGN QUESTION)
+
+Time decay must exist in some form but is not yet fully designed. Known
+constraints:
+
+- Old content can become newly relevant (a friend comments on a post I liked
+  years ago — I should see the comment, and the post becomes slightly more
+  relevant again).
+- New content can be irrelevant (a brand new post from someone 5 hops away
+  that no one I know has interacted with).
+- **Recency is not importance.** Time is a factor but not a dominant one.
+
+What shape the decay function should take (exponential, linear, step
+function) and how it interacts with `R`, `h`, `i`, `j`, `k` is still an
+open design choice.
+
+---
+
+## 8. The "already seen" problem (OPEN DESIGN QUESTION)
+
+Users should not be re-shown content they've already seen unless something
+meaningful happened (e.g. a friend commented on it). This creates a problem:
+
+**Option A: "View" edges (0, 0 sentiment/relevance edges for any node visited)**
+- Pro: Clean graph-native solution. "I've seen this" is just another edge.
+- Con: Explodes the edge count. Instead of sorting through 3 posts a friend
+  liked, you sort through 10,000 posts they've viewed. Computation cost
+  becomes untenable.
+
+**Option B: Separate "seen" store outside the graph**
+- Pro: Doesn't pollute the graph. Can use a compact data structure (bloom
+  filter, bitset, Redis set).
+- Con: Breaks the "everything is in the graph" purity. Adds a third data
+  store.
+
+**Option C: Client-side "seen" tracking**
+- Pro: Aligns with the decentralized feed calculation vision (the client
+  already has a subgraph). The client knows what it's shown the user.
+- Con: Doesn't sync across devices without additional infrastructure.
+
+**Option D: View edges with aggressive compaction**
+- Pro: Graph-native. Only recent view edges are kept as individual layers;
+  older ones are compacted into a summary.
+- Con: Compaction logic adds complexity. Defining "recent" is another design
+  decision.
+
+This needs a dedicated design session. The solution must:
+1. Not flood the graph with low-signal edges.
+2. Not be a black box.
+3. Allow users to revisit content manually.
+4. Surface content again when something meaningful changes (new interactions
+   from people the user cares about).

@@ -251,7 +251,7 @@ Membership is encoded in the two-edge approval pattern:
 
 Append-only means the existing approval edge cannot be removed once
 created. The leading proposal — pending formal resolution of
-[edge-tensor-model.md §13 Q#8](edge-tensor-model.md) — is to **encode
+[edge-tensor-model.md §12 Q#5](edge-tensor-model.md) — is to **encode
 state transitions as new layers on the structural edges themselves**:
 
 - **Voluntary leave.** The user adds a new layer on their actor edge

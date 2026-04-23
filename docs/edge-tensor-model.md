@@ -358,7 +358,7 @@ No one can take ownership without the current owner's explicit approval.
 Earlier ItemOwnership nodes still have their `Item -> ItemOwnership` edges
 from when they were current — the **current** owner is identified by the
 most recent `Item -> ItemOwnership` approval edge (analogous to how
-authorship is derived from the earliest incoming edge in §7). See §13 for
+authorship is derived from the earliest incoming edge in §7). See §12 for
 the open question on how superseded states — and departures like leaving a
 chat or company — are encoded under append-only.
 
@@ -458,92 +458,36 @@ Jakob -> Post_X:
 **Layer count as a signal:** The number of layers on an edge is itself
 meaningful. An edge with 50 layers represents a deep, frequently-revisited
 relationship. An edge with 1 layer is a passing interaction. How exactly to
-use this signal is an open question (see section 13).
+use this signal is an open question (see section 12).
 
 ---
 
-## 12. Time Considerations
-
-### Time decay (OPEN DESIGN QUESTION)
-
-Time decay must exist in some form but is not yet fully designed. Known
-constraints:
-
-- Old content can become newly relevant (a friend comments on a post I liked
-  years ago — I should see the comment, and the post becomes slightly more
-  relevant again).
-- New content can be irrelevant (a brand new post from someone 5 hops away
-  that no one I know has interacted with).
-- **Recency is not importance.** Time is a factor but not a dominant one.
-
-### The "already seen" problem (OPEN DESIGN QUESTION)
-
-Users should not be re-shown content they've already seen unless something
-meaningful happened (e.g., a friend commented on it). This creates a problem:
-
-**Option A: "View" edges (0, 0 sentiment/relevance edges for any node visited)**
-- Pro: Clean graph-native solution. "I've seen this" is just another edge.
-- Con: Explodes the edge count. Instead of sorting through 3 posts a friend
-  liked, you sort through 10,000 posts they've viewed. Computation cost
-  becomes untenable.
-
-**Option B: Separate "seen" store outside the graph**
-- Pro: Doesn't pollute the graph. Can use a compact data structure (bloom
-  filter, bitset, Redis set).
-- Con: Breaks the "everything is in the graph" purity. Adds a third data
-  store.
-
-**Option C: Client-side "seen" tracking**
-- Pro: Aligns with the decentralized feed calculation vision (the client
-  already has a subgraph). The client knows what it's shown the user.
-- Con: Doesn't sync across devices without additional infrastructure.
-
-**Option D: View edges with aggressive compaction**
-- Pro: Graph-native. Only recent view edges are kept as individual layers;
-  older ones are compacted into a summary.
-- Con: Compaction logic adds complexity. Defining "recent" is another design
-  decision.
-
-This needs a dedicated design session. The solution must:
-1. Not flood the graph with low-signal edges.
-2. Not be a black box.
-3. Allow users to revisit content manually.
-4. Surface content again when something meaningful changes (new interactions
-   from people the user cares about).
-
----
-
-## 13. Open Questions
+## 12. Open Questions
 
 These are known unknowns that need to be resolved as the project progresses:
 
-1. **Time decay function**: What shape? Exponential? Linear? Step function?
-   How does it interact with the ranking algorithm's `R`, `h`, `i`, `j`, `k`?
-
-2. **Layer count usage**: The number of layers on an edge is a signal, but
+1. **Layer count usage**: The number of layers on an edge is a signal, but
    how does it factor into ranking? Is it a modifier on the dimension values?
    A separate ranking parameter?
 
-3. **Cross-type dimension comparability**: When the ranking algorithm
+2. **Cross-type dimension comparability**: When the ranking algorithm
    traverses `User -> User -> Comment -> Post`, it crosses three edge types
    with different dimension meanings. How exactly are
    sentiment-toward-a-user and sentiment-toward-a-post combined? The math is
    uniform (both are floats) but the semantics differ.
 
-4. **View/seen tracking**: See section 12. Needs a dedicated solution.
-
-5. **Minimum interaction for edge creation**: Does viewing a post for 3
+3. **Minimum interaction for edge creation**: Does viewing a post for 3
    seconds create an edge? Does scrolling past it? Where is the line between
    "implicit signal" and "explicit action"? This ties into the transparency
    principle — implicit signals feel like surveillance.
 
-6. **Company vs User distinction**: Companies can do most things users can
+4. **Company vs User distinction**: Companies can do most things users can
    (author posts, own items, connect to hashtags). What can't they do? Can a
    Company follow a User? Can Companies have sentiment toward each other? The
    boundary between Company and User node types needs clarification —
    especially for the economic model where companies are ad-revenue sources.
 
-7. **State transitions on junction relationships under append-only**: How
+5. **State transitions on junction relationships under append-only**: How
    are departures encoded — a member leaving a chat, getting kicked from a
    company, an ItemOwnership being superseded by the next transfer? The
    `Parent -> Junction` approval edge cannot be deleted (append-only), so
@@ -553,14 +497,14 @@ These are known unknowns that need to be resolved as the project progresses:
    resolution should apply uniformly to ChatMember, CompanyMember, and
    ItemOwnership.
 
-8. **Invitation default values**: What sentiment/closeness values should the
+6. **Invitation default values**: What sentiment/closeness values should the
    auto-created edge from the new actor toward the inviter have? Too high
    and it biases the new user's feed heavily toward one person. Too low and
    the new user has a weak starting position in the graph.
 
 ---
 
-## 14. Relationship to Feed Ranking
+## 13. Relationship to Feed Ranking
 
 The [feed ranking algorithm](feed-ranking.md) currently operates on simple
 signed (+/-) edges. The tensor model described here is the next evolution:
