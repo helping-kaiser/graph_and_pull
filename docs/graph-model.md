@@ -369,23 +369,27 @@ These are known unknowns that need to be resolved as the project progresses:
    "implicit signal" and "explicit action"? This ties into the transparency
    principle — implicit signals feel like surveillance.
 
-
-
 ---
 
-## 10. Relationship to Feed Ranking
+## 10. Relationship to feed ranking
 
-The [feed ranking algorithm](feed-ranking.md) currently operates on simple
-signed (+/-) edges. The tensor model described here is the next evolution:
+The [feed ranking algorithm](feed-ranking.md) is a general rule for
+ordering target nodes in any signed, weighted graph from a root node's
+perspective. It is deliberately layer-agnostic — the math applies
+regardless of what the signs and weights represent.
 
-- The ranking algorithm's `sign(U -> node)` becomes a function of the tensor
-  dimensions (not just positive/negative, but a weighted combination of
-  sentiment and relevance/closeness).
-- The `h`, `i`, `j`, `k` metrics will need to operate on continuous values
-  rather than discrete signs.
-- The sort/order phases remain structurally the same, but the inputs become
-  richer.
+This document defines the **concrete inputs** the ranking algorithm
+operates on in CoGra:
 
-The basic signed-edge ranking is the **v0 implementation**. The full tensor
-model is the **target state**. We build v0 first to validate the algorithm,
-then evolve the edge model.
+- Node categories (actor, content, junction) — §2.
+- Edge categories (actor, structural) — §3.
+- The uniform 2-dimensional `[-1.0, +1.0]` tensor shape — §4.
+- Directional semantics — §7 (inbound edges don't affect the viewer's
+  feed).
+- Append-only layer stacks — §8 (the current state is the top layer).
+
+How the continuous tensor values map into the ranker's signed-edge
+math (sign + weight, product, per-dimension contribution, or
+something else) is not yet pinned down. This is closely related to
+the cross-type dimension comparability question in §9 and will be
+resolved in a follow-up.
