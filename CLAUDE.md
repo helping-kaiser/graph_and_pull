@@ -72,6 +72,10 @@ Read these before making changes to data models or algorithms:
 
 - [Graph Model](docs/graph-model.md) — the edge/node system. All
   edges are 2-dimensional directional tensors with append-only layers.
+- [Nodes](docs/nodes.md) — full node catalog with per-type graph
+  properties.
+- [Edges](docs/edges.md) — full edge catalog plus the
+  relationship-label scheme at the graph layer.
 - [Layers](docs/layers.md) — the append-only principle applied to edges,
   node properties, and Postgres-side display content.
 - [Feed Ranking](docs/feed-ranking.md) — how target nodes are ranked from a
