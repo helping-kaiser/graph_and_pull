@@ -14,6 +14,12 @@ This repo explores the architecture for its next evolution: the graph network.
 
 Project name: **CoGra** (Content Graph).
 
+**Mission:** decentralize the power of social media. The goal is not to
+become the next Instagram/X/TikTok with a graph bolted on — it is to shift
+power from social-media companies to users, a massive network where the
+weight and ranking are owned by users themselves. Every design decision
+must resist re-centralization.
+
 ### Core Principles
 
 These are non-negotiable. Every decision must be evaluated against them:
@@ -35,7 +41,9 @@ These are non-negotiable. Every decision must be evaluated against them:
    feed.
 6. **Transparency over black boxes.** The system is a visible, auditable
    graph. Follow the principles of BTC: transparency, immutability, fairness.
-7. **Open source.** Everything we create resonates with the open-source spirit.
+7. **Fully open source.** The entire codebase is open source — a factual
+   commitment, not a spirit. Forking, self-hosting, and running
+   disconnected graphs are architecturally supported.
 8. **Freedom of the mind.** No rewards for outrage, no manipulation, no dark
    patterns.
 
@@ -98,6 +106,10 @@ Read these before making changes to data models or algorithms:
   via PR. Keep branch lifetime short.
 - **Test everything.** `cargo fmt`, `cargo clippy -D warnings`, unit tests,
   integration tests.
+- **Document decisions in the repo.** Any rule, principle, or agreement
+  reached during discussion belongs in this file or a design doc — not in
+  private notes, assistant memory, or anyone's head. Other contributors,
+  other devices, and future sessions need to see the same truth.
 
 ---
 
