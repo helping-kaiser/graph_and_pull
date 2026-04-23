@@ -96,6 +96,7 @@ make logs         follow docker compose logs
 - [Architecture](docs/architecture.md) — system design, dual-database split, data flow
 - [Data Model](docs/data-model.md) — PostgreSQL schema (display metadata)
 - [Graph DB Decision Record](docs/graph-db-options.md) — why Memgraph, alternatives considered
+- [Open Questions](docs/open-questions.md) — consolidated index of unresolved design calls
 
 ### API
 

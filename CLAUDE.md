@@ -91,6 +91,9 @@ Read these before making changes to data models or algorithms:
 - [Items](docs/items.md) — items as content; ItemOwnership transfer
   flow.
 - [Data Model](docs/data-model.md) — Postgres schema + graph definitions.
+- [Open Questions](docs/open-questions.md) — consolidated index of
+  unresolved design calls, one block per question so a fresh reader
+  can engage without hunting for context.
 
 ---
 
