@@ -24,19 +24,21 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Independent quick wins | 1 | **Q7** | Pure Postgres implementation call; independent of everything else. |
-| | 2 | **Q8** | Self-contained to chats; independent of ranking math. |
-| 2. Principle-driven | 3 | **Q3** | Principle-driven (transparency). Gates Q5 — the likely answer ("only explicit actions create edges") rules out Q5's implicit-view-edge options. |
-| 3. Ranking foundation | 4 | **Q2** | The keystone. Every downstream ranking question needs the primitive operation defined (what a float edge value *means* to the ranker). |
-| | 5 | **Q6** | Depends on Q2: "good" default values on invitation edges only mean something once the ranking math gives them meaning. |
-| | 6 | **Q4** | Now that ranking primitives exist, decay can compose with `R/h/i/j/k`. |
-| | 7 | **Q1** | Now that primitives *and* decay are settled, layer count finds its place (modifier? separate parameter? folded into `i`?). |
-| 4. Build on foundations | 8 | **Q5** | Gated by Q3 (what signals are allowed) and informed by Q4 (decay may absorb part of "seen"). |
-| 5. Scale concerns | 9 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
-| 6. Policy, externally gated | 10 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
+| 1. Independent quick wins | 1 | **Q8** | Self-contained to chats; independent of ranking math. |
+| 2. Principle-driven | 2 | **Q3** | Principle-driven (transparency). Gates Q5 — the likely answer ("only explicit actions create edges") rules out Q5's implicit-view-edge options. |
+| 3. Ranking foundation | 3 | **Q2** | The keystone. Every downstream ranking question needs the primitive operation defined (what a float edge value *means* to the ranker). |
+| | 4 | **Q6** | Depends on Q2: "good" default values on invitation edges only mean something once the ranking math gives them meaning. |
+| | 5 | **Q4** | Now that ranking primitives exist, decay can compose with `R/h/i/j/k`. |
+| | 6 | **Q1** | Now that primitives *and* decay are settled, layer count finds its place (modifier? separate parameter? folded into `i`?). |
+| 4. Build on foundations | 7 | **Q5** | Gated by Q3 (what signals are allowed) and informed by Q4 (decay may absorb part of "seen"). |
+| 5. Scale concerns | 8 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
+| 6. Policy, externally gated | 9 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
 
-As questions resolve, their blocks disappear from below. This table
-stays until all ten are closed.
+As questions resolve, their blocks disappear from below and their
+rows disappear from this table. The table stays in place until all
+questions are closed.
+
+**Resolved:** Q7 — see [data-model.md](data-model.md) §"author_id + author_type".
 
 ---
 
@@ -302,48 +304,6 @@ outgoing edge toward the inviter?
   user's feed will be thin until they build more edges.
 - **Neutral** (0.0, 0.0) — no bias, but the new user has almost no
   foothold. Feed may be nearly empty.
-
-### Related
-
-None directly.
-
----
-
-## Q7 — `posts.author_id` referential integrity with two target tables
-
-**Where it shows up:** [data-model.md](data-model.md) (§"posts.author_id does not use a foreign key")
-**Status:** open (design decision for implementation time)
-
-### Context
-
-In CoGra, a Post can be authored by either a User or a Company
-(both are actor nodes — see [companies.md](companies.md)). On the
-Postgres side, `posts.author_id` is a UUID that references either
-`users.id` or `companies.id`. A standard SQL foreign key can't point
-to two tables, so some enforcement strategy is needed.
-
-`author_id` itself is a cached derivation; the source of truth is the
-earliest-incoming-edge rule in [authorship.md](authorship.md).
-That means enforcement on the Postgres side is about keeping the cache
-honest, not about being the authority.
-
-### The question
-
-How do we enforce that `posts.author_id` (and analogously
-`comments.author_id`, `chat_messages.author_id`) references a valid
-actor row?
-
-### Options considered
-
-- **Check constraint + discriminator column** — add `author_type TEXT`
-  (`'user'` or `'company'`) and write a check constraint that
-  validates the pair. Still can't express a real FK, but the
-  discriminator makes joins explicit.
-- **Polymorphic FK** — two nullable columns (`author_user_id`,
-  `author_company_id`), with a check constraint that exactly one is
-  non-null. Real FKs on both. More columns, cleaner integrity.
-- **Application-level validation only** — the API enforces it; the
-  database trusts the API. Simple; no DB-level safety net.
 
 ### Related
 

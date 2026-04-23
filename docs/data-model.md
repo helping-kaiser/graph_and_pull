@@ -59,11 +59,12 @@ CREATE TABLE companies (
 ```sql
 -- Posts: content authored by users or companies
 CREATE TABLE posts (
-    id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    author_id  UUID        NOT NULL,  -- references users.id or companies.id
-    content    TEXT        NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    author_id   UUID        NOT NULL,
+    author_type TEXT        NOT NULL CHECK (author_type IN ('user', 'company')),
+    content     TEXT        NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Media attached to posts (images, videos)
@@ -82,7 +83,8 @@ CREATE TABLE media_attachments (
 CREATE TABLE comments (
     id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     post_id           UUID        NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    author_id         UUID        NOT NULL,  -- references users.id or companies.id
+    author_id         UUID        NOT NULL,
+    author_type       TEXT        NOT NULL CHECK (author_type IN ('user', 'company')),
     parent_comment_id UUID        REFERENCES comments(id),
     content           TEXT        NOT NULL,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -97,11 +99,12 @@ CREATE TABLE chats (
 
 -- Chat messages: individual messages within a chat
 CREATE TABLE chat_messages (
-    id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    chat_id    UUID        NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
-    author_id  UUID        NOT NULL,  -- references users.id or companies.id
-    content    TEXT        NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    chat_id     UUID        NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+    author_id   UUID        NOT NULL,
+    author_type TEXT        NOT NULL CHECK (author_type IN ('user', 'company')),
+    content     TEXT        NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Items: physical or digital goods (future)
@@ -147,13 +150,30 @@ whose incoming edge to the node has the earliest layer 1 timestamp (see
 Postgres column exists because "who wrote this?" is asked on every render and
 scanning all incoming edges every time would be expensive.
 
-### posts.author_id does not use a foreign key
+### author_id + author_type — discriminator, not foreign key
 
-`posts.author_id` can reference either `users.id` or `companies.id`. A
-standard FK constraint can't point to two tables, so some enforcement
-strategy is needed. The options (check constraint, polymorphic FK, or
-application-level validation) are tracked in
-[open-questions.md Q7](open-questions.md).
+`posts.author_id`, `comments.author_id`, and `chat_messages.author_id`
+each reference either `users.id` or `companies.id`. A standard SQL
+foreign key can't point to two tables, so each of these tables carries
+an `author_type` discriminator alongside `author_id` with a `CHECK`
+restricting it to `'user'` or `'company'`.
+
+There is deliberately **no FK** from these columns to either parent
+table. The graph is the source of truth for authorship; Postgres
+`author_id` is a cache. A real FK would buy DB-level referential
+integrity at the cost of schema churn every time a new actor type is
+added (e.g. a future self-hosted instance introducing its own actor
+kind). Integrity is guaranteed by the cache-rebuild path instead: if
+Postgres ever disagrees with the graph, rebuild from the graph.
+
+Reads that need the parent row join on `author_type`:
+
+```sql
+SELECT p.*, COALESCE(u.display_name, c.name) AS author_name
+FROM posts p
+LEFT JOIN users     u ON p.author_type = 'user'    AND u.id = p.author_id
+LEFT JOIN companies c ON p.author_type = 'company' AND c.id = p.author_id;
+```
 
 ---
 
