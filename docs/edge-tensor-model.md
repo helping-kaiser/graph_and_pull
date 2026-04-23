@@ -17,6 +17,13 @@ Every edge in the graph is:
   hide that you disliked someone in the past. Your current feelings are the
   top layer, but the full history is preserved.
 
+And the graph itself is:
+- **Fully transparent** — every node and every edge in the graph is visible
+  to every actor on it. The only way to be invisible is to not be on the
+  graph (a disconnected, self-hosted instance is possible but unreachable
+  from anywhere else). Privacy of *content* is achieved through end-to-end
+  encryption; topology itself is always public.
+
 ---
 
 ## 2. Node Types
