@@ -4,7 +4,7 @@ An **Item** is a content node representing a physical or digital good
 — something that can be owned, transferred, and talked about. Items
 are interactable content: they can be liked, disliked, commented on,
 and tagged with hashtags (see
-[edge-tensor-model.md §5](edge-tensor-model.md) for the relevant
+[graph-model.md §5](graph-model.md) for the relevant
 edges).
 
 Items are a **future** concern in the sense that the first iterations
@@ -15,7 +15,7 @@ below is committed to regardless.
 ## Ownership: ItemOwnership
 
 An `ItemOwnership` is a junction node (see
-[edge-tensor-model.md §2](edge-tensor-model.md)) representing a
+[graph-model.md §2](graph-model.md)) representing a
 specific ownership claim. Each transfer creates a **new**
 ItemOwnership node — old ones are never removed. Together they form
 an **append-only chain of an item's ownership history**.
@@ -27,7 +27,7 @@ from the most recent approved ItemOwnership (see below).
 ## Transfer flow
 
 ItemOwnership uses the **two-edge approval pattern** described in
-[edge-tensor-model.md §6](edge-tensor-model.md):
+[graph-model.md §6](graph-model.md):
 
 1. **Acquirer** (User or Company) creates an actor edge toward a new
    **ItemOwnership** node.
@@ -48,7 +48,7 @@ edge is created, the system **automatically** adds a new layer on the
 **previous** ItemOwnership's `Item -> ItemOwnership` approval edge
 with `dim1 < 0` — marking it revoked/superseded. This uses the
 general state-transition mechanism on structural edges described in
-[edge-tensor-model.md §6](edge-tensor-model.md).
+[graph-model.md §6](graph-model.md).
 
 The invariant is: **at most one ItemOwnership per item has a positive
 top layer on its approval edge at any time.** Identifying the current

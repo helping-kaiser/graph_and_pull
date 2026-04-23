@@ -3,7 +3,7 @@
 This document covers the **PostgreSQL schema** — the metadata/display layer.
 
 For the graph model (nodes, edges, tensor dimensions, append-only layers),
-see [Edge Tensor Model](edge-tensor-model.md).
+see [Graph Model](graph-model.md).
 
 > **Note:** This schema is a starting point. The production Peer Network
 > backend has an existing Postgres schema with additional display data tables
@@ -143,7 +143,7 @@ CREATE TABLE hashtags (
 The `author_id` columns on `posts`, `comments`, and `chat_messages` are
 **caches** of a fact that lives in the graph. The true author is the actor
 whose incoming edge to the node has the earliest layer 1 timestamp (see
-[Edge Tensor Model — Authorship](edge-tensor-model.md#7-authorship)). The
+[Graph Model — Authorship](graph-model.md#7-authorship)). The
 Postgres column exists because "who wrote this?" is asked on every render and
 scanning all incoming edges every time would be expensive.
 

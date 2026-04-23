@@ -30,9 +30,12 @@ These are non-negotiable. Every decision must be evaluated against them:
 2. **All edges are directional.** Nothing can push onto you. Inbound edges
    from others never affect your feed. Only your outgoing edges shape what you
    see.
-3. **Append-only edges.** Edge history is immutable. You cannot delete or
-   overwrite past interactions. New layers are added on top. Transparency and
-   auditability over convenience.
+3. **Append-only on the graph.** Graph state (edges and node properties) is
+   immutable — you cannot delete or overwrite past interactions or values.
+   New layers are added on top. The principle extends to Postgres-side
+   display content, which uses versioned rows rather than overwrites.
+   Transparency and auditability over convenience. See
+   [docs/layers.md](docs/layers.md) for the full rule.
 4. **Fair economics.** Ad revenue distributes across the economic landscape of
    the graph. Bot clusters earn nothing because real users never point toward
    them. Pull marketing, not push marketing.
@@ -67,8 +70,10 @@ Crate structure:
 
 Read these before making changes to data models or algorithms:
 
-- [Edge Tensor Model](docs/edge-tensor-model.md) — the edge/node system. All
+- [Graph Model](docs/graph-model.md) — the edge/node system. All
   edges are 2-dimensional directional tensors with append-only layers.
+- [Layers](docs/layers.md) — the append-only principle applied to edges,
+  node properties, and Postgres-side display content.
 - [Feed Ranking](docs/feed-ranking.md) — how target nodes are ranked from a
   root node's perspective.
 - [Chats](docs/chats.md) — chats/messages as first-class public content;
@@ -91,8 +96,17 @@ Read these before making changes to data models or algorithms:
 
 - **Never introduce AI-based ranking or recommendations.** The graph and its
   weights are the only ranking mechanism.
-- **Never allow edge deletion.** Edges are append-only. New layers on top,
-  never remove or overwrite.
+- **Never delete graph structure.** Nodes, edges, and layer stacks are never
+  removed. State transitions are always layered, never destructive. The only
+  permitted "deletion" on the graph is **in-place redaction** of a specific
+  node-property layer's contents when the content itself is illegal — the
+  layer stays, its value is replaced with a visible `[redacted — ...]`
+  marker. Postgres-side display content follows the same spirit: deletion
+  is a narrow exception for illegal material, and the fact of deletion
+  always leaves a visible trace. See [docs/layers.md](docs/layers.md) §5
+  for the full policy.
+- **Never erase silently.** Any redaction or takedown — graph-side or
+  Postgres-side — must leave a visible mark. No silent removal of history.
 - **Never let inbound edges affect a user's feed.** Only outgoing edges from
   the viewing user shape their feed.
 - **Never break edge tensor uniformity.** All edges (actor and structural)
