@@ -89,6 +89,7 @@ make logs         follow docker compose logs
 - [Authorship](docs/authorship.md) — how authorship is derived from the earliest incoming edge
 - [Invitations](docs/invitations.md) — the two-edge onboarding pattern for new actors
 - [Companies](docs/companies.md) — companies as actors; CompanyMember flow; economic role (not preferential)
+- [Items](docs/items.md) — items as content nodes; ItemOwnership transfer flow
 - [Architecture](docs/architecture.md) — system design, dual-database split, data flow
 - [Data Model](docs/data-model.md) — PostgreSQL schema (display metadata)
 - [Graph DB Decision Record](docs/graph-db-options.md) — why Memgraph, alternatives considered

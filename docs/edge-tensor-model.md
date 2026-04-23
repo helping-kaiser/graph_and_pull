@@ -280,26 +280,10 @@ They follow the same two-edge approval pattern described above.
 
 ### Ownership Transfer (ItemOwnership)
 
-Each transfer creates a **new** ItemOwnership node. Historic ItemOwnership
-nodes are never removed — they form an append-only chain of the item's
-ownership history.
-
-1. **Acquirer** (User/Company) creates an actor edge toward a new
-   **ItemOwnership** node.
-2. System creates `ItemOwnership -> Item` (claim, pending).
-3. **Current owner** creates an actor edge toward the same ItemOwnership
-   node with positive sentiment (approval).
-4. Policy satisfied; system creates `Item -> ItemOwnership` (approval).
-5. Transfer is complete; the new ItemOwnership is now the active one.
-
-No one can take ownership without the current owner's explicit approval.
-Earlier ItemOwnership nodes still have their `Item -> ItemOwnership` edges
-from when they were current — the **current** owner is identified by the
-most recent `Item -> ItemOwnership` approval edge (analogous to how
-authorship is derived from the earliest incoming edge — see
-[authorship.md](authorship.md)). See §10 for the open question on how
-superseded states — and departures like leaving a chat or company — are
-encoded under append-only.
+Item-specific flows are explained in [docs/items.md](items.md). They
+follow the same two-edge approval pattern described above, with the
+additional property that transfers form an append-only chain of
+ItemOwnership nodes per item.
 
 ---
 

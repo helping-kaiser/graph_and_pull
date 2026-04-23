@@ -79,6 +79,8 @@ Read these before making changes to data models or algorithms:
   for new actors.
 - [Companies](docs/companies.md) — companies as actors (equivalent to
   users); CompanyMember flow; no preferential ad revenue.
+- [Items](docs/items.md) — items as content; ItemOwnership transfer
+  flow.
 - [Data Model](docs/data-model.md) — Postgres schema + graph definitions.
 
 ---
