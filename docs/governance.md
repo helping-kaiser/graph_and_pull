@@ -175,7 +175,50 @@ snapshot weights, but they carry the burden of explaining why.
 
 ---
 
-## 6. Instances
+## 6. When outcomes take effect
+
+Outcomes are **triggered by new-vote threshold-crossings**. A tally
+is computed only when a new or updated vote layer arrives on the
+subject — not on any schedule, and not when the eligibility set
+shifts in the background.
+
+- Raw vote layers are written whenever any eligible actor casts or
+  changes a vote.
+- On each new vote event, the tally is computed over currently
+  eligible voters' current top vote layers (§§2.2, 5). If the tally
+  has crossed the threshold since the last outcome on this subject,
+  a new state layer is written on the subject.
+- Eligibility changes alone (members leaving, roles changing) do
+  **not** trigger re-tallying. Past outcomes stand. Current
+  eligibility only applies the next time someone actually votes on
+  the subject.
+
+### Why outcomes are sticky, not continuously rendered
+
+Consider a member who voted on 1000 past disavowals and then leaves
+the chat. Under a naive "always match the current tally" model,
+their exit could flip every past decision they were pivotal to —
+and each of those thousand subjects would then need fresh votes
+from remaining members to re-cross quorum. Governance would be
+dominated by background churn, not by intent, and the graph's
+history would be swamped by silent reverts.
+
+CoGra's model instead: **once an outcome takes effect, the subject
+stays in that state until a future vote event pushes it back across
+the threshold.** To undo a decision, members actively cast new
+votes — updating their existing vote edges or creating new ones for
+members who hadn't voted before. Governance is an act, not a
+background computation.
+
+### No time-boxing
+
+Votes stand until changed; there is no "voting ends at T". A
+specific application that genuinely needs a time window is a new
+design discussion (§8).
+
+---
+
+## 7. Instances
 
 ### Existing
 
@@ -191,7 +234,7 @@ Future cases get added here as they're designed.
 
 ---
 
-## 7. Out of scope
+## 8. Out of scope
 
 - **Secret ballots.** All votes are public on the graph. Privacy is
   achieved through content encryption elsewhere, not through hiding
