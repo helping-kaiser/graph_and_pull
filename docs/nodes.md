@@ -77,6 +77,7 @@ Entities that are acted upon by actors.
 | **ChatMessage** | A single message within a chat. See [chats.md](chats.md). |
 | **Item** | A physical or digital good. See [items.md](items.md). |
 | **Hashtag** | A topic tag. Also covers concepts like places (e.g. `#berlin`) — if places ever need dedicated properties they can become their own node type later. |
+| **Proposal** | A proposed change to a graph-side property on another node — the subject carrier for property-level governance votes (see [governance.md §2.1](governance.md)). Carries the target, the property name, and the proposed new value. When the vote crosses threshold, a cascade writes a new layer on the target property. |
 
 ### Graph-side properties
 
@@ -87,6 +88,10 @@ lives in Postgres. Specific cases:
   `content_privacy` (plaintext vs E2EE — the graph needs this to
   know what to route). See [chats.md](chats.md).
 - **Hashtag**: its tag string — the tag *is* the identifier.
+- **Proposal**: `target_node_id`, `target_property`,
+  `proposed_value`. A Proposal is fully specified by these three —
+  no display content in Postgres. See
+  [governance.md §2.1](governance.md) for the mechanism.
 
 Post bodies, Comment bodies, ChatMessage payloads, Item descriptions
 and media, Chat descriptions all live in Postgres — not on the graph.
