@@ -24,21 +24,23 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Independent quick wins | 1 | **Q8** | Self-contained to chats; independent of ranking math. |
-| 2. Principle-driven | 2 | **Q3** | Principle-driven (transparency). Gates Q5 — the likely answer ("only explicit actions create edges") rules out Q5's implicit-view-edge options. |
-| 3. Ranking foundation | 3 | **Q2** | The keystone. Every downstream ranking question needs the primitive operation defined (what a float edge value *means* to the ranker). |
-| | 4 | **Q6** | Depends on Q2: "good" default values on invitation edges only mean something once the ranking math gives them meaning. |
-| | 5 | **Q4** | Now that ranking primitives exist, decay can compose with `R/h/i/j/k`. |
-| | 6 | **Q1** | Now that primitives *and* decay are settled, layer count finds its place (modifier? separate parameter? folded into `i`?). |
-| 4. Build on foundations | 7 | **Q5** | Gated by Q3 (what signals are allowed) and informed by Q4 (decay may absorb part of "seen"). |
-| 5. Scale concerns | 8 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
-| 6. Policy, externally gated | 9 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
+| 1. Principle-driven | 1 | **Q3** | Principle-driven (transparency). Gates Q5 — the likely answer ("only explicit actions create edges") rules out Q5's implicit-view-edge options. |
+| 2. Ranking foundation | 2 | **Q2** | The keystone. Every downstream ranking question needs the primitive operation defined (what a float edge value *means* to the ranker). |
+| | 3 | **Q6** | Depends on Q2: "good" default values on invitation edges only mean something once the ranking math gives them meaning. |
+| | 4 | **Q4** | Now that ranking primitives exist, decay can compose with `R/h/i/j/k`. |
+| | 5 | **Q1** | Now that primitives *and* decay are settled, layer count finds its place (modifier? separate parameter? folded into `i`?). |
+| 3. Build on foundations | 6 | **Q5** | Gated by Q3 (what signals are allowed) and informed by Q4 (decay may absorb part of "seen"). |
+| 4. Scale concerns | 7 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
+| 5. Policy, externally gated | 8 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
 questions are closed.
 
-**Resolved:** Q7 — see [data-model.md](data-model.md) §"author_id + author_type".
+**Resolved:**
+
+- Q7 — see [data-model.md](data-model.md) §"author_id + author_type".
+- Q8 — see [chats.md §6](chats.md) and [governance.md §7](governance.md).
 
 ---
 
@@ -311,48 +313,6 @@ None directly.
 
 ---
 
-## Q8 — Admin/mod powers vs community voting in chats
-
-**Where it shows up:** [chats.md §6](chats.md) (Roles still apply)
-**Status:** open (implementation-level design)
-
-### Context
-
-Open public chats have no admin gating joining — anyone can become a
-member. But chats can still have admins and mods (roles carried as
-properties on ChatMember junction nodes — see
-[nodes.md §3](nodes.md)). Moderation in CoGra works by **the chat
-moving away from a message, not the other way around** — members vote
-to disavow a message, and a new layer is added to the relevant
-structural edge signaling that the chat no longer associates itself
-with it.
-
-An admin's disavowal may carry more weight than a regular member's,
-but the exact composition between role weight and community voting is
-unspecified.
-
-### The question
-
-How do admin/mod powers compose with community voting?
-
-- Does an admin's vote count as N regular votes?
-- Can an admin single-handedly disavow without community input (unilateral veto)?
-- Is there a threshold of community votes that overrides an admin?
-- How does this scale with multi-sig policies (several admins required)?
-
-### Options considered
-
-None explicitly laid out. The primitives exist (weighted votes via
-role properties, multi-sig via N-of-M actor edges); the policy on top
-of them is the design call.
-
-### Related
-
-Q9 (redaction authority — there's a similar "who decides" shape for
-content takedown).
-
----
-
 ## Q9 — Who authorizes a redaction, and through what process
 
 **Where it shows up:** [layers.md §5](layers.md) (Out of scope)
@@ -390,8 +350,9 @@ model.
 
 ### Related
 
-Q8 (admin/mod × community voting has a similar "who decides" shape,
-though with lower stakes), Q10 (retention).
+Q10 (retention). Chat moderation (resolved Q8 — see
+[chats.md §6](chats.md)) is a similar "who decides" shape with
+much lower stakes.
 
 ---
 

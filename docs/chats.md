@@ -171,30 +171,81 @@ Open public chats face an obvious question: without an admin, who
 stops a bad message from dominating? CoGra's answer reuses the
 no-push principle from [graph-model.md §7](graph-model.md):
 
-**The chat moves away from a message. It never moves the message
-away.**
+**The chat moves away from a message (or a member). It never moves
+the message or the member away.**
 
-Concretely: members of a chat can vote to disavow a specific
-ChatMessage. If the vote passes, a new layer is added to the relevant
-structural edge signaling that the chat no longer associates itself
-with that message. The message itself is **not** removed — append-only
-applies. A reader who wants to see disavowed content still can; a
-reader who treats the chat's current stance as authoritative simply
-won't.
+Moderation happens at two levels, independently. Both are instances
+of the weighted-voting primitive in [governance.md](governance.md),
+both use Shape B (the vote travels from the voter's `ChatMember`
+junction to the subject, so the chat stance stays decoupled from
+personal sentiment).
 
-This is the same pattern as everything else in the graph: actors and
-containers only move themselves. Nothing gets pushed off.
+### Level 1 — Message disavowal (`Chat -> ChatMessage`)
 
-### Roles still apply
+Members vote to disavow a specific `ChatMessage`. If the vote
+passes, a new layer on the `Chat -> ChatMessage` structural edge
+signals that the chat no longer associates itself with the message.
+The message is **not** removed — append-only applies. A reader who
+wants to see disavowed content still can; a reader who treats the
+chat's current stance as authoritative simply won't.
 
-Even open chats can have roles. Joining may be free, but **other roles
-(admin, mod) are given** — they're carried as properties on the
-ChatMember junction node (see
-[graph-model.md §2](graph-model.md)). An admin's
-disavowal may weigh more than a regular member's. How exactly
-admin/mod powers compose with community voting (thresholds, veto,
-tie-breaking) is tracked in
-[open-questions.md Q8](open-questions.md).
+### Level 2 — Member disavowal (`Chat -> ChatMember`)
+
+A chat can also move away from a *member*, not just a message.
+This is the heavier decision and is a separate governance act —
+not an automatic cascade from N message disavowals. A chat may
+disavow a member after a pattern of incidents or after a single
+severe one; the community decides when to escalate. The count of
+incoming `disavow` edges on a `ChatMember` is a visible signal,
+but never a trigger.
+
+If the vote passes, a new layer on the `Chat -> ChatMember`
+structural edge reflects that the chat no longer accepts the
+member. The full membership history stays in the graph; only the
+current stance changes.
+
+### Default parameters
+
+Starting points, not fixed rules:
+
+| Parameter       | Message disavowal                                                     | Member disavowal                                                      |
+|-----------------|-----------------------------------------------------------------------|-----------------------------------------------------------------------|
+| Eligibility     | Active `ChatMember`s                                                  | Active `ChatMember`s excluding the member under review                |
+| Role weights    | `admin = 5`, `mod = 3`, `member = 1`                                  | Same                                                                  |
+| Quorum          | ≥ 20% of total eligible weight has cast a vote                        | ≥ 40% of total eligible weight has cast a vote                        |
+| Threshold       | > 50% of cast weight disavowing                                       | ≥ 2/3 of cast weight disavowing                                       |
+| Outcome         | New layer on `Chat -> ChatMessage`                                    | New layer on `Chat -> ChatMember`                                     |
+| Takes effect at | New-vote threshold-crossing ([governance.md §6](governance.md))       | Same                                                                  |
+
+**Every number above is a node property on the `Chat`.** Role
+weights, quorum %, threshold % — none of them are hardcoded.
+Members change any of them via a Proposal node targeting the
+chat's property, voted by the same eligibility rules (see
+[governance.md §2.1](governance.md)). The defaults above exist
+to bootstrap new chats; they are not fixed rules, and the same
+primitive that governs disavowals also governs changes to the
+disavowal rules themselves.
+
+### How roles fit in
+
+Roles (admin, mod, member) are carried as properties on the
+`ChatMember` junction node (see [graph-model.md §2](graph-model.md)).
+An admin's disavowal weight is higher than a member's but it is
+never a veto — in any chat large enough that an admin's weight is
+a small fraction of the pool, an admin cannot single-handedly
+disavow. Multiple admins simply stack their weights under the same
+primitive; no separate M-of-N admin rule is needed.
+
+A community can override an admin by crossing the threshold
+without the admin's participation. That falls naturally out of
+the primitive, not from a special rule.
+
+### Still no push
+
+Even this flow is pull, not push. The chat moves away; nothing
+forces the content or the member off the graph. Anyone reading the
+graph directly still sees the disavowed message or the departed
+member — they just see that the chat has moved away.
 
 ---
 

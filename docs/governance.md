@@ -164,7 +164,7 @@ ChatMember_Jakob_ChatY -[dim1: -1, dim2: 0]-> ChatMessage_X
   a member of this chat," not "I personally dislike this content."
 - Eligibility loss handled naturally: if the junction goes inactive,
   the vote drops from the tally (edge stays in history).
-- Used by: chat message moderation (Q8).
+- Used by: chat message disavowal, chat member disavowal.
 
 ### Choosing between A and B
 
@@ -257,11 +257,10 @@ design discussion (§8).
 
 - **Junction approvals** — [graph-model.md §5](graph-model.md).
   Shape A. Threshold: N actor edges from specified roles.
-
-### Planned
-
-- **Chat message moderation** — [chats.md §6](chats.md), tracked as
-  Q8 in [open-questions.md](open-questions.md). Shape B.
+- **Chat message disavowal** — [chats.md §6](chats.md). Shape B.
+  Quorum + weighted-majority threshold.
+- **Chat member disavowal** — [chats.md §6](chats.md). Shape B.
+  Higher quorum + weighted-supermajority threshold.
 
 Future cases get added here as they're designed.
 
