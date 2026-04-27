@@ -24,14 +24,13 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Principle-driven | 1 | **Q3** | Principle-driven (transparency). Gates Q5 — the likely answer ("only explicit actions create edges") rules out Q5's implicit-view-edge options. |
-| 2. Ranking foundation | 2 | **Q2** | The keystone. Every downstream ranking question needs the primitive operation defined (what a float edge value *means* to the ranker). |
-| | 3 | **Q6** | Depends on Q2: "good" default values on invitation edges only mean something once the ranking math gives them meaning. |
-| | 4 | **Q4** | Now that ranking primitives exist, decay can compose with `R/h/i/j/k`. |
-| | 5 | **Q1** | Now that primitives *and* decay are settled, layer count finds its place (modifier? separate parameter? folded into `i`?). |
-| 3. Build on foundations | 6 | **Q5** | Gated by Q3 (what signals are allowed) and informed by Q4 (decay may absorb part of "seen"). |
-| 4. Scale concerns | 7 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
-| 5. Policy, externally gated | 8 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
+| 1. Ranking foundation | 1 | **Q2** | The keystone. Every downstream ranking question needs the primitive operation defined (what a float edge value *means* to the ranker). |
+| | 2 | **Q6** | Depends on Q2: "good" default values on invitation edges only mean something once the ranking math gives them meaning. |
+| | 3 | **Q4** | Now that ranking primitives exist, decay can compose with `R/h/i/j/k`. |
+| | 4 | **Q1** | Now that primitives *and* decay are settled, layer count finds its place (modifier? separate parameter? folded into `i`?). |
+| 2. Build on foundations | 5 | **Q5** | Informed by Q4 (decay may absorb part of "seen"). Q3 already ruled out the implicit-view-edge options. |
+| 3. Scale concerns | 6 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
+| 4. Policy, externally gated | 7 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -41,6 +40,7 @@ questions are closed.
 
 - Q7 — see [data-model.md](implementation/data-model.md) §"author_id + author_type".
 - Q8 — see [chats.md §6](instances/chats.md) and [governance.md §7](primitive/governance.md).
+- Q3 — see [graph-model.md §3](primitive/graph-model.md) "What creates an actor edge — stances, not events".
 
 ---
 
@@ -137,43 +137,6 @@ decaying).
 
 ---
 
-## Q3 — Minimum interaction required to create an edge
-
-**Where it shows up:** [graph-model.md §1](primitive/graph-model.md) (transparency principle)
-**Status:** open
-
-### Context
-
-The graph is built from interactions. But "interaction" covers a wide
-spectrum — from an explicit like on a post to merely scrolling past it
-in a feed. Implicit signals (dwell time, scroll-past, hover) are how
-existing social apps build their ranking inputs, and they feel like
-surveillance. CoGra's transparency principle
-([CLAUDE.md](../CLAUDE.md) principle #6) makes implicit tracking
-uncomfortable.
-
-### The question
-
-Where is the line between *implicit signal* and *explicit action*?
-Does viewing a post for 3 seconds create an edge? Does scrolling past
-it without viewing? Does opening a chat create an edge toward it?
-
-### Options considered
-
-None explicitly mapped. The principle constraint is that implicit
-signals are uncomfortable with transparency. A defensible default
-might be: **only explicit actions** (like, comment, follow, mute,
-open-and-read-a-message) create or update edges — but that leaves
-signals on the table that legitimately help ranking (e.g. a user
-repeatedly opens a chat without posting).
-
-### Related
-
-Q5 (already-seen tracking) — some options for "seen" tracking create
-implicit view-edges, so this question gates them.
-
----
-
 ## Q4 — Time and recency: decay shape
 
 **Where it shows up:** [feed-ranking.md §7](primitive/feed-ranking.md)
@@ -243,35 +206,25 @@ How should "already seen" tracking work?
 
 ### Options considered
 
-- **A. View edges on the graph** — every viewed node gets a `(0, 0)`
-  edge.
-  - Pro: graph-native; "I've seen this" is just another edge.
-  - Con: explodes the edge count. Instead of sorting through 3 posts a
-    friend liked, you sort through 10,000 posts they've viewed.
-    Computation cost becomes untenable.
-
+- **~~A. View edges on the graph~~** — ruled out by Q3
+  (graph-model.md §3 "stances, not events"): a viewed-but-unreacted
+  node does not create an actor edge.
 - **B. Separate "seen" store outside the graph** (e.g. Redis set,
   bitset, bloom filter).
   - Pro: doesn't pollute the graph; compact data structures possible.
   - Con: breaks the "everything is in the graph" property. Adds a
     third data store.
-
 - **C. Client-side "seen" tracking.**
   - Pro: aligns with the decentralized/compute-close-to-viewer vision
     (see [feed-ranking.md §9](primitive/feed-ranking.md)). The client already
     has the subgraph and knows what it rendered.
   - Con: doesn't sync across devices without additional infra.
-
-- **D. View edges with aggressive compaction** — only recent views
-  live as individual layers; older ones get compacted into a summary.
-  - Pro: graph-native.
-  - Con: compaction logic adds complexity; "recent" is another
-    decision to make.
+- **~~D. View edges with aggressive compaction~~** — ruled out by Q3
+  for the same reason as A.
 
 ### Related
 
-Q3 (minimum interaction — view-edge options (A) and (D) conflict with
-"only explicit actions create edges"), Q4 (decay).
+Q4 (decay).
 
 ---
 
