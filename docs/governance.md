@@ -296,6 +296,13 @@ design discussion (§9).
 
 Future cases get added here as they're designed.
 
+### Planned
+
+- **Redaction authorization** — [open-questions.md Q9](open-questions.md).
+  When Q9 resolves, the takedown / redaction policy will land as
+  another governance instance: subject = the layer or display row
+  to redact, eligibility and threshold per the redaction policy.
+
 ---
 
 ## 8. Multi-candidate decisions
