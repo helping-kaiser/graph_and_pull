@@ -41,8 +41,8 @@ CREATE TABLE users (
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Companies: business/organization profiles
-CREATE TABLE companies (
+-- Collectives: profiles for any collective actor (households, bands, co-ops, companies, ...)
+CREATE TABLE collectives (
     id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     name          TEXT        NOT NULL,
     handle        TEXT        NOT NULL UNIQUE,
@@ -57,11 +57,11 @@ CREATE TABLE companies (
 ### Content metadata
 
 ```sql
--- Posts: content authored by users or companies
+-- Posts: content authored by users or collectives
 CREATE TABLE posts (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     author_id   UUID        NOT NULL,
-    author_type TEXT        NOT NULL CHECK (author_type IN ('user', 'company')),
+    author_type TEXT        NOT NULL CHECK (author_type IN ('user', 'collective')),
     content     TEXT        NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -84,7 +84,7 @@ CREATE TABLE comments (
     id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     post_id           UUID        NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
     author_id         UUID        NOT NULL,
-    author_type       TEXT        NOT NULL CHECK (author_type IN ('user', 'company')),
+    author_type       TEXT        NOT NULL CHECK (author_type IN ('user', 'collective')),
     parent_comment_id UUID        REFERENCES comments(id),
     content           TEXT        NOT NULL,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -102,7 +102,7 @@ CREATE TABLE chat_messages (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     chat_id     UUID        NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     author_id   UUID        NOT NULL,
-    author_type TEXT        NOT NULL CHECK (author_type IN ('user', 'company')),
+    author_type TEXT        NOT NULL CHECK (author_type IN ('user', 'collective')),
     content     TEXT        NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -135,7 +135,7 @@ CREATE TABLE hashtags (
 - **Counts** (followers, likes, comments) — derived from graph edges at query
   time, not materialized
 - **Membership / ownership state** — graph-only (junction nodes: ChatMember,
-  CompanyMember, ItemOwnership)
+  CollectiveMember, ItemOwnership)
 
 ---
 
@@ -153,10 +153,10 @@ scanning all incoming edges every time would be expensive.
 ### author_id + author_type — discriminator, not foreign key
 
 `posts.author_id`, `comments.author_id`, and `chat_messages.author_id`
-each reference either `users.id` or `companies.id`. A standard SQL
+each reference either `users.id` or `collectives.id`. A standard SQL
 foreign key can't point to two tables, so each of these tables carries
 an `author_type` discriminator alongside `author_id` with a `CHECK`
-restricting it to `'user'` or `'company'`.
+restricting it to `'user'` or `'collective'`.
 
 There is deliberately **no FK** from these columns to either parent
 table. The graph is the source of truth for authorship; Postgres
@@ -172,7 +172,7 @@ Reads that need the parent row join on `author_type`:
 SELECT p.*, COALESCE(u.display_name, c.name) AS author_name
 FROM posts p
 LEFT JOIN users     u ON p.author_type = 'user'    AND u.id = p.author_id
-LEFT JOIN companies c ON p.author_type = 'company' AND c.id = p.author_id;
+LEFT JOIN collectives c ON p.author_type = 'collective' AND c.id = p.author_id;
 ```
 
 ---

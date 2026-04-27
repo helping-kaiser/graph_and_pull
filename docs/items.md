@@ -29,7 +29,7 @@ from the most recent approved ItemOwnership (see below).
 ItemOwnership uses the **two-edge approval pattern** described in
 [graph-model.md §5](graph-model.md):
 
-1. **Acquirer** (User or Company) creates an actor edge toward a new
+1. **Acquirer** (User or Collective) creates an actor edge toward a new
    **ItemOwnership** node.
 2. System creates `ItemOwnership -> Item` (claim, pending).
 3. **Current owner** creates an actor edge toward the same

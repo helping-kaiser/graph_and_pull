@@ -2,7 +2,7 @@
 
 > **OUTDATED — pending redesign.** This spec was written before the
 > [Graph Model](graph-model.md) was designed. The GraphQL schema
-> below does not reflect the current node types (Company, Chat, ChatMessage,
+> below does not reflect the current node types (Collective, Chat, ChatMessage,
 > Item, junction nodes), the uniform tensor edge model (no more named
 > relationships like "follow" or "like"), or the append-only edge principle
 > (no "unlike" or "delete" operations). A full API redesign session is needed

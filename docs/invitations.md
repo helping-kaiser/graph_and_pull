@@ -1,6 +1,6 @@
 # Invitations
 
-How a new actor (User or Company) joins the graph and gets their first
+How a new actor (User or Collective) joins the graph and gets their first
 edges. Invitations are the onboarding mechanism that prevents new
 actors from starting as isolated nodes with no path to any other part
 of the graph.

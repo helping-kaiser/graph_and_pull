@@ -11,7 +11,7 @@ directionality, the append-only rule — see
 
 ## 1. Actor edges
 
-All actor edges are created by User or Company nodes toward other
+All actor edges are created by User or Collective nodes toward other
 nodes. The 2 dimensions are set by the actor and follow the uniform
 `[-1.0, +1.0]` range described in
 [graph-model.md](graph-model.md).
@@ -21,32 +21,32 @@ nodes. The 2 dimensions are set by the actor and follow the uniform
 | Edge type | Dimension 1 | Dimension 2 |
 |-----------|-------------|-------------|
 | User -> User | **Sentiment** (love to hate) | **Closeness** (how much we interact / know each other) |
-| User -> Company | **Sentiment** (love to hate) | **Closeness** (how much I engage with this brand) |
+| User -> Collective | **Sentiment** (love to hate) | **Closeness** (how much I engage with this collective) |
 | User -> Post | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
 | User -> Comment | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
 | User -> Chat | **Sentiment** (like to dislike) | **Relevance** (how important is this chat to me) |
 | User -> ChatMessage | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
 | User -> ChatMember | **Sentiment** (approve to reject) | **Relevance** (how important is this membership to me) |
-| User -> CompanyMember | **Sentiment** (approve to reject) | **Relevance** (how important is this membership to me) |
+| User -> CollectiveMember | **Sentiment** (approve to reject) | **Relevance** (how important is this membership to me) |
 | User -> ItemOwnership | **Sentiment** (approve to reject) | **Relevance** (how important is this transfer to me) |
 | User -> Item | **Sentiment** (want to avoid) | **Relevance** (how interesting to me) |
 | User -> Hashtag | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
 
-### Company as actor
+### Collective as actor
 
 | Edge type | Dimension 1 | Dimension 2 |
 |-----------|-------------|-------------|
-| Company -> User | **Sentiment** | **Relevance** (how valuable is this user to the company) |
-| Company -> Company | **Sentiment** | **Relevance** |
-| Company -> Post | **Sentiment** | **Relevance** |
-| Company -> Comment | **Sentiment** | **Relevance** |
-| Company -> Chat | **Sentiment** | **Relevance** |
-| Company -> ChatMessage | **Sentiment** | **Relevance** |
-| Company -> ChatMember | **Sentiment** (approve to reject) | **Relevance** |
-| Company -> CompanyMember | **Sentiment** (approve to reject) | **Relevance** |
-| Company -> ItemOwnership | **Sentiment** (approve to reject) | **Relevance** |
-| Company -> Item | **Sentiment** | **Relevance** (how important is this product) |
-| Company -> Hashtag | **Sentiment** | **Relevance** |
+| Collective -> User | **Sentiment** | **Relevance** (how valuable is this user to the collective) |
+| Collective -> Collective | **Sentiment** | **Relevance** |
+| Collective -> Post | **Sentiment** | **Relevance** |
+| Collective -> Comment | **Sentiment** | **Relevance** |
+| Collective -> Chat | **Sentiment** | **Relevance** |
+| Collective -> ChatMessage | **Sentiment** | **Relevance** |
+| Collective -> ChatMember | **Sentiment** (approve to reject) | **Relevance** |
+| Collective -> CollectiveMember | **Sentiment** (approve to reject) | **Relevance** |
+| Collective -> ItemOwnership | **Sentiment** (approve to reject) | **Relevance** |
+| Collective -> Item | **Sentiment** | **Relevance** (how important is this product) |
+| Collective -> Hashtag | **Sentiment** | **Relevance** |
 
 ---
 
@@ -67,7 +67,7 @@ see [graph-model.md](graph-model.md) for the rule).
 | Comment -> Item | This comment is on this item |
 | ChatMessage -> Chat | This message belongs to this chat |
 | ChatMember -> Chat | This membership claims to be about this chat (claim) |
-| CompanyMember -> Company | This membership claims to be about this company (claim) |
+| CollectiveMember -> Collective | This membership claims to be about this collective (claim) |
 | ItemOwnership -> Item | This ownership claim relates to this item (claim) |
 
 ### Approval completion
@@ -78,7 +78,7 @@ Paired with the claim edges above — see
 | Edge type | Meaning |
 |-----------|---------|
 | Chat -> ChatMember | This chat has accepted this member |
-| Company -> CompanyMember | This company has accepted this member |
+| Collective -> CollectiveMember | This collective has accepted this member |
 | Item -> ItemOwnership | This item's ownership transfer to this claim is complete |
 
 ### Tagging
@@ -105,7 +105,7 @@ and the schema explodes every time a node type is added.
 
 | Label | Applies to | Description |
 |---|---|---|
-| `:ACTOR` | All actor edges | Created by User or Company actors; carries the 2-dimensional opinion tensor. Uniform across every actor-edge type — specific meaning (sentiment-toward-post vs closeness-to-user, etc.) derives from endpoint node labels. |
+| `:ACTOR` | All actor edges | Created by User or Collective actors; carries the 2-dimensional opinion tensor. Uniform across every actor-edge type — specific meaning (sentiment-toward-post vs closeness-to-user, etc.) derives from endpoint node labels. |
 | `:STRUCTURAL` | All structural edges not otherwise labeled | System-created edges expressing containment or belonging. Dimensions typically `(0, 0)` unless they participate in a state-bearing pattern. |
 
 ### Sub-category labels
@@ -127,7 +127,7 @@ relationship has exactly one label in Memgraph.
 
 Actor edges stay uniform at `:ACTOR`. The 2D tensor treats all
 actor edges the same math-wise; splitting them by tuple would
-multiply labels (User-Post, User-User, Company-Post, ...) without
+multiply labels (User-Post, User-User, Collective-Post, ...) without
 improving ranking efficiency — the ranking algorithm iterates over
 actor edges regardless of tuple.
 

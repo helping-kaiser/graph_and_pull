@@ -45,12 +45,12 @@ Entities that take actions and create edges.
 | Node type | Description |
 |-----------|-------------|
 | **User** | A person on the platform. |
-| **Company** | A business, organization, band, solo artist profile — any collective or professional entity. Fully equivalent to Users as actors: can do everything Users can (author content, be followed, post items, create edges toward other nodes, be members of other companies). See [companies.md](companies.md). |
+| **Collective** | Any group of people that needs a single graph identity to act through — a household, band, co-op, studio, partnership, NGO, company. Fully equivalent to Users as actors: can do everything Users can (author content, be followed, post items, create edges toward other nodes, be members of other collectives). See [collectives.md](collectives.md). |
 
 ### Graph-side properties
 
 - **User**: `username` (the handle used for mentions and lookups).
-- **Company**: `name` (the handle used for mentions and lookups,
+- **Collective**: `name` (the handle used for mentions and lookups,
   analogous to `username` on User).
 
 Additional authored properties for either type (display name,
@@ -71,7 +71,7 @@ Entities that are acted upon by actors.
 
 | Node type | Description |
 |-----------|-------------|
-| **Post** | Content authored by a User or Company (text, image, video). |
+| **Post** | Content authored by a User or Collective (text, image, video). |
 | **Comment** | A response to another content node — Post, Comment, Chat, ChatMessage, or Item. See [edges.md](edges.md) for the full list of valid comment targets. A full node because comments can be liked, disliked, and replied to. |
 | **Chat** | A conversation container (group or 1:1). See [chats.md](chats.md). |
 | **ChatMessage** | A single message within a chat. See [chats.md](chats.md). |
@@ -106,9 +106,9 @@ with (liked, voted on, etc.).
 
 | Node type | Connects | Why it's a node |
 |-----------|----------|-----------------|
-| **ChatMember** | Chat <-> User/Company | Has roles (admin, mod, member). Entry can require multi-sig approval (invite-only chats). Can be interacted with (vote to kick, promote to admin). See [chats.md](chats.md). |
-| **CompanyMember** | Company <-> User/Company | Has roles (founder, shareholder, worker, band member, subsidiary). Multi-sig for adding/removing members. Ownership stakes. Companies can be members of other companies (holdings, subsidiaries, label rosters). See [companies.md](companies.md). |
-| **ItemOwnership** | Item <-> User/Company | Represents ownership claim. Multi-sig for transfer (acquirer requests, current owner approves). Full ownership history. See [items.md](items.md). |
+| **ChatMember** | Chat <-> User/Collective | Has roles (admin, mod, member). Entry can require multi-sig approval (invite-only chats). Can be interacted with (vote to kick, promote to admin). See [chats.md](chats.md). |
+| **CollectiveMember** | Collective <-> User/Collective | Has roles (founder, shareholder, worker, band member, subsidiary, partner, member). Multi-sig for adding/removing members. Ownership stakes where applicable. Collectives can be members of other collectives (holdings, subsidiaries, label rosters, households as members of co-ops). See [collectives.md](collectives.md). |
+| **ItemOwnership** | Item <-> User/Collective | Represents ownership claim. Multi-sig for transfer (acquirer requests, current owner approves). Full ownership history. See [items.md](items.md). |
 
 ### Why junction nodes exist
 
@@ -134,7 +134,7 @@ toward the junction are evaluated.
 Per-type properties committed so far:
 
 - **ChatMember**: `role` (`admin` / `mod` / `member`).
-- **CompanyMember**: `role` (`founder` / `shareholder` / `worker` /
+- **CollectiveMember**: `role` (`founder` / `shareholder` / `worker` /
   `band member` / `subsidiary`), plus `ownership_pct` where the
   role carries an equity stake.
 
@@ -142,7 +142,7 @@ Per-type properties committed so far:
 
 Junction nodes are lightweight relationship carriers and carry no
 display content in Postgres. The entities they connect (Chats,
-Companies, Items) own the display content.
+Collectives, Items) own the display content.
 
 ---
 

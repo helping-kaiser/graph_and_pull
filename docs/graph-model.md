@@ -34,11 +34,11 @@ And the graph itself is:
 Nodes fall into three categories:
 
 - **Actor nodes** — entities that take actions and create edges
-  (User, Company).
+  (User, Collective).
 - **Content nodes** — entities that are acted upon (Post, Comment,
   Chat, ChatMessage, Item, Hashtag).
 - **Junction nodes** — entities that represent relationships which
-  themselves can be interacted with (ChatMember, CompanyMember,
+  themselves can be interacted with (ChatMember, CollectiveMember,
   ItemOwnership). They have roles, need approval flows, and
   eliminate parallel edges between the same two nodes: a user's
   *membership* in a chat and their *opinion* of that chat are
@@ -64,7 +64,7 @@ algorithm never needs to branch on edge category.
 
 ### Actor edges
 
-Created by actor nodes (User, Company) toward any other node. Express
+Created by actor nodes (User, Collective) toward any other node. Express
 **opinion and interaction**. The 2 dimensions carry subjective meaning
 (sentiment, relevance, closeness — varies by edge type, see [edges.md](edges.md)).
 
@@ -142,7 +142,7 @@ is always available.
 
 Junction nodes enable approval-required relationships and role management
 without parallel edges. All three junction types — ChatMember,
-CompanyMember, ItemOwnership — share a common shape.
+CollectiveMember, ItemOwnership — share a common shape.
 
 Junction approval is one application of CoGra's broader governance
 primitive (weighted role-based voting) — see
@@ -245,9 +245,9 @@ Chat-specific flows (open / invite-only / request-entry) are explained
 in [docs/chats.md](chats.md). They are all variants of the two-edge
 approval pattern described above.
 
-### Company Membership (CompanyMember)
+### Collective Membership (CollectiveMember)
 
-Company-specific flows are explained in [docs/companies.md](companies.md).
+Collective-specific flows are explained in [docs/collectives.md](collectives.md).
 They follow the same two-edge approval pattern described above.
 
 ### Ownership Transfer (ItemOwnership)
@@ -319,7 +319,7 @@ If a cluster of bots likes Jakob's posts 10,000 times:
 - Jakob has zero edges toward the bots — they don't appear in *his* feed at
   all.
 - The bot cluster gains nothing economically because the economically
-  important nodes (real users, advertisers, companies) never point toward them.
+  important nodes (real users and advertisers) never point toward them.
 
 This is only possible because all edges are directional. There is no concept
 of an undirected "connection." A friendship is explicitly:

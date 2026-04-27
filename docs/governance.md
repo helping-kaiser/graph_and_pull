@@ -2,7 +2,7 @@
 
 CoGra uses **weighted role-based voting** as a recurring primitive.
 Every governance decision — approving a new member, disavowing a
-message, eventually electing a company council — follows the same
+message, eventually electing a collective council — follows the same
 shape: eligible actors cast weighted votes; a threshold policy
 decides the outcome; the outcome is recorded as a state transition
 on the graph.
@@ -76,7 +76,7 @@ state:
 
 - "Active ChatMembers of Chat Y" — membership + approval pair
   active.
-- "CompanyMembers of Company Z with role `shareholder`."
+- "CollectiveMembers of Collective Z with role `shareholder`."
 - "Any actor with an outgoing edge to X" — permissive.
 
 Eligibility is evaluated at **tally time**, not vote time. A vote
@@ -90,7 +90,7 @@ How each vote's contribution is scaled. Derived from properties on
 the voter's eligibility junction:
 
 - ChatMember: `role` (admin / mod / member).
-- CompanyMember: `role` + `ownership_pct` combine into a composite.
+- CollectiveMember: `role` + `ownership_pct` combine into a composite.
 - Future cases: whatever properties the junction exposes.
 
 ### 2.4 Threshold policy

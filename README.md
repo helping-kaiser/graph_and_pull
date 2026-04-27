@@ -14,7 +14,7 @@ See [CLAUDE.md](CLAUDE.md) for the full set of project principles.
 
 Two databases, each doing what it does best:
 
-- **Memgraph** — the social graph: nodes (users, companies, posts, comments,
+- **Memgraph** — the social graph: nodes (users, collectives, posts, comments,
   chats, items, hashtags, junction nodes), directional tensor edges, and all
   traversal/ranking queries in Cypher.
 - **PostgreSQL** — metadata: profiles, post content, media URLs, display data.
@@ -92,7 +92,7 @@ make logs         follow docker compose logs
 - [Chats](docs/chats.md) — chats and messages as first-class public content; privacy via end-to-end encryption of content only
 - [Authorship](docs/authorship.md) — how authorship is derived from the earliest incoming edge
 - [Invitations](docs/invitations.md) — the two-edge onboarding pattern for new actors
-- [Companies](docs/companies.md) — companies as actors; CompanyMember flow; economic role (not preferential)
+- [Collectives](docs/collectives.md) — collectives as actors (households, bands, co-ops, companies); CollectiveMember flow; economic role (not preferential)
 - [Items](docs/items.md) — items as content nodes; ItemOwnership transfer flow
 - [Architecture](docs/architecture.md) — system design, dual-database split, data flow
 - [Data Model](docs/data-model.md) — PostgreSQL schema (display metadata)

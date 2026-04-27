@@ -90,8 +90,9 @@ Read these before making changes to data models or algorithms:
   earliest incoming edge.
 - [Invitations](docs/invitations.md) — the two-edge onboarding pattern
   for new actors.
-- [Companies](docs/companies.md) — companies as actors (equivalent to
-  users); CompanyMember flow; no preferential ad revenue.
+- [Collectives](docs/collectives.md) — collectives as actors (households,
+  bands, co-ops, companies); CollectiveMember flow; no preferential ad
+  revenue.
 - [Items](docs/items.md) — items as content; ItemOwnership transfer
   flow.
 - [Data Model](docs/data-model.md) — Postgres schema + graph definitions.
