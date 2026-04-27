@@ -32,7 +32,16 @@ decision reuses:
 
 ## 2. The five components
 
-Every vote-based decision specifies:
+Every vote-based decision specifies the components below.
+
+A single subject node can host **multiple coexisting governance
+instances**, each scoped to a specific decision-type and
+parameterized independently. A Collective may have one instance
+for "fire worker" (1-of-1 from CEO) and a different one for
+"remove board member" (2/3 of the board) — same node, different
+instances, routed by the subject's role. See
+[collectives.md](collectives.md) for the worked-out social-contract
+patterns.
 
 ### 2.1 Subject
 
@@ -43,6 +52,17 @@ What's being decided. Always a graph object whose state can change:
   toward a message).
 - A node property (e.g. a chat's own `disavowal_threshold`) —
   governance of governance is in scope.
+
+**What governance does NOT cover — actor sovereignty.** A User's
+own node properties (`username`, profile fields) and their
+outgoing actor edges are sovereign: the User changes them
+themselves, with no vote and no eligibility check. Governance
+applies to **shared** state (junctions, structural edges, and
+properties on nodes that represent more than one actor — Chats,
+Collectives, Items, Proposals). The
+[redaction exception in layers.md §5](layers.md) is the only path
+by which someone outside the actor can alter sovereign content,
+and only for illegal material with a visible trace.
 
 #### How subjects are addressed
 
@@ -247,7 +267,7 @@ background computation.
 
 Votes stand until changed; there is no "voting ends at T". A
 specific application that genuinely needs a time window is a new
-design discussion (§8).
+design discussion (§9).
 
 ---
 
@@ -261,12 +281,51 @@ design discussion (§8).
   Quorum + weighted-majority threshold.
 - **Chat member disavowal** — [chats.md §6](chats.md). Shape B.
   Higher quorum + weighted-supermajority threshold.
+- **Chat property and role changes** — [chats.md §6](chats.md).
+  Proposals on `Chat.title`, `Chat.content_privacy`,
+  `Chat.join_policy`, and `ChatMember.role`. Defaults vary by
+  stakes; thresholds are themselves chat properties.
+- **Collective governance (full social contract)** —
+  [collectives.md](collectives.md). Membership changes (hire /
+  fire / promote), property changes (`name`, `governance_rules`,
+  `ownership_pct`), and any other decision-type the collective
+  defines. A Collective hosts as many instances as its social
+  contract specifies; each is parameterized for its own
+  decision-type. Eligibility, weights, and thresholds are all
+  per-instance.
 
 Future cases get added here as they're designed.
 
+### Planned
+
+- **Redaction authorization** — [open-questions.md Q9](open-questions.md).
+  When Q9 resolves, the takedown / redaction policy will land as
+  another governance instance: subject = the layer or display row
+  to redact, eligibility and threshold per the redaction policy.
+
 ---
 
-## 8. Out of scope
+## 8. Multi-candidate decisions
+
+Decisions that pick from several candidates — council seats,
+multiple property values to choose between, etc. — are expressed
+as **N parallel binary Proposals**, one per candidate. Each
+Proposal is voted on independently using the same governance
+instance (same eligibility, weights, threshold). Every Proposal
+that crosses threshold passes; that candidate takes office or
+that property value is set.
+
+Removal later (recall, term-end) is another Proposal targeting
+the same role or property to revert it. No special lifecycle
+machinery needed.
+
+This pattern loses ranked-ballot information ("B over A"). Ranked
+and multi-seat semantics aren't part of the primitive (§9). A use
+case that genuinely needs them deserves its own design pass.
+
+---
+
+## 9. Out of scope
 
 - **Secret ballots.** All votes are public on the graph. Privacy is
   achieved through content encryption elsewhere, not through hiding
@@ -277,6 +336,12 @@ Future cases get added here as they're designed.
   design.
 - **Delegation / proxies.** No "proxy voter" mechanism. Adds a
   layer to eligibility rules and needs its own design.
+- **Ranked, multi-seat, or budget-allocation ballots.** All votes
+  are binary (support / oppose on a single subject). Ranked
+  preferences ("B over A"), multi-seat allocations beyond parallel
+  binary Proposals (§8), and proportional budget splits across N
+  options aren't expressible in the current primitive. Use cases
+  that genuinely need any of these deserve their own design pass.
 
 These aren't refused — they're just not addressed by the current
 primitive. Any of them would extend governance.md rather than

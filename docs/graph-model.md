@@ -216,19 +216,32 @@ changes:
 - **Voluntary leave / withdrawal.** Actor adds a new negative-sentiment
   layer on their actor edge toward the junction node. System adds a
   new layer on the **claim-side** structural edge with `dim1 < 0`.
-- **Removal by approving actor (kick / firing / non-renewal).**
-  Approving actor adds a new negative-sentiment layer on their actor
-  edge toward the junction node. System evaluates the approval policy;
-  if the revocation threshold is met, system adds a new layer on the
-  **approval-side** structural edge with `dim1 < 0`.
+  Self-determined; not a governance decision.
+- **Removal via governance instance (kick / fire / expel).** Removal
+  is the outcome of a governance instance defined on the parent
+  node — same primitive as approval, with its own eligibility,
+  weights, and threshold (see
+  [governance.md](governance.md)). Configurations span the full
+  range:
+    - Single-approver instance (1-of-1 from the original approver) —
+      retains the simple "the approver who let you in can revoke"
+      shape where it's appropriate.
+    - Multi-sig instance (N-of-M from named roles) — the inverse of
+      a multi-sig approval.
+    - Community-vote instance (Shape B disavowal with quorum and
+      threshold) — used by ChatMember per
+      [chats.md §6](chats.md) and configurable per
+      [collectives.md](collectives.md).
+  When the instance's threshold is crossed, the system adds a new
+  layer on the **approval-side** structural edge with `dim1 < 0`.
 - **System-initiated** (auto-expiry, violation handling, etc.). System
   adds the appropriate negative layer directly.
 
-**Intermediate states are not materialized.** For multi-sig policies
-where N > 1 admins must act to kick a member, the approval-side
-structural edge stays at its top layer until the policy threshold is
-met. Partial progress is visible on individual actor edges; the
-structural edge reflects only the policy-resolved state.
+**Intermediate states are not materialized.** For multi-vote
+governance instances, the approval-side structural edge stays at
+its top layer until the instance's threshold is crossed. Partial
+progress is visible on individual vote edges; the structural edge
+reflects only the threshold-resolved state.
 
 **Cascading updates across structural edges.** A state change on one
 structural edge can trigger the system to add a corresponding layer on

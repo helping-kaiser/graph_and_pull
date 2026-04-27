@@ -240,6 +240,30 @@ A community can override an admin by crossing the threshold
 without the admin's participation. That falls naturally out of
 the primitive, not from a special rule.
 
+### Property and role changes via Proposals
+
+Beyond disavowal, the chat's other state changes use the Proposal
+mechanism (see [governance.md §2.1](governance.md)). `ChatMember.role`
+(promote / demote), `Chat.title`, `Chat.content_privacy`, and
+`Chat.join_policy` are all node properties; each change is a
+Proposal voted on by chat members under chat-defined parameters.
+
+Suggested defaults (starting points, not fixed rules):
+
+| Property change                    | Quorum | Threshold | Eligibility                                    |
+|------------------------------------|--------|-----------|------------------------------------------------|
+| `ChatMember.role`                  | ≥ 30%  | > 50%     | Active members, excluding the subject member   |
+| `Chat.title`                       | ≥ 10%  | > 50%     | Active members                                 |
+| `Chat.content_privacy`             | ≥ 50%  | ≥ 2/3     | Active members                                 |
+| `Chat.join_policy`                 | ≥ 30%  | ≥ 2/3     | Active members                                 |
+| Disavowal thresholds (the table above) | ≥ 30% | ≥ 2/3 | Active members                                 |
+
+These percentages are themselves node properties on the chat and
+can be changed via Proposals targeting them — governance of
+governance applies all the way down. Promoting and demoting
+exclude the subject from voting (consistent with the member-disavowal
+exclusion); cosmetic changes like the title don't.
+
 ### Still no push
 
 Even this flow is pull, not push. The chat moves away; nothing
@@ -305,16 +329,20 @@ state transitions"). For a chat membership:
   toward the ChatMember (negative sentiment = withdrawing their claim)
   and the system adds a new layer on `ChatMember -> Chat` reflecting
   the retraction. The top layers now disagree with the membership
-  being active.
-- **Kicked by admin.** The admin adds a new layer on their actor edge
-  toward the ChatMember (negative sentiment = approval withdrawn) and
-  the system adds a new layer on `Chat -> ChatMember` reflecting that
-  the chat no longer accepts the member.
+  being active. Self-determined; no governance vote.
+- **Removed by community.** Members vote to disavow the ChatMember
+  via the member-disavowal instance defined in §6 — Shape B vote
+  with the chat's configured quorum and threshold. When the
+  threshold is crossed, the system adds a new layer on
+  `Chat -> ChatMember` reflecting that the chat no longer accepts
+  the member. There is no admin-unilateral kick path; admins
+  participate in the disavowal vote with their role-weighted vote
+  alongside everyone else.
 
 In both cases, the relationship is active iff both edges' top layers
 have `dim1 > 0`. The full history — including the moment of
-departure and who triggered it — stays visible, as everywhere else
-in the graph.
+departure and the votes that drove it — stays visible, as
+everywhere else in the graph.
 
 ---
 

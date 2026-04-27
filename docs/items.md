@@ -63,3 +63,25 @@ revoked.
 An item with **no** active ItemOwnership (no positive top layer on
 any `Item -> ItemOwnership` edge) is considered abandoned. The
 history of all previous owners remains visible in the layer stacks.
+
+## Shared ownership routes through a Collective
+
+The single-owner invariant is deliberate. There is **no
+direct co-ownership** of an Item by multiple parallel
+ItemOwnership junctions. When several actors want to share an
+item, the established pattern is to make the owner a **Collective**
+that the sharing actors are CollectiveMembers of (see
+[collectives.md](collectives.md)).
+
+A married couple co-owning a car, three roommates sharing a coffee
+machine, a band co-owning equipment, a co-op holding tools — all
+of these are modeled as: a Collective node, the sharing actors as
+its CollectiveMembers, the Collective as the holder of the
+ItemOwnership. Internal disputes about the shared item are
+resolved by the Collective's own social contract — its own
+governance instances — not by parallel-ItemOwnership voting on the
+graph.
+
+This keeps the Item-side query model simple (one active owner per
+item) and uses the existing Collective primitive for collective
+ownership rather than inventing a parallel mechanism.

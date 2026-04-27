@@ -90,17 +90,124 @@ Multi-sig approval thresholds are expressed as "N actor edges from
 specific roles required," with role-weighted voting derived from
 the properties on the approving actors' own CollectiveMember nodes.
 
+## Governance — the social contract
+
+A collective's **social contract** is its set of governance rules:
+which decisions need votes, who can vote on each, with what
+weights, and at what threshold. Different collectives have very
+different rules — a corporation's CEO can fire workers
+unilaterally; a household requires consensus for everything; a
+co-op uses 2/3 majorities for major decisions. The graph supports
+all of these without any primitive changes.
+
+### Per-decision-type instances
+
+Every decision-type in a collective is a separate governance
+instance per [governance.md §2](governance.md). Each instance has
+its own:
+
+- **Subject** — what's being decided (a CollectiveMember junction
+  for member changes; a Proposal node for property changes).
+- **Eligibility** — who can vote (`role = CEO`,
+  `role = board_member`, all members, members weighted by
+  `ownership_pct`, …).
+- **Weights** — how each voter's contribution is computed (uniform,
+  role-based, or property-derived).
+- **Threshold** — quorum and pass-threshold.
+
+Instances coexist on the same Collective. Hiring a worker and
+removing a board member can use entirely different rules; the
+system routes each decision to its instance based on the subject
+and the subject's role.
+
+### No primitive defaults
+
+Unlike Chats — which default to community-vote moderation because
+that fits informal communities — Collectives must explicitly
+define their rules at creation. Creating a Collective is the act
+of writing its social contract. The example configurations below
+are starting templates, not enforced defaults.
+
+### Hierarchical authority is just a parameter choice
+
+The "no admin veto" stance from chat governance is a chat-specific
+default, not a primitive principle. A collective whose social
+contract gives the CEO `weight = ∞` (or just `threshold = 1` with
+`eligibility = role = CEO`) for the "fire worker" decision IS
+expressing CEO-unilateral authority — and the graph supports it.
+The primitive doesn't pick a power structure; the collective does.
+
+### Example configurations
+
+#### Corporate hierarchy
+
+A small company with founders, a CEO, board members, and workers.
+
+| Decision-type            | Eligibility                                            | Threshold |
+|--------------------------|--------------------------------------------------------|-----------|
+| Hire / fire worker       | `role = CEO`                                           | 1 vote    |
+| Promote worker to senior | `role = CEO`                                           | 1 vote    |
+| Add board member         | `role = founder`, weighted by `ownership_pct`          | > 50%     |
+| Remove board member      | `role IN (founder, board_member)`, excluding subject   | ≥ 2/3     |
+| Remove CEO               | `role = board_member`                                  | ≥ 2/3     |
+| Change `ownership_pct`   | `role IN (founder, shareholder)`, weighted by stake    | ≥ 75%     |
+| Change `Collective.name` | All active members                                     | > 50%     |
+
+A worker is fired by a single CEO vote; a board member is removed
+only by board supermajority; a CEO is removed only by the rest of
+the board.
+
+#### Household (5 people)
+
+| Decision-type            | Eligibility                                | Threshold                                 |
+|--------------------------|--------------------------------------------|-------------------------------------------|
+| Add a new member         | All active members                         | 100% of cast, 100% quorum                 |
+| Remove a member          | All members except subject                 | ≥ 90% of cast, 100% quorum of remaining   |
+| Routine spending (if tracked) | All active members                    | > 50%, ≥ 60% quorum                       |
+
+Everyone has equal voice; consensus dominates.
+
+#### Worker co-op
+
+All members equal stake; some routine decisions delegated to
+officers.
+
+| Decision-type            | Eligibility                | Threshold |
+|--------------------------|----------------------------|-----------|
+| Add a new member         | All active members         | ≥ 2/3     |
+| Remove a member          | All members except subject | ≥ 2/3     |
+| Routine operations       | `role = officer`           | > 50%     |
+| Major policy change      | All active members         | ≥ 2/3     |
+| Change capital structure | All active members         | ≥ 75%     |
+
+### Where governance rules live
+
+Each decision-type's parameters are stored as a structured property
+on the Collective node (e.g.,
+`Collective.governance_rules.remove_worker = { eligibility, weights, threshold }`).
+Changes to any rule follow the standard Proposal pattern with that
+rule's **own** configurable parameters. The bootstrap rules are set
+at collective creation; everything afterward is governance of
+governance.
+
 ## Leaving / being removed
 
-Departures follow the general state-transition rule for junction
-approval pairs — new layers on the structural edges encode the
-flip, and the relationship is active iff both top layers have
-`dim1 > 0`. See [graph-model.md §5](graph-model.md) for the formal
-rule, and [chats.md §8](chats.md) for the chat-side version of the
-same mechanism applied to ChatMember. For CollectiveMember: a
-member voluntarily leaving adds a negative layer to their actor
-edge and the system cascades to `CollectiveMember -> Collective`;
-removal by the collective (firing, dismissal, expulsion) adds a
-negative layer to the approving actors' actor edges and, once the
-policy threshold is met, the system cascades to
-`Collective -> CollectiveMember`.
+Two paths out of an active membership:
+
+- **Voluntary leave.** The member adds a new negative layer on
+  their actor edge toward the CollectiveMember junction. The system
+  cascades to `CollectiveMember -> Collective` with `dim1 < 0`.
+  Self-determined; no governance vote.
+- **Removal via governance instance.** The collective applies its
+  "remove member" instance — eligibility, weights, and threshold
+  per the social contract above. When that instance's threshold is
+  crossed, the system adds a new layer on
+  `Collective -> CollectiveMember` with `dim1 < 0`. The shape of
+  "removal" varies enormously across collectives — a 1-of-1 CEO
+  firing instance and a 2/3-of-board expulsion instance are both
+  valid configurations.
+
+In both cases the relationship is active iff both edges' top
+layers have `dim1 > 0`, and the full history — including the
+votes that drove a removal — stays visible, as everywhere else in
+the graph.

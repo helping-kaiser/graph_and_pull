@@ -138,6 +138,11 @@ Read these before making changes to data models or algorithms:
 - **Move slowly and correctly.** Quality over speed. No rushing, no shortcuts.
 - **Follow atomic commits.** One commit = one logical task. A commit can touch
   multiple files if all changes serve one purpose. Never mix unrelated changes.
+- **Short commit messages.** Subject + at most a few lines. Design rationale,
+  section-by-section change lists, and option comparisons belong in the
+  **PR description**, not the commit body. Reviewers read PRs; `git log` stays
+  readable. Restated lower in the Git Workflow section, restated here so it
+  is impossible to miss.
 - **Branch-per-task.** Create a branch from main, work in small commits, merge
   via PR. Keep branch lifetime short.
 - **Test everything.** `cargo fmt`, `cargo clippy -D warnings`, unit tests,
