@@ -256,7 +256,7 @@ background computation.
 
 Votes stand until changed; there is no "voting ends at T". A
 specific application that genuinely needs a time window is a new
-design discussion (§8).
+design discussion (§9).
 
 ---
 
@@ -287,7 +287,27 @@ Future cases get added here as they're designed.
 
 ---
 
-## 8. Out of scope
+## 8. Multi-candidate decisions
+
+Decisions that pick from several candidates — council seats,
+multiple property values to choose between, etc. — are expressed
+as **N parallel binary Proposals**, one per candidate. Each
+Proposal is voted on independently using the same governance
+instance (same eligibility, weights, threshold). Every Proposal
+that crosses threshold passes; that candidate takes office or
+that property value is set.
+
+Removal later (recall, term-end) is another Proposal targeting
+the same role or property to revert it. No special lifecycle
+machinery needed.
+
+This pattern loses ranked-ballot information ("B over A"). Ranked
+and multi-seat semantics aren't part of the primitive (§9). A use
+case that genuinely needs them deserves its own design pass.
+
+---
+
+## 9. Out of scope
 
 - **Secret ballots.** All votes are public on the graph. Privacy is
   achieved through content encryption elsewhere, not through hiding
