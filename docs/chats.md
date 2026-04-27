@@ -240,6 +240,30 @@ A community can override an admin by crossing the threshold
 without the admin's participation. That falls naturally out of
 the primitive, not from a special rule.
 
+### Property and role changes via Proposals
+
+Beyond disavowal, the chat's other state changes use the Proposal
+mechanism (see [governance.md §2.1](governance.md)). `ChatMember.role`
+(promote / demote), `Chat.title`, `Chat.content_privacy`, and
+`Chat.join_policy` are all node properties; each change is a
+Proposal voted on by chat members under chat-defined parameters.
+
+Suggested defaults (starting points, not fixed rules):
+
+| Property change                    | Quorum | Threshold | Eligibility                                    |
+|------------------------------------|--------|-----------|------------------------------------------------|
+| `ChatMember.role`                  | ≥ 30%  | > 50%     | Active members, excluding the subject member   |
+| `Chat.title`                       | ≥ 10%  | > 50%     | Active members                                 |
+| `Chat.content_privacy`             | ≥ 50%  | ≥ 2/3     | Active members                                 |
+| `Chat.join_policy`                 | ≥ 30%  | ≥ 2/3     | Active members                                 |
+| Disavowal thresholds (the table above) | ≥ 30% | ≥ 2/3 | Active members                                 |
+
+These percentages are themselves node properties on the chat and
+can be changed via Proposals targeting them — governance of
+governance applies all the way down. Promoting and demoting
+exclude the subject from voting (consistent with the member-disavowal
+exclusion); cosmetic changes like the title don't.
+
 ### Still no push
 
 Even this flow is pull, not push. The chat moves away; nothing

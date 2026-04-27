@@ -261,6 +261,10 @@ design discussion (§8).
   Quorum + weighted-majority threshold.
 - **Chat member disavowal** — [chats.md §6](chats.md). Shape B.
   Higher quorum + weighted-supermajority threshold.
+- **Chat property and role changes** — [chats.md §6](chats.md).
+  Proposals on `Chat.title`, `Chat.content_privacy`,
+  `Chat.join_policy`, and `ChatMember.role`. Defaults vary by
+  stakes; thresholds are themselves chat properties.
 
 Future cases get added here as they're designed.
 
