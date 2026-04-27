@@ -81,31 +81,13 @@ make logs         follow docker compose logs
 
 ## Documentation
 
-### Design
+Docs are organized in three layers under `docs/`:
 
-- [Graph Model](docs/graph-model.md) — the core: node categories, edge categories, dimensions, directionality, append-only, junction approval pattern
-- [Governance](docs/governance.md) — weighted role-based voting as a reusable primitive across junction approvals, chat moderation, and future governance patterns
-- [Nodes](docs/nodes.md) — full node catalog: what each type is, its graph-side properties, and where display content lives
-- [Edges](docs/edges.md) — full edge catalog and the relationship-label scheme at the graph layer
-- [Layers](docs/layers.md) — append-only principle across edges, node properties, and Postgres-side display content
-- [Feed Ranking](docs/feed-ranking.md) — ranking algorithm for ordering target nodes from a root node's perspective
-- [Chats](docs/chats.md) — chats and messages as first-class public content; privacy via end-to-end encryption of content only
-- [Authorship](docs/authorship.md) — how authorship is derived from the earliest incoming edge
-- [Invitations](docs/invitations.md) — the two-edge onboarding pattern for new actors
-- [Collectives](docs/collectives.md) — collectives as actors (households, bands, co-ops, companies); CollectiveMember flow; economic role (not preferential)
-- [Items](docs/items.md) — items as content nodes; ItemOwnership transfer flow
-- [Architecture](docs/architecture.md) — system design, dual-database split, data flow
-- [Data Model](docs/data-model.md) — PostgreSQL schema (display metadata)
-- [Graph DB Decision Record](docs/graph-db-options.md) — why Memgraph, alternatives considered
-- [Open Questions](docs/open-questions.md) — consolidated index of unresolved design calls
+- **`docs/primitive/`** — what the graph IS and how it BEHAVES (graph-model, nodes, edges, layers, governance, authorship, feed-ranking, invitations).
+- **`docs/instances/`** — concrete applications of the primitive (chats, collectives, items).
+- **`docs/implementation/`** — system and code-level concerns (architecture, data-model, development, api-spec, graph-db-options).
 
-### API
-
-- [API Spec](docs/api-spec.md) — **outdated, pending redesign** to align with tensor model
-
-### Development
-
-- [Development Guide](docs/development.md) — local setup, tools, workflows
+See [docs/README.md](docs/README.md) for the full index by layer and the suggested reading order. Cross-cutting design questions live in [docs/open-questions.md](docs/open-questions.md).
 
 ## Tech Stack
 

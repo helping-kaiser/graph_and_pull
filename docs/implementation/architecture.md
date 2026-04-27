@@ -41,7 +41,7 @@ Memgraph. If it is needed to **display** something, it goes in Postgres.
 | Structural edges (containment, tagging) | Memgraph | Graph topology |
 | Cached author_id on nodes | Both | Derived from earliest incoming edge, cached for fast lookup |
 
-See [Graph Model](graph-model.md) for the full node/edge
+See [Graph Model](../primitive/graph-model.md) for the full node/edge
 specification.
 
 ### 2. UUIDs as the shared key
@@ -55,8 +55,8 @@ graph topology.
 
 There are no materialized counters, no popularity scores, no algorithm-driven
 signals stored as node properties. Feed ranking is computed from the
-[edge tensor model](graph-model.md) using the
-[feed ranking algorithm](feed-ranking.md):
+[edge tensor model](../primitive/graph-model.md) using the
+[feed ranking algorithm](../primitive/feed-ranking.md):
 
 - **Personal relevance** (`h`) — weighted opinion from your connections
 - **Importance** (`i`) — strength of your connections to those who reacted
@@ -75,7 +75,7 @@ All graph state lives in edges. Edges are:
 
 There are no named relationship types like FOLLOWS, LIKED, or CREATED. All
 edges are uniform tensors. The meaning is derived from the node types at each
-end and the dimension values. See [Graph Model](graph-model.md).
+end and the dimension values. See [Graph Model](../primitive/graph-model.md).
 
 ### 5. Writes are dual (content + topology)
 

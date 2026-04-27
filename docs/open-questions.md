@@ -39,26 +39,26 @@ questions are closed.
 
 **Resolved:**
 
-- Q7 — see [data-model.md](data-model.md) §"author_id + author_type".
-- Q8 — see [chats.md §6](chats.md) and [governance.md §7](governance.md).
+- Q7 — see [data-model.md](implementation/data-model.md) §"author_id + author_type".
+- Q8 — see [chats.md §6](instances/chats.md) and [governance.md §7](primitive/governance.md).
 
 ---
 
 ## Q1 — Layer count as a ranking signal
 
-**Where it shows up:** [graph-model.md §8](graph-model.md) (append-only history)
+**Where it shows up:** [graph-model.md §8](primitive/graph-model.md) (append-only history)
 **Status:** open
 
 ### Context
 
 Every edge is a stack of append-only layers. Each interaction adds a
 new layer; old layers are never removed (see
-[layers.md](layers.md)). The number of layers on an edge is
+[layers.md](primitive/layers.md)). The number of layers on an edge is
 therefore itself a signal: an edge with 50 layers represents a deep,
 frequently-revisited relationship; an edge with 1 layer is a passing
 interaction.
 
-The [feed ranking algorithm](feed-ranking.md) currently has no
+The [feed ranking algorithm](primitive/feed-ranking.md) currently has no
 input for layer count. Its metrics `h`, `i`, `j`, `k` operate on edge
 values and presence, not on how many times an edge has been touched.
 
@@ -85,7 +85,7 @@ dimension, it has to modify it consistently across edge types.
 
 ## Q2 — Cross-type dimension comparability and float-to-sign mapping
 
-**Where it shows up:** [graph-model.md §9](graph-model.md) (relationship to feed ranking)
+**Where it shows up:** [graph-model.md §9](primitive/graph-model.md) (relationship to feed ranking)
 **Status:** open
 
 ### Context
@@ -100,7 +100,7 @@ that cross edge types with different dimension meanings — for example
 *relevance*. The math is uniform (all `f64` in `[-1, +1]`) but the
 semantics differ.
 
-**(b) Float-to-sign mapping.** [feed-ranking.md](feed-ranking.md)
+**(b) Float-to-sign mapping.** [feed-ranking.md](primitive/feed-ranking.md)
 is framed over a **signed** graph (each edge is `+` or `-`). CoGra's
 actual edges carry **continuous** values in `[-1, +1]`. How continuous
 values map into the ranker's signed math is not specified.
@@ -139,7 +139,7 @@ decaying).
 
 ## Q3 — Minimum interaction required to create an edge
 
-**Where it shows up:** [graph-model.md §1](graph-model.md) (transparency principle)
+**Where it shows up:** [graph-model.md §1](primitive/graph-model.md) (transparency principle)
 **Status:** open
 
 ### Context
@@ -176,7 +176,7 @@ implicit view-edges, so this question gates them.
 
 ## Q4 — Time and recency: decay shape
 
-**Where it shows up:** [feed-ranking.md §7](feed-ranking.md)
+**Where it shows up:** [feed-ranking.md §7](primitive/feed-ranking.md)
 **Status:** open
 
 ### Context
@@ -222,7 +222,7 @@ Q1 (layer count), Q5 (already-seen).
 
 ## Q5 — The "already seen" problem
 
-**Where it shows up:** [feed-ranking.md §8](feed-ranking.md)
+**Where it shows up:** [feed-ranking.md §8](primitive/feed-ranking.md)
 **Status:** open
 
 ### Context
@@ -258,7 +258,7 @@ How should "already seen" tracking work?
 
 - **C. Client-side "seen" tracking.**
   - Pro: aligns with the decentralized/compute-close-to-viewer vision
-    (see [feed-ranking.md §9](feed-ranking.md)). The client already
+    (see [feed-ranking.md §9](primitive/feed-ranking.md)). The client already
     has the subgraph and knows what it rendered.
   - Con: doesn't sync across devices without additional infra.
 
@@ -277,13 +277,13 @@ Q3 (minimum interaction — view-edge options (A) and (D) conflict with
 
 ## Q6 — Initial dimension values on invitation edges
 
-**Where it shows up:** [invitations.md](invitations.md)
+**Where it shows up:** [invitations.md](primitive/invitations.md)
 **Status:** open
 
 ### Context
 
 When an existing actor invites a new actor, two edges are created —
-one in each direction (see [invitations.md](invitations.md) for
+one in each direction (see [invitations.md](primitive/invitations.md) for
 the two-edge pattern). The new actor needs at least one outgoing edge
 the moment they join, or their feed has nothing to compute from.
 
@@ -315,12 +315,12 @@ None directly.
 
 ## Q9 — Who authorizes a redaction, and through what process
 
-**Where it shows up:** [layers.md §5](layers.md) (Out of scope)
+**Where it shows up:** [layers.md §5](primitive/layers.md) (Out of scope)
 **Status:** open (policy)
 
 ### Context
 
-The graph is append-only, but [layers.md §5](layers.md) carves out a
+The graph is append-only, but [layers.md §5](primitive/layers.md) carves out a
 narrow exception: the contents of a specific node-property layer (or a
 Postgres display-content row) can be **redacted in place** when the
 content itself is illegal. The layer stays; its value is replaced
@@ -351,14 +351,14 @@ model.
 ### Related
 
 Q10 (retention). Chat moderation (resolved Q8 — see
-[chats.md §6](chats.md)) is a similar "who decides" shape with
+[chats.md §6](instances/chats.md)) is a similar "who decides" shape with
 much lower stakes.
 
 ---
 
 ## Q10 — Layer retention and pruning for storage cost
 
-**Where it shows up:** [layers.md §5](layers.md) (Out of scope)
+**Where it shows up:** [layers.md §5](primitive/layers.md) (Out of scope)
 **Status:** open (implementation optimization)
 
 ### Context
@@ -368,7 +368,7 @@ point, storing infinite history has a cost — both at the graph layer
 (edge layer stacks) and at the Postgres layer (version rows on
 display content).
 
-The principle in [layers.md](layers.md) is non-negotiable: no silent
+The principle in [layers.md](primitive/layers.md) is non-negotiable: no silent
 deletion. But there's a spectrum between "keep every layer verbatim
 forever" and "compact old layers into summaries" that preserves the
 principle.

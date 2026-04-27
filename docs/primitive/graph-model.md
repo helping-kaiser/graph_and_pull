@@ -230,8 +230,8 @@ changes:
       a multi-sig approval.
     - Community-vote instance (Shape B disavowal with quorum and
       threshold) — used by ChatMember per
-      [chats.md §6](chats.md) and configurable per
-      [collectives.md](collectives.md).
+      [chats.md §6](../instances/chats.md) and configurable per
+      [collectives.md](../instances/collectives.md).
   When the instance's threshold is crossed, the system adds a new
   layer on the **approval-side** structural edge with `dim1 < 0`.
 - **System-initiated** (auto-expiry, violation handling, etc.). System
@@ -247,7 +247,7 @@ reflects only the threshold-resolved state.
 structural edge can trigger the system to add a corresponding layer on
 another structural edge when consistency requires it. This is a
 general mechanism — the canonical case today is ItemOwnership
-supersession (see [items.md](items.md)), where creating a new approval
+supersession (see [items.md](../instances/items.md)), where creating a new approval
 edge causes the previous one to be marked revoked so that exactly one
 ownership is active at a time. Future junction or content patterns
 may use the same cascade shape.
@@ -255,17 +255,17 @@ may use the same cascade shape.
 ### Chat Membership (ChatMember)
 
 Chat-specific flows (open / invite-only / request-entry) are explained
-in [docs/chats.md](chats.md). They are all variants of the two-edge
+in [docs/chats.md](../instances/chats.md). They are all variants of the two-edge
 approval pattern described above.
 
 ### Collective Membership (CollectiveMember)
 
-Collective-specific flows are explained in [docs/collectives.md](collectives.md).
+Collective-specific flows are explained in [docs/collectives.md](../instances/collectives.md).
 They follow the same two-edge approval pattern described above.
 
 ### Ownership Transfer (ItemOwnership)
 
-Item-specific flows are explained in [docs/items.md](items.md). They
+Item-specific flows are explained in [docs/items.md](../instances/items.md). They
 follow the same two-edge approval pattern described above, with the
 additional property that transfers form an append-only chain of
 ItemOwnership nodes per item.
@@ -371,7 +371,7 @@ Jakob -> Post_X:
 meaningful. An edge with 50 layers represents a deep, frequently-revisited
 relationship. An edge with 1 layer is a passing interaction. How exactly
 this signal factors into ranking is an open question — see
-[open-questions.md Q1](open-questions.md).
+[open-questions.md Q1](../open-questions.md).
 
 ---
 
@@ -395,5 +395,5 @@ operates on in CoGra:
 How the continuous tensor values map into the ranker's signed-edge
 math (sign + weight, product, per-dimension contribution, or
 something else) is not yet pinned down. See
-[open-questions.md Q2](open-questions.md) for the full shape of this
+[open-questions.md Q2](../open-questions.md) for the full shape of this
 question and the options considered.

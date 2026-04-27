@@ -25,7 +25,7 @@ What the graph does **not** store as node properties:
 
 - **Display content** — bios, post bodies, profile text, images,
   videos, chat descriptions — lives in Postgres or media servers
-  and is linked by UUID. See [data-model.md](data-model.md).
+  and is linked by UUID. See [data-model.md](../implementation/data-model.md).
 - **Derived values** — authorship, member counts, current-owner
   pointers — are rebuilt from the graph, not stored as independent
   primitives. Caches of these values may exist on nodes for query
@@ -45,7 +45,7 @@ Entities that take actions and create edges.
 | Node type | Description |
 |-----------|-------------|
 | **User** | A person on the platform. |
-| **Collective** | Any group of people that needs a single graph identity to act through — a household, band, co-op, studio, partnership, NGO, company. Fully equivalent to Users as actors: can do everything Users can (author content, be followed, post items, create edges toward other nodes, be members of other collectives). See [collectives.md](collectives.md). |
+| **Collective** | Any group of people that needs a single graph identity to act through — a household, band, co-op, studio, partnership, NGO, company. Fully equivalent to Users as actors: can do everything Users can (author content, be followed, post items, create edges toward other nodes, be members of other collectives). See [collectives.md](../instances/collectives.md). |
 
 ### Graph-side properties
 
@@ -61,7 +61,7 @@ independently under the append-only rule.
 
 Profile text (bio, description), profile image, cover image, contact
 info, and other display material. Linked by UUID. See
-[data-model.md](data-model.md).
+[data-model.md](../implementation/data-model.md).
 
 ---
 
@@ -73,9 +73,9 @@ Entities that are acted upon by actors.
 |-----------|-------------|
 | **Post** | Content authored by a User or Collective (text, image, video). |
 | **Comment** | A response to another content node — Post, Comment, Chat, ChatMessage, or Item. See [edges.md](edges.md) for the full list of valid comment targets. A full node because comments can be liked, disliked, and replied to. |
-| **Chat** | A conversation container (group or 1:1). See [chats.md](chats.md). |
-| **ChatMessage** | A single message within a chat. See [chats.md](chats.md). |
-| **Item** | A physical or digital good. See [items.md](items.md). |
+| **Chat** | A conversation container (group or 1:1). See [chats.md](../instances/chats.md). |
+| **ChatMessage** | A single message within a chat. See [chats.md](../instances/chats.md). |
+| **Item** | A physical or digital good. See [items.md](../instances/items.md). |
 | **Hashtag** | A topic tag. Also covers concepts like places (e.g. `#berlin`) — if places ever need dedicated properties they can become their own node type later. |
 | **Proposal** | A proposed change to a graph-side property on another node — the subject carrier for property-level governance votes (see [governance.md §2.1](governance.md)). Carries the target, the property name, and the proposed new value. When the vote crosses threshold, a cascade writes a new layer on the target property. |
 
@@ -86,7 +86,7 @@ lives in Postgres. Specific cases:
 
 - **Chat**: `title` (if needed for routing or display hints) and
   `content_privacy` (plaintext vs E2EE — the graph needs this to
-  know what to route). See [chats.md](chats.md).
+  know what to route). See [chats.md](../instances/chats.md).
 - **Hashtag**: its tag string — the tag *is* the identifier.
 - **Proposal**: `target_node_id`, `target_property`,
   `proposed_value`. A Proposal is fully specified by these three —
@@ -106,9 +106,9 @@ with (liked, voted on, etc.).
 
 | Node type | Connects | Why it's a node |
 |-----------|----------|-----------------|
-| **ChatMember** | Chat <-> User/Collective | Has roles (admin, mod, member). Entry can require multi-sig approval (invite-only chats). Can be interacted with (vote to kick, promote to admin). See [chats.md](chats.md). |
-| **CollectiveMember** | Collective <-> User/Collective | Has roles (founder, shareholder, worker, band member, subsidiary, partner, member). Multi-sig for adding/removing members. Ownership stakes where applicable. Collectives can be members of other collectives (holdings, subsidiaries, label rosters, households as members of co-ops). See [collectives.md](collectives.md). |
-| **ItemOwnership** | Item <-> User/Collective | Represents ownership claim. Multi-sig for transfer (acquirer requests, current owner approves). Full ownership history. See [items.md](items.md). |
+| **ChatMember** | Chat <-> User/Collective | Has roles (admin, mod, member). Entry can require multi-sig approval (invite-only chats). Can be interacted with (vote to kick, promote to admin). See [chats.md](../instances/chats.md). |
+| **CollectiveMember** | Collective <-> User/Collective | Has roles (founder, shareholder, worker, band member, subsidiary, partner, member). Multi-sig for adding/removing members. Ownership stakes where applicable. Collectives can be members of other collectives (holdings, subsidiaries, label rosters, households as members of co-ops). See [collectives.md](../instances/collectives.md). |
+| **ItemOwnership** | Item <-> User/Collective | Represents ownership claim. Multi-sig for transfer (acquirer requests, current owner approves). Full ownership history. See [items.md](../instances/items.md). |
 
 ### Why junction nodes exist
 
@@ -153,6 +153,6 @@ Collectives, Items) own the display content.
   [graph-model.md §2](graph-model.md).
 - **Not the Postgres schema.** Actual column definitions, version
   tables, and display-content shapes live in
-  [data-model.md](data-model.md).
+  [data-model.md](../implementation/data-model.md).
 - **Not the edge catalog.** For relationships between nodes, see
   [edges.md](edges.md).

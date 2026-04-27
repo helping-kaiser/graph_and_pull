@@ -270,7 +270,7 @@ Both posts tie on `h` (`0`), on `h + i` (`0`), and diverge on `h + i + j`
 Time decay must exist in some form but is not yet designed. The full
 question — constraints, plausible decay shapes, and how decay
 composes with the ranking parameters — is tracked in
-[open-questions.md Q4](open-questions.md).
+[open-questions.md Q4](../open-questions.md).
 
 ---
 
@@ -280,7 +280,7 @@ Users should not be re-shown content they've already seen unless
 something meaningful happened (e.g. a friend commented on it). The
 options (graph-native view edges, separate store, client-side,
 compaction) and their tradeoffs are tracked in
-[open-questions.md Q5](open-questions.md).
+[open-questions.md Q5](../open-questions.md).
 
 ---
 
@@ -342,7 +342,7 @@ unified; the deployment doesn't.
 
 - **Not per-item suppression.** Muting a specific post, message, or
   chat is a different mechanism (actor edges plus, for chats,
-  community moderation voting — see [chats.md §6](chats.md)).
+  community moderation voting — see [chats.md §6](../instances/chats.md)).
   Per-item mutes live on the graph as edges.
 - **Not a cache-everything strategy.** The backend can't meaningfully
   precompute ranked feeds because they're fully personalized. It can

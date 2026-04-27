@@ -102,7 +102,7 @@ would duplicate history that already lives in the source data.
 
 Display content — message bodies, post text, profile text,
 attachment metadata — lives in Postgres (see
-[data-model.md](data-model.md)). The append-only rule still applies:
+[data-model.md](../implementation/data-model.md)). The append-only rule still applies:
 an edit writes a **new version row**, not an overwrite. The graph
 node stays the same; the Postgres row for that content gets a new
 version with the edited text, the old version preserved. Readers see
@@ -157,7 +157,7 @@ narrow exception: illegal material, court-ordered takedowns, legally
 mandated removals. The deletion still leaves a visible trace — a
 tombstone version row or equivalent marker — so the history shows
 that content existed and was removed. Implementation specifics
-belong in [data-model.md](data-model.md).
+belong in [data-model.md](../implementation/data-model.md).
 
 ### The operating principle
 
@@ -179,7 +179,7 @@ separately:
 
 - **Who authorizes a redaction, and through what process** — a policy
   question (thresholds, legal process, appeal rights). See
-  [open-questions.md Q9](open-questions.md).
+  [open-questions.md Q9](../open-questions.md).
 - **Retention / pruning for storage cost** — an implementation
   optimization concern separate from the principle. See
-  [open-questions.md Q10](open-questions.md).
+  [open-questions.md Q10](../open-questions.md).

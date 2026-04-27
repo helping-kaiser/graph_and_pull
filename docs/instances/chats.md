@@ -15,7 +15,7 @@ the outside.
 In CoGra, a chat is a **public node on the graph**. Its existence, its
 member list, and its message count are visible to every actor on the
 graph (see the transparency principle in
-[graph-model.md §1](graph-model.md)). **Topology is always
+[graph-model.md §1](../primitive/graph-model.md)). **Topology is always
 public**; what's private is the *content* of individual messages, if
 the chat chose to encrypt them.
 
@@ -35,7 +35,7 @@ A chat's behavior is defined by two independent choices:
 
 ### Join policy — who can become a member
 
-Specified in [graph-model.md §5](graph-model.md) as the
+Specified in [graph-model.md §5](../primitive/graph-model.md) as the
 two-edge approval pattern. Four shapes:
 
 - **Open** — anyone joins, no approval required.
@@ -111,7 +111,7 @@ Edits are append-only. A correction writes a new version into the
 Postgres row rather than overwriting the old one. Past versions remain
 readable. This is consistent with the project-wide append-only
 principle: you cannot retroactively erase what you wrote, you can only
-add what you meant to write. See [layers.md](layers.md) for the
+add what you meant to write. See [layers.md](../primitive/layers.md) for the
 project-wide append-only rule across edges, node properties, and
 Postgres-side display content.
 
@@ -124,7 +124,7 @@ For an E2EE chat, the ChatMessage payload stored on the graph is a
 from outside — sees:
 
 - That the ChatMessage exists.
-- Its author (see [authorship.md](authorship.md)).
+- Its author (see [authorship.md](../primitive/authorship.md)).
 - Its creation timestamp.
 - Its structural position (`ChatMessage -> Chat`).
 - A ciphertext blob as the payload.
@@ -169,13 +169,13 @@ property without changing the graph model.
 
 Open public chats face an obvious question: without an admin, who
 stops a bad message from dominating? CoGra's answer reuses the
-no-push principle from [graph-model.md §7](graph-model.md):
+no-push principle from [graph-model.md §7](../primitive/graph-model.md):
 
 **The chat moves away from a message (or a member). It never moves
 the message or the member away.**
 
 Moderation happens at two levels, independently. Both are instances
-of the weighted-voting primitive in [governance.md](governance.md),
+of the weighted-voting primitive in [governance.md](../primitive/governance.md),
 both use Shape B (the vote travels from the voter's `ChatMember`
 junction to the subject, so the chat stance stays decoupled from
 personal sentiment).
@@ -215,13 +215,13 @@ Starting points, not fixed rules:
 | Quorum          | ≥ 20% of total eligible weight has cast a vote                        | ≥ 40% of total eligible weight has cast a vote                        |
 | Threshold       | > 50% of cast weight disavowing                                       | ≥ 2/3 of cast weight disavowing                                       |
 | Outcome         | New layer on `Chat -> ChatMessage`                                    | New layer on `Chat -> ChatMember`                                     |
-| Takes effect at | New-vote threshold-crossing ([governance.md §6](governance.md))       | Same                                                                  |
+| Takes effect at | New-vote threshold-crossing ([governance.md §6](../primitive/governance.md))       | Same                                                                  |
 
 **Every number above is a node property on the `Chat`.** Role
 weights, quorum %, threshold % — none of them are hardcoded.
 Members change any of them via a Proposal node targeting the
 chat's property, voted by the same eligibility rules (see
-[governance.md §2.1](governance.md)). The defaults above exist
+[governance.md §2.1](../primitive/governance.md)). The defaults above exist
 to bootstrap new chats; they are not fixed rules, and the same
 primitive that governs disavowals also governs changes to the
 disavowal rules themselves.
@@ -229,7 +229,7 @@ disavowal rules themselves.
 ### How roles fit in
 
 Roles (admin, mod, member) are carried as properties on the
-`ChatMember` junction node (see [graph-model.md §2](graph-model.md)).
+`ChatMember` junction node (see [graph-model.md §2](../primitive/graph-model.md)).
 An admin's disavowal weight is higher than a member's but it is
 never a veto — in any chat large enough that an admin's weight is
 a small fraction of the pool, an admin cannot single-handedly
@@ -243,7 +243,7 @@ the primitive, not from a special rule.
 ### Property and role changes via Proposals
 
 Beyond disavowal, the chat's other state changes use the Proposal
-mechanism (see [governance.md §2.1](governance.md)). `ChatMember.role`
+mechanism (see [governance.md §2.1](../primitive/governance.md)). `ChatMember.role`
 (promote / demote), `Chat.title`, `Chat.content_privacy`, and
 `Chat.join_policy` are all node properties; each change is a
 Proposal voted on by chat members under chat-defined parameters.
@@ -275,7 +275,7 @@ member — they just see that the chat has moved away.
 
 ## 7. Join flows
 
-*(This content was moved from [graph-model.md §5](graph-model.md).
+*(This content was moved from [graph-model.md §5](../primitive/graph-model.md).
 The generic two-edge approval pattern these flows instantiate remains
 there as a graph-level primitive.)*
 
@@ -322,7 +322,7 @@ Membership is encoded in the two-edge approval pattern:
 Append-only means the existing approval edge cannot be removed once
 created. State transitions are instead **encoded as new layers on the
 structural edges themselves** — the formal rule is in
-[graph-model.md §5](graph-model.md) ("Revocation and
+[graph-model.md §5](../primitive/graph-model.md) ("Revocation and
 state transitions"). For a chat membership:
 
 - **Voluntary leave.** The user adds a new layer on their actor edge

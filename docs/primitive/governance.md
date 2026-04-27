@@ -40,7 +40,7 @@ parameterized independently. A Collective may have one instance
 for "fire worker" (1-of-1 from CEO) and a different one for
 "remove board member" (2/3 of the board) — same node, different
 instances, routed by the subject's role. See
-[collectives.md](collectives.md) for the worked-out social-contract
+[collectives.md](../instances/collectives.md) for the worked-out social-contract
 patterns.
 
 ### 2.1 Subject
@@ -277,16 +277,16 @@ design discussion (§9).
 
 - **Junction approvals** — [graph-model.md §5](graph-model.md).
   Shape A. Threshold: N actor edges from specified roles.
-- **Chat message disavowal** — [chats.md §6](chats.md). Shape B.
+- **Chat message disavowal** — [chats.md §6](../instances/chats.md). Shape B.
   Quorum + weighted-majority threshold.
-- **Chat member disavowal** — [chats.md §6](chats.md). Shape B.
+- **Chat member disavowal** — [chats.md §6](../instances/chats.md). Shape B.
   Higher quorum + weighted-supermajority threshold.
-- **Chat property and role changes** — [chats.md §6](chats.md).
+- **Chat property and role changes** — [chats.md §6](../instances/chats.md).
   Proposals on `Chat.title`, `Chat.content_privacy`,
   `Chat.join_policy`, and `ChatMember.role`. Defaults vary by
   stakes; thresholds are themselves chat properties.
 - **Collective governance (full social contract)** —
-  [collectives.md](collectives.md). Membership changes (hire /
+  [collectives.md](../instances/collectives.md). Membership changes (hire /
   fire / promote), property changes (`name`, `governance_rules`,
   `ownership_pct`), and any other decision-type the collective
   defines. A Collective hosts as many instances as its social
@@ -298,7 +298,7 @@ Future cases get added here as they're designed.
 
 ### Planned
 
-- **Redaction authorization** — [open-questions.md Q9](open-questions.md).
+- **Redaction authorization** — [open-questions.md Q9](../open-questions.md).
   When Q9 resolves, the takedown / redaction policy will land as
   another governance instance: subject = the layer or display row
   to redact, eligibility and threshold per the redaction policy.

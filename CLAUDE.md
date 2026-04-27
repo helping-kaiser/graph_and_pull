@@ -35,7 +35,7 @@ These are non-negotiable. Every decision must be evaluated against them:
    New layers are added on top. The principle extends to Postgres-side
    display content, which uses versioned rows rather than overwrites.
    Transparency and auditability over convenience. See
-   [docs/layers.md](docs/layers.md) for the full rule.
+   [docs/primitive/layers.md](docs/primitive/layers.md) for the full rule.
 4. **Fair economics.** Ad revenue distributes across the economic landscape of
    the graph. Bot clusters earn nothing because real users never point toward
    them. Pull marketing, not push marketing.
@@ -55,7 +55,7 @@ These are non-negotiable. Every decision must be evaluated against them:
 ## Architecture
 
 Dual-database: **Memgraph** (graph topology, edges, traversal) +
-**PostgreSQL** (metadata, display content). See [docs/architecture.md](docs/architecture.md).
+**PostgreSQL** (metadata, display content). See [docs/implementation/architecture.md](docs/implementation/architecture.md).
 
 Crate structure:
 
@@ -68,37 +68,19 @@ Crate structure:
 
 ### Key Design Documents
 
-Read these before making changes to data models or algorithms:
+Docs are organized in three layers under `docs/`:
 
-- [Graph Model](docs/graph-model.md) — the edge/node system. All
-  edges are 2-dimensional directional tensors with append-only layers.
-- [Governance](docs/governance.md) — weighted role-based voting as
-  a reusable primitive. Five components, two vote shapes,
-  append-only. Junction approvals, chat moderation, and future
-  governance patterns all plug into it.
-- [Nodes](docs/nodes.md) — full node catalog with per-type graph
-  properties.
-- [Edges](docs/edges.md) — full edge catalog plus the
-  relationship-label scheme at the graph layer.
-- [Layers](docs/layers.md) — the append-only principle applied to edges,
-  node properties, and Postgres-side display content.
-- [Feed Ranking](docs/feed-ranking.md) — how target nodes are ranked from a
-  root node's perspective.
-- [Chats](docs/chats.md) — chats/messages as first-class public content;
-  privacy via E2EE of content only.
-- [Authorship](docs/authorship.md) — how authorship is derived from the
-  earliest incoming edge.
-- [Invitations](docs/invitations.md) — the two-edge onboarding pattern
-  for new actors.
-- [Collectives](docs/collectives.md) — collectives as actors (households,
-  bands, co-ops, companies); CollectiveMember flow; no preferential ad
-  revenue.
-- [Items](docs/items.md) — items as content; ItemOwnership transfer
-  flow.
-- [Data Model](docs/data-model.md) — Postgres schema + graph definitions.
-- [Open Questions](docs/open-questions.md) — consolidated index of
-  unresolved design calls, one block per question so a fresh reader
-  can engage without hunting for context.
+- **`docs/primitive/`** — what the graph IS and how it BEHAVES
+  (graph-model, nodes, edges, layers, governance, authorship,
+  feed-ranking, invitations).
+- **`docs/instances/`** — concrete applications of the primitive
+  (chats, collectives, items).
+- **`docs/implementation/`** — system and code-level concerns
+  (architecture, data-model, development, api-spec, graph-db-options).
+
+See [docs/README.md](docs/README.md) for the full index by layer
+and the suggested reading order. Cross-cutting design questions
+live in [docs/open-questions.md](docs/open-questions.md).
 
 ---
 
@@ -115,7 +97,7 @@ Read these before making changes to data models or algorithms:
   layer stays, its value is replaced with a visible `[redacted — ...]`
   marker. Postgres-side display content follows the same spirit: deletion
   is a narrow exception for illegal material, and the fact of deletion
-  always leaves a visible trace. See [docs/layers.md](docs/layers.md) §5
+  always leaves a visible trace. See [docs/primitive/layers.md](docs/primitive/layers.md) §5
   for the full policy.
 - **Never erase silently.** Any redaction or takedown — graph-side or
   Postgres-side — must leave a visible mark. No silent removal of history.

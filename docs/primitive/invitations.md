@@ -39,4 +39,4 @@ Both directions are needed because edges are strictly directional (see
 The initial dimension values on the new actor's edge toward the
 inviter are an open design decision — they shape the first week of
 the new user's experience. The question and the options considered
-are tracked in [open-questions.md Q6](open-questions.md).
+are tracked in [open-questions.md Q6](../open-questions.md).
