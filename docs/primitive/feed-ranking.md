@@ -56,6 +56,27 @@ Only **actor edges** contribute factors to the path products.
 Structural edges count toward `R` (path length) but do not contribute
 factors — they are pure topology.
 
+```
+s_path uses only dim1 of actor edges in the path
+|c_path| uses only |dim2| of actor edges in the path
+R counts every edge in the path (actor + structural)
+```
+
+Why structural edges count toward `R` but not toward the products:
+a path `U → friend (actor) → Comment (actor reaction) → Post`
+where `Comment → Post` is a structural containment edge has `R = 3`.
+Under the `d(R)` decay applied at sort time (§4–§5), the friend's
+directly-reacted-to comment sits at `R = 2` (more proximate to U),
+and the post it's attached to is one structural hop further away
+at `R = 3` (slightly less proximate). This matches feed intuition:
+a friend's strong comment is more directly relevant than the post
+it sits on, even by a small margin.
+
+Deep structural chains (e.g., replies of replies on a post)
+accumulate `R` naturally and decay via `d(R)` without needing an
+explicit depth cap. The dataminer's R-fetch limit (typically `R ≤
+5` or `6` in practice) bounds traversal at the system level.
+
 State-bearing structural edges (junction approval pairs, see
 [graph-model.md §5](graph-model.md)) act as **gates on traversability**:
 a path is traversable through such an edge only if its top-layer
