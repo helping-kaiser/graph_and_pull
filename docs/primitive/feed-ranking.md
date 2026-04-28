@@ -63,25 +63,40 @@ a path is traversable through such an edge only if its top-layer
 values do not enter the ranking math; they only decide whether the
 path exists at all.
 
-### 3.2 Zero handling
+### 3.2 Zero handling — kill rule
 
-A factor of `0` (in `dim1` or `dim2`) is **skipped** in the path
-product (treated as multiplicative identity). The hop still counts
-toward `R`.
+A factor of `0` in either dim of any actor edge along the path
+zeros that dimension's path product. Zeros are **not** skipped
+or treated as multiplicative identity — they are real factors
+that, through ordinary multiplication, collapse the chain.
 
-If after skipping zeros there are no remaining factors in a given
-dimension's product, the contribution for that dimension is **`0`**,
-not `1`. The "no signal at all" case maps to zero, not to identity.
+```
+if dim1(eᵢ) = 0 for any actor edge eᵢ in path  →  s_path = 0
+if dim2(eᵢ) = 0 for any actor edge eᵢ in path  →  c_path = 0
+```
+
+The two tracks are independent: a zero in one dim does not affect
+the other dim's chain. An edge `(0, +0.7)` zeros `s_path` while
+the closeness chain continues via `c_path`; `(+0.7, 0)` zeros
+`c_path` while sentiment continues via `s_path`.
+
+Defensible in feed terms: if I have no opinion on a hop, signal
+of that type does not flow through me on this path. The hop still
+counts as a real edge in the topology; it just contributes nothing
+on the dim where I expressed nothing. Compared to a "skip zero"
+rule (treating `0` as multiplicative identity `1`), the kill rule
+prevents the artifact where a path with a single weak hop and one
+zero hop scores stronger than a path with two real weak hops.
 
 ### 3.3 dim1 chain — signed multiplication
 
 For a path with actor edges `e_1, e_2, ..., e_R'` (where `R'` is the
-number of actor edges in the path; structural edges are skipped per
-§3.1):
+number of actor edges in the path; structural edges contribute no
+factors per §3.1):
 
 ```
-s_path = ∏ dim1(e_k)    over actor edges with dim1(e_k) ≠ 0
-       = 0              if all actor-edge dim1 in path are zero
+s_path = ∏ dim1(e_k)   over all actor edges in the path
+       = 0             if any dim1(e_k) is zero (kill rule, §3.2)
 ```
 
 Signed multiplication preserves **signed-graph balance**: the
@@ -103,13 +118,14 @@ real social pattern (two avoidances would compose to a positive
 Instead, dim2 composes via a **taint rule**:
 
 ```
-|c_path|     = ∏ |dim2(e_k)|   over actor edges with dim2(e_k) ≠ 0
+|c_path|     = ∏ |dim2(e_k)|   over all actor edges in the path
 sign(c_path) = -1   if ANY dim2(e_k) in the path is negative
              = +1   otherwise
 c_path       = sign(c_path) × |c_path|
-
-c_path       = 0    if all actor-edge dim2 in path are zero
 ```
+
+If any `dim2(e_k) = 0`, then `|c_path| = 0` per the kill rule
+(§3.2) and the sign becomes irrelevant — `c_path = 0`.
 
 Two important properties:
 
