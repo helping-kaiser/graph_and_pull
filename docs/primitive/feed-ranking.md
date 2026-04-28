@@ -291,47 +291,50 @@ is trying to suppress.
 
 ## 5. Algorithm
 
-The ranking runs in two phases: a coarse **sort** into buckets, then
-a finer **order** within buckets using cumulative tie-breakers.
-
-### Step 1 — Sort (bucketing, descending priority)
+The ranking is a single sort by **personal opinion `h`** descending,
+with cumulative tie-breakers and `S` as the final fallback.
 
 ```
-R  →  S  →  k  →  j  →  i  →  h
+sort by:   h(t)
+           if equal:  h(t) + i(t)
+           if equal:  h(t) + i(t) + j(t)
+           if equal:  h(t) + i(t) + j(t) + k(t)
+           if equal:  S(t)
 ```
 
-Targets are bucketed first by reach `R` (closer is higher), then by
-scalar `S` (intrinsic node weight), then by `k`, `j`, `i`, `h` —
-each collapsed to scalar per §4.1.
+`d(R)` decay (§4.1) is already baked into the personal metrics
+(`h`, `i`), so a single sort by `h` naturally puts close-strong
+signals at the top and distant signals at the bottom — no
+separate R-bucketing phase is needed.
 
-### Step 2 — Order (final sequence with cumulative tie-breakers)
+Strict R-bucketing was considered and rejected: it forced any
+direct connection (however weak) above any indirect connection
+(however strong). The score-based sort is more nuanced — it lets
+a target with many strong R=3 paths outrank a target with one
+weak R=2 path, while preserving "closeness is most important"
+through `d(R)`'s steep decay.
 
-Within each `R` group, the final order uses cumulative sums starting
-from `h`:
-
-```
-R  →  h
-        →  if equal:  h + i
-        →  if equal:  h + i + j
-        →  if equal:  h + i + j + k
-```
-
-1. Order primarily by `h` (personalized).
-2. If tied — compare by `h + i`.
-3. If still tied — compare by `h + i + j`.
-4. If still tied — compare by `h + i + j + k`.
+Targets with `h(t) > 0` appear at the top of the feed; `h(t) < 0`
+at the bottom. Negatives are **visible**, not banished — a friend
+strongly disliking something is meaningful information for the
+viewer to be aware of, and the graph's transparency principle
+favors showing them over hiding. They sort below positives because
+the score itself is negative; that's it.
 
 The cascade activates only on **strict equality** at each level.
 With float math, exact ties on `h` are rare; the cascade kicks in
 mostly for sparse graphs (where many targets have `h ≈ 0` exactly)
 and for users who default to `+1/0/-1` integer values (where ties
-are common).
+are common). `S` (the intrinsic node scalar) is the deepest
+fallback — see [open-questions.md](../open-questions.md) for its
+derivation.
 
-> **Why `S` doesn't reappear in the order step.** During the sort
-> step, nodes are already placed in scalar order. The cumulative
-> tie-breakers `h, h+i, h+i+j, h+i+j+k` resolve any remaining ties
-> inside that scalar order, so re-applying `S` at the end would not
-> change the result.
+> **Adversarial robustness of the default sort is an open question.**
+> The math is honest about path-product values, but bots can
+> engineer their content's score by mixing path types (positive,
+> zero, negative) to land at chosen positions in the feed. See
+> [open-questions.md Q11](../open-questions.md) for the unresolved
+> question and current thinking.
 
 ### 5.1 Filtering vs ranking
 
