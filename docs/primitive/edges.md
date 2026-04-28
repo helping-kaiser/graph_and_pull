@@ -16,6 +16,14 @@ nodes. The 2 dimensions are set by the actor and follow the uniform
 `[-1.0, +1.0]` range described in
 [graph-model.md](graph-model.md).
 
+Across every actor-edge type the two dimensions follow the same
+underlying grammar (see [graph-model.md §6](graph-model.md)):
+`dim1` is **signed valence** (sentiment / approval / affirmation);
+`dim2` is **signed connection-weight** (closeness / relevance /
+importance). The labels in the tables below differ to highlight the
+relevant aspect of each edge type, but the role each dimension plays
+in the math is uniform.
+
 ### User as actor
 
 | Edge type | Dimension 1 | Dimension 2 |

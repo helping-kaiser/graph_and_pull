@@ -366,16 +366,29 @@ ItemOwnership nodes per item.
 
 ## 6. Dimension Semantics
 
-### Why the dimensions differ per edge type
+### A unified two-axis grammar
 
-The same numeric value means different things in different contexts:
-- **User -> User**: dimension_2 = `+0.9` means "we interact constantly, very
-  close." This is **closeness**.
-- **User -> Post**: dimension_2 = `+0.9` means "this is extremely relevant /
-  fascinating to me." This is **relevance**.
+Across all actor edges, the two dimensions follow a uniform grammar:
 
-But because both are `f64` in `[-1.0, +1.0]`, the ranking algorithm can
-compute over them uniformly. The *interpretation* differs; the *math* doesn't.
+- **`dim1` is signed valence** — sentiment, approval, affirmation. The
+  "do I feel positively or negatively about this?" axis.
+- **`dim2` is signed connection-weight** — closeness, relevance,
+  importance. The "how much does this matter to me?" axis.
+
+The user-facing **labels** vary by edge type to surface the relevant
+aspect (closeness on `User → User`, relevance on `User → Post`,
+importance on `User → ChatMember`, etc.). The **role** each dimension
+plays in the math is uniform: dim1 carries direction; dim2 carries
+weight. See [edges.md](edges.md) for the per-edge-type label catalog.
+
+This unification keeps the ranking math single-shape — the algorithm
+reads `(dim1, dim2)` from any actor edge without branching on edge
+type. The interpretation (sentiment vs. closeness, sentiment vs.
+relevance) lives at the user-presentation layer; the math sees a
+uniform 2D tensor. See [feed-ranking.md §3](feed-ranking.md) for how
+the two axes compose along a path under different rules — `dim1` via
+signed multiplication (signed-graph balance), `dim2` via taint sign ×
+magnitude product (no transitivity for connection).
 
 ### Range and polarity
 
@@ -396,6 +409,23 @@ rejection, not abstention).
 
 Holding the full `[-1.0, +1.0]` range for every dimension also keeps the
 ranking math uniform and avoids per-dimension clamping or branching logic.
+
+### Negative `dim2` in the graph math vs. as a frontend filter
+
+The graph math uses negative `dim2` as a **continuous taint signal**
+(see [feed-ranking.md §3.4](feed-ranking.md)): a path that crosses an
+avoided connection has its closeness signal flipped negative, but its
+magnitude is the natural product of `|dim2|` along the path —
+proportional to the rest of the path's strength. Negative `dim2` is
+*not* snapped to zero in the math.
+
+Hard "never show me X" exclusion is a separate, **frontend concern**
+— applied as a post-ranking filter, not encoded in the math. The math
+stays smooth and the frontend layers exclusions on top. This
+separation lets users tune their feed in two distinct ways: by
+expressing graduated stances (which the math reads continuously) and
+by enforcing absolute exclusions (which the UI applies after the
+fact).
 
 ### Independence of dimensions
 
@@ -470,9 +500,9 @@ this signal factors into ranking is an open question — see
 ## 9. Relationship to feed ranking
 
 The [feed ranking algorithm](feed-ranking.md) is a general rule for
-ordering target nodes in any signed, weighted graph from a root node's
-perspective. It is deliberately layer-agnostic — the math applies
-regardless of what the signs and weights represent.
+ordering target nodes in any graph with 2D-tensor edges from a root
+node's perspective. It is deliberately layer-agnostic — the math
+applies regardless of what the dimensions represent.
 
 This document defines the **concrete inputs** the ranking algorithm
 operates on in CoGra:
@@ -484,8 +514,10 @@ operates on in CoGra:
   feed).
 - Append-only layer stacks — §8 (the current state is the top layer).
 
-How the continuous tensor values map into the ranker's signed-edge
-math (sign + weight, product, per-dimension contribution, or
-something else) is not yet pinned down. See
-[open-questions.md Q2](../open-questions.md) for the full shape of this
-question and the options considered.
+The ranker composes these inputs along each path via **parallel
+tracks**: `dim1` chain via signed multiplication (signed-graph
+balance), `dim2` chain via taint sign × magnitude product (no
+transitivity for connection-weight). Each metric (`h`, `i`, `j`,
+`k`) is itself a 2-tuple `(sentiment-component, closeness-component)`,
+collapsed to a scalar (default: sum) only at sort time. See
+[feed-ranking.md §3-§4](feed-ranking.md) for the full rule.

@@ -24,13 +24,13 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Ranking foundation | 1 | **Q2** | The keystone. Every downstream ranking question needs the primitive operation defined (what a float edge value *means* to the ranker). |
-| | 2 | **Q6** | Depends on Q2: "good" default values on invitation edges only mean something once the ranking math gives them meaning. |
-| | 3 | **Q4** | Now that ranking primitives exist, decay can compose with `R/h/i/j/k`. |
-| | 4 | **Q1** | Now that primitives *and* decay are settled, layer count finds its place (modifier? separate parameter? folded into `i`?). |
-| 2. Build on foundations | 5 | **Q5** | Informed by Q4 (decay may absorb part of "seen"). Q3 already ruled out the implicit-view-edge options. |
-| 3. Scale concerns | 6 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
-| 4. Policy, externally gated | 7 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
+| 1. Adversarial robustness | 1 | **Q11** | Default sort produces correct math, but bots can engineer score positions. Needs exhaustive treatment before the feed is production-ready. |
+| 2. Onboarding | 2 | **Q6** | Now that the ranking math is defined (Q2), invitation-edge defaults can be designed against concrete ranking behavior. |
+| 3. Decay & layer signal | 3 | **Q4** | Decay composes with `R/h/i/j/k` — needs the metrics defined (now done) before decay can be designed. |
+| | 4 | **Q1** | Layer count finds its place once primitives and decay are settled (modifier? separate parameter? folded into `i`?). |
+| 4. Build on foundations | 5 | **Q5** | Informed by Q4 (decay may absorb part of "seen"). Q3 already ruled out the implicit-view-edge options. |
+| 5. Scale concerns | 6 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
+| 6. Policy, externally gated | 7 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -41,6 +41,7 @@ questions are closed.
 - Q7 — see [data-model.md](implementation/data-model.md) §"author_id + author_type".
 - Q8 — see [chats.md §6](instances/chats.md) and [governance.md §7](primitive/governance.md).
 - Q3 — see [graph-model.md §3](primitive/graph-model.md) "What creates an actor edge — stances, not events".
+- Q2 — see [feed-ranking.md §3-§4](primitive/feed-ranking.md) (per-edge composition, parallel tracks, taint rule, sum collapser) and [graph-model.md §6](primitive/graph-model.md) (dim1/dim2 unification, filtering vs. graph math). S's intrinsic derivation deferred — flagged as a forward sub-question.
 
 ---
 
@@ -78,62 +79,9 @@ None yet.
 
 ### Related
 
-Q2 (cross-type dimension comparability) — if layer count modifies a
-dimension, it has to modify it consistently across edge types.
-
----
-
-## Q2 — Cross-type dimension comparability and float-to-sign mapping
-
-**Where it shows up:** [graph-model.md §9](primitive/graph-model.md) (relationship to feed ranking)
-**Status:** open
-
-### Context
-
-Two tangled sub-questions that are best resolved together:
-
-**(a) Cross-type combination.** The ranking algorithm traverses paths
-that cross edge types with different dimension meanings — for example
-`User -> User -> Comment -> Post`. The `User -> User` dimensions are
-*sentiment* and *closeness*; the `Comment -> Post` structural edge is
-*(0, 0)* by default; the `User -> Post` dimensions are *sentiment* and
-*relevance*. The math is uniform (all `f64` in `[-1, +1]`) but the
-semantics differ.
-
-**(b) Float-to-sign mapping.** [feed-ranking.md](primitive/feed-ranking.md)
-is framed over a **signed** graph (each edge is `+` or `-`). CoGra's
-actual edges carry **continuous** values in `[-1, +1]`. How continuous
-values map into the ranker's signed math is not specified.
-
-### The question
-
-**(a)** When the ranker walks across edge types, how are dimensions
-with different meanings combined into a single scalar per hop?
-
-**(b)** How does a `[-1, +1]` tensor edge feed into the ranker's
-per-hop sign/weight?
-
-### Options considered
-
-For (b), plausible shapes:
-
-- **Sign + weight:** `sign = sign(dim1)`, `weight = |dim1| * |dim2|`
-  (or similar). Keeps ranker math unchanged; dim2 becomes a magnitude.
-- **Product:** single scalar `dim1 * dim2`, pass the sign and
-  magnitude of the product to the ranker. Collapses information early.
-- **Per-dimension contribution:** compute `h/i/j/k` twice, once per
-  dimension, then combine. Preserves information at ranking time but
-  doubles the compute.
-- **Primary dimension only:** ranker uses `dim1` (sentiment in most
-  edge types); `dim2` is a secondary signal used elsewhere (filtering,
-  suggestions, decay weighting).
-
-None ruled out. (a) depends on what (b) settles.
-
-### Related
-
-Q1 (layer count), Q4 (time decay — decay needs to know what it's
-decaying).
+The dim1/dim2 grammar is now uniform project-wide
+([graph-model.md §6](primitive/graph-model.md)), so a layer-count
+modifier on a dimension would compose consistently across edge types.
 
 ---
 
@@ -350,3 +298,147 @@ the principle.
 Q1 (layer count as signal — compaction changes what layer count
 means), Q9 (redaction authority — retention decisions affect what
 can still be redacted).
+
+---
+
+## Q11 — Adversarial robustness of the default sort
+
+**Where it shows up:** [feed-ranking.md §3.5](primitive/feed-ranking.md) (Bot resistance), [feed-ranking.md §5](primitive/feed-ranking.md) (Algorithm)
+**Status:** open
+
+### Context
+
+The Q2 resolution lays down honest math: `h(t)` reflects the
+graph's actual signal toward a target. The score-based sort (§5)
+puts strong-positive close-by signal at the top of the feed and
+strong-negative close-by at the bottom. The community defenses
+in §3.5 (inbound-edge directionality, non-engagement, `(0, -1)`
+defender pattern) give real users powerful tools.
+
+But sophisticated bot clusters can engineer their target's score
+position by mixing path types. The math itself is honest — the
+question is whether the *sort rule* and *defender patterns*
+together leave exploitable surfaces. Several attack vectors have
+surfaced and none is fully resolved.
+
+### Attack vectors identified so far
+
+**Attack 1 — `(0, 0)` muting of a `(0, -1)` defender.**
+Defender places `(0, -1)` on a path entering the bot cluster. Bots
+respond with `(0, 0)` edges *internal* to the cluster.
+- Defender's `dim1 = 0` already zeros `s_path` (kill rule, §3.2).
+- Bots' `dim2 = 0` zeros `|c_path|` magnitude — overrides
+  defender's `|−1|` contribution.
+- Total path score collapses to `0 + 0 = 0`. Defender's
+  suppression is neutralized. Target lands at score 0, just below
+  positives in the default sort.
+
+**Attack 2 — Sign-flip of a `(-1, -1)` defender via `(-1, 0)`.**
+A less-coordinated defender uses `(-1, -1)` (negative on both
+dims) instead of the more robust `(0, -1)`. Bots can flip this:
+- Path: `... → defender(-1, -1) → bot(-1, 0) → target(...)`.
+- `s_path`: `... × (-1) × (-1) × ... = +1` (sign flip via
+  signed-graph balance — two negatives multiply to positive).
+- `c_path`: defender's `|−1| = 1` magnitude × bot's `|0| = 0`
+  magnitude = 0. `c_path = 0`.
+- Total: `+1 + 0 = +1`. The defender's tainted path is **flipped
+  to positive**.
+- Bots can then amplify via infinite internal nodes/edges,
+  creating a flood of positive paths to the target.
+
+The `(-1, -1)` shape is fundamentally exploitable: its `dim1 = -1`
+is recoverable via signed-graph balance (bots add another
+negative dim1), and its `dim2 = -1` magnitude can be zeroed by
+`dim2 = 0` downstream. Only `(0, -1)` is robust — zero in `dim1`
+is permanent (kill rule), and the negative `dim2` taint sign is
+one-way.
+
+**Attack 3 — Arbitrary score control via path mixing.**
+With infinite internal nodes/edges, bots can compose paths in any
+proportion they choose:
+- `(0, 0)`-muted paths to **neutralize** defender contributions
+  (zero out paths through them).
+- `(-1, 0)` sign-flips on `(-1, -1)` defender paths to **convert**
+  them into positives (Attack 2).
+- Bot-positive paths (amplified through cluster) to **inject**
+  arbitrary positive contribution.
+- Selectively unguarded paths to introduce a controlled amount
+  of negative or positive contribution.
+
+The net effect: a target's aggregate score is the sum of these
+contributions, and **bots can dial the aggregate to any value**
+— very positive, slightly positive, near zero, slightly negative,
+or very negative — by tuning the mix of paths their cluster
+exposes. They are not constrained to "small negative" or any
+specific position; they can choose their feed slot up to the
+limits of what the surrounding real-user signal allows.
+
+The fundamental constraint is that bots cannot manufacture
+*outgoing edges from real users into the cluster* (per the
+inbound-edges-don't-affect-feed rule). Once a real user has an
+outgoing edge into the cluster, however, bots can compound that
+edge into virtually any aggregate they want.
+
+### The question
+
+How should the default sort and/or the math handle adversarial
+score engineering so that bot-controlled content lands at the
+bottom of the feed *regardless* of what mix of path types the
+bot cluster uses, given that bots can create unbounded internal
+edges/nodes?
+
+Constraints (non-negotiable):
+- Bot networks can always create infinitely more edges and nodes
+  than real users can.
+- Defense must come from community signal + math properties, not
+  central gatekeeping (no allow/blocklists, no AI classification).
+- The default sort must keep "closeness is the most important
+  factor" (positives ranked by closeness × strength).
+- Negatives stay visible (transparency principle,
+  [layers.md](primitive/layers.md)). They are not banished.
+- Real users actively marking bot clusters with `(0, -1)` should
+  be **decisive** against those clusters — community moderation
+  must work even against an infinite-edge adversary.
+
+### Options considered (none worked out — surfaced for context only)
+
+These are notes from prior discussion. Each has failure modes
+against one or more of the attacks above. The full design needs
+to be built up from scratch, considering all attack vectors at
+once rather than mitigating one at a time.
+
+- **Zero-class at bottom.** Sort `|score| < ε` to the bottom of
+  feed. Defends Attack 1 but trivially bypassed by Attack 3
+  (bots tune to small non-zero values).
+- **Threshold-based bot flagging.** Real users mark suspected
+  bots; flagged nodes are sorted distinctly. Risks centralization
+  if the flagging mechanism isn't append-only and community-driven.
+- **R-distribution heuristics.** Use the distribution of paths
+  across `R` levels as a signal — bot clusters tend to have
+  many far-R internal paths and few close-R real-user paths.
+  Speculative; needs simulation.
+- **Trust-propagation analogues.** Treat `(0, -1)` edges as
+  trust suppression that propagates further than the direct
+  path. Tension with "signal flows along actual paths."
+- **Constraints at the math level.** Possibly limit how `dim1`
+  and `dim2` compose to deny bots the sign-flip / muting tools
+  in the first place. Risks breaking other parts of the math.
+
+### Where this needs to go
+
+- A sort rule (and possibly math refinements) that defend all
+  three attack vectors *together*.
+- Emphasis that `(0, -1)` is the *only* robust defender shape
+  (already noted in [feed-ranking.md §3.5](primitive/feed-ranking.md);
+  should be educational material for users).
+- Acknowledgment that some attack vectors may be fundamental
+  limits of multi-path graph ranking against infinite-budget
+  adversaries — the design is choosing where to draw the
+  practical line, not eliminating the threat entirely.
+
+### Related
+
+Q2 (the underlying ranking math). Bot-attack vectors will likely
+re-emerge as Q4 (time decay) and Q1 (layer count) are designed —
+adversarial robustness should be considered when adding any new
+ranking signal.
