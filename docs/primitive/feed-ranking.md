@@ -169,59 +169,112 @@ A signed-multiplication rule (matching dim1) was also considered
 and rejected: it produces "two-avoidances → positive connection"
 artifacts that don't reflect social reality.
 
-### 3.5 Bot resistance via the dim2 asymmetry
+### 3.5 Bot resistance via the `(0, 0)` severance edge
 
-The asymmetry between dim1 (signed multiplication) and dim2
-(taint sign + magnitude) gives users a community-driven defense
-against bot clusters that doesn't require any algorithmic
-gatekeeping.
+The math gives users a community-driven defense against bot clusters
+that doesn't require any algorithmic gatekeeping. The mechanism rests
+on the unique adversarial-robustness property of the `(0, 0)` edge —
+the **severance edge** — and on the immovability of `h(t) = 0` under
+full community severance.
 
-Three layered defenses, all properties of the math:
+The same mechanism applies to any cluster the broader community
+wants to disengage from. The math operates on path-set properties,
+not on cluster type — see §3.6.
+
+#### Why bots can dial any non-zero score
+
+A cluster with unbounded internal nodes and edges can amplify a
+single live entry path into an arbitrary aggregate `h(t)`. The
+number of paths through a cluster of branching factor `b` grows as
+`b^(R−1)`; path contributions decay as `d(R) = 0.1^(R−1)`. Once
+`b ≥ 10`, the path-sum series diverges; even with a hard `R ≤ 5–6`
+traversal cap, achievable amplification of a single entry edge runs
+to ~100× and beyond.
+
+So, as long as **any** path from `U` into the cluster has
+`dim1 ≠ 0` and a non-zero `dim2` magnitude end-to-end, bots can
+dial `h(t)` to any value they choose — strongly positive, slightly
+positive, slightly negative, deeply negative, anywhere.
+
+This rules out any "near-zero jail" defined as an interval
+`[−ε, 0]`: bots tune their amplification to land at `−ε − δ` and
+re-enter the visible feed directly below the positive section.
+
+#### Why exact `h(t) = 0` is special
+
+The only score bots cannot tune **away from** is exact `h(t) = 0`,
+and only when **every** path from `U` into the cluster has at least
+one edge enforcing `dim1 = 0` *and* `dim2 = 0` simultaneously. The
+kill rule (§3.2) zeros each path's `s_path` and `|c_path|`
+independently and irrevocably; with both dims killed on every path,
+the aggregate is forced to exactly `0` and no internal edge
+construction recovers it.
+
+The asymmetry between the dims is what makes both kills necessary:
+- `dim1 ≠ 0` gives bots full freedom on `s_path` — both **sign
+  inversion** (signed-graph balance: chain in another negative
+  factor and the product flips) and **magnitude scaling**. They can
+  land `s_path` at any real value.
+- `dim2 ≠ 0` gives bots **magnitude freedom** on `|c_path|`. The
+  taint sign is one-way and not bot-recoverable, but `|c_path|`
+  magnitude can be scaled to any value via internal edges.
+
+Either dim non-zero on an entry edge gives bots a lever — `dim1` a
+stronger one (sign + magnitude), `dim2` a narrower one (magnitude
+only) — and either is enough to move `h(t)` off exact zero.
+`(0, 0)` is the unique edge shape that closes both channels in a
+single declaration.
+
+#### The severance edge is not the everyday signal
+
+`(0, 0)` is reserved for **deliberate severance** — a declaration
+that the target is outside the user's graph of relevance entirely.
+`(+, +)`, `(−, +)`, `(+, −)`, `(−, −)` and floats in between remain
+the normal vocabulary for affinity, distance, dislike, and
+avoidance, all of which leave path products live and feed back into
+`h(t)` via the ordinary math. A user who simply dislikes a target
+uses `(−, −)`, not `(0, 0)`.
+
+Severance is a stronger statement and has stronger consequences: it
+kills both dim chains on every path through the edge, removes the
+severing user as a transit node toward the severed account, and
+contributes to placing the severed account into zero-jail (§5) when
+the entry path-set is fully community-marked.
+
+#### Three layered defenses
 
 1. **Inbound edges don't affect feeds**
-   ([graph-model.md §7](graph-model.md)). A bot cluster cannot
-   insert itself into U's feed by creating outgoing edges *toward*
-   U. Influence requires U (or a transitive contact) to have an
+   ([graph-model.md §7](graph-model.md)). A cluster cannot insert
+   itself into `U`'s feed by creating outgoing edges *toward* `U`.
+   Influence requires `U` (or a transitive contact) to have an
    outgoing edge *into* the cluster.
 
 2. **Non-engagement keeps clusters isolated.** Per the
    action-creates-edges rule
    ([graph-model.md §3](graph-model.md)), no actor edge is created
-   without an explicit gesture. A user who simply ignores a bot
-   cluster creates no path into it from their neighborhood.
+   without an explicit gesture. A user who simply ignores a cluster
+   creates no path into it from their neighborhood.
 
-3. **`(0, -1)` is the decisive defender edge.** When real users
-   detect a bot account and want to mark it, the optimal edge
-   shape is `dim1 = 0, dim2 = -1`:
-   - `dim1 = 0` zeros the sentiment chain (kill rule, §3.2). Bots
-     cannot recover this with internal sign-flipping; once any
-     dim1 in the chain is zero, `s_path = 0` permanently.
-   - `dim2 = -1` taints `c_path` (taint rule, §3.4). The taint sign
-     is a one-way assignment — once any `dim2 < 0` exists in the
-     path, `sign(c_path) = -1` for the rest of the path,
-     irrespective of subsequent edges.
-   - Total path contribution: `0 + (negative magnitude) =
-     negative`. The path is suppressed in U's feed.
+3. **`(0, 0)` severance forces zero-jail.** When the community marks
+   every entry edge into the cluster with `(0, 0)`, every path from
+   `U` to any target inside the cluster has at least one severance
+   edge along it. The kill rule forces `s_path = 0` and `c_path = 0`
+   on every such path; the aggregate `h(t) = 0` exactly. The sort
+   rule (§5) banishes targets at exact `h(t) = 0` to the bottom of
+   the feed, invisible by default.
 
-   Setting `(-1, 0)` (negative sentiment, zero closeness) is
-   *less* robust: bots can chain `dim1 = -1` edges internally to
-   flip `s_path` back positive via signed-graph balance, while
-   `dim2 = 0` provides no defensive contribution. The asymmetric
-   taint rule on dim2 — which dim1 doesn't have — is what makes
-   `(0, -1)` decisive.
+The severance is **community-driven**, not gatekeeping. The math
+gives users a tool; communities use it. The fundamental constraint
+is that clusters can always create infinitely more edges than real
+users can — but they cannot bypass inbound directionality, cannot
+manufacture outgoing edges from real users into themselves, and
+cannot recover paths through severance edges.
 
-This is community-driven defense, not gatekeeping. The math gives
-users tools (signed dims, both axes); communities use them. The
-fundamental constraint is that bot clusters can always create
-infinitely more edges than real users can — but they cannot bypass
-inbound directionality, cannot manufacture outgoing edges from real
-users into themselves, and cannot un-taint `dim2` once a real user
-has marked it.
-
-The full adversarial-robustness story is **not yet complete** —
-sophisticated bots can still engineer score positions via mixed
-path types. See [open-questions.md Q11](../open-questions.md) for
-the unresolved problem.
+When a cluster has a live entry point holding it open — a real
+user with a non-`(0, 0)` outgoing edge into the cluster — §3.6
+covers how the defense cascades to that user, how the math applies
+uniformly to clusters of any composition, and how a self-redeeming
+node returns to the graph.
 
 ---
 
@@ -441,6 +494,25 @@ multiplication of `dim2` would have given `+1` (two negatives
 multiplying), inflating `score` to `+2` and falsely surfacing
 content along avoided paths. The taint rule keeps `c_path = −1`,
 yielding the correct neutral score.
+
+#### The severance edge `(0, 0)` — special case
+
+The 16-case table enumerates the ordinary `±1` vocabulary.
+`(+, +)`, `(−, +)`, `(+, −)`, `(−, −)` and floats in between
+remain the normal way to express affinity, distance, dislike,
+and avoidance. The **severance edge** `(0, 0)` is qualitatively
+different — a deliberate declaration that the target is outside
+the user's graph of relevance (see §3.5). One representative
+case at R=2:
+
+| # | U→A | A→post | s_path | c_path | score | reading |
+|---|---|---|:---:|:---:|:---:|---|
+| 17 | (0, 0) | (anything) | 0 | 0 | **0** | Severance at U's outgoing edge. Both dim chains killed at the entry hop; nothing downstream recovers either. The path contributes 0 to `h(t)` regardless of what `A → post` is. |
+
+`(0, 0)` is not the everyday signal — it is reserved for the
+deliberate cut described in §3.5, where its consequences (transit
+removal, contribution to zero-jail under full community severance)
+are spelled out.
 
 ### 6.2 R=3, representative cases
 
