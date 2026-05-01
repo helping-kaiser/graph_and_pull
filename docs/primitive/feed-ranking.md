@@ -359,11 +359,423 @@ them); the community's response is preserved (they severed the
 user, then restored). Nothing is hidden, and the community's
 trust decision is made against the visible record.
 
-Discovery of one's own zero-jail state and the specific gestures
-that invite re-edges from the community are tracked as
-[open-questions.md Q12 and Q13](../open-questions.md). The
-mechanism above is the math-level frame; the UX surface is
-unfinished.
+Discovery of one's own zero-jail state and the specific
+gestures that invite re-edges from the community are covered
+in §3.7.
+
+### 3.7 Post-severance surfaces
+
+§3.5 and §3.6 specify the math: severance kills paths via the
+kill rule, cascading severance and append-only redemption
+operate on edge values. This section specifies the
+**surfaces** built on top of that math — how a severed node
+discovers their state and identifies the cause edge, and how
+a severer learns when someone they severed has updated their
+outgoing edges and might warrant re-evaluation.
+
+Three properties hold throughout:
+
+- **All surfaces are client- or miner-computed from existing
+  graph state.** No new edge types, no new node types beyond
+  what the graph already supports, no backend logic beyond
+  the subgraph it already serves. The surfaces are
+  derivations over the layer-stack data the client already
+  has access to (or can fetch on demand for self-queries).
+- **Discovery is loud; redemption is deliberate.** A severed
+  node should learn quickly so they can act — the discovery
+  surface is continuous and visible. A severer reviewing
+  whether to restore a severed account requires deliberate
+  per-severer review with the full layer-stack history
+  visible, not automatic mass restoration. One real user
+  re-attached to a live bot bridge is a network failure, so
+  the bar for restoration is the severer's own gesture, not
+  any system automatism.
+- **Frontend latitude on presentation.** This section spells
+  out what data is available and what the client can derive
+  from it. Visual styling, notification frequency,
+  aggregation thresholds, and badge design are frontend
+  concerns and intentionally not specified here. Where path
+  cutoffs or scoring formulas appear below, treat them as
+  frontend-tunable defaults like `d(R)` (§4.1) — guidance
+  surfaced as tooltips, not enforced rules.
+
+#### 3.7.1 Severance discovery — the inbound side
+
+Inbound edges do not affect the viewer's feed
+([graph-model.md §7](graph-model.md)), so the feed-pull
+traversal does not include them. Discovering one's own
+severance state therefore requires an **explicit
+self-query** — the client (or a delegated miner) requests
+inbound state on demand, separately from the feed pull. The
+data is on the graph and traversable; it is just not
+pre-loaded for free.
+
+For node `U` running this self-query, two derived surfaces
+are available:
+
+**Severance pattern.** Count inbound edges with top-of-stack
+value `(0, 0)`. For each, identify the severer `S` and the
+severance layer's timestamp. The directional edge structure
+provides a natural per-edge weighting:
+
+- A severance from `S` where `U` has an outbound edge to `S`
+  with non-`(0, 0)` top-of-stack — `U` considers `S` part of
+  their network. **Strong per-edge signal.**
+- A severance from `S` where `U` has no outbound edge to `S`,
+  or has `(0, 0)` top-of-stack toward `S` — `S` is outside
+  `U`'s outbound network. **Weaker per-edge, but volume
+  matters.** A celebrity or hub will have thousands of
+  inbound edges from non-trusted-network users under normal
+  conditions; a sudden burst of severance from this category
+  is itself a meaningful signal even though no individual
+  severer is in `U`'s network.
+
+Frontends present these two categories with different
+prominence — neither is dismissed. Trusted-network severance
+is the per-edge alarm; stranger-severance volume is the
+population-level alarm.
+
+**Outbound-edge audit list.** List `U`'s outbound edges with
+metadata derivable from the layer stacks: when each was
+created, top-of-stack values, layer count. This is the audit
+material — `U` reviews their outbound list with the severance
+pattern as context.
+
+**The cause-pointing gap.** No automatic on-graph signal
+points from "you are severed" to "this specific outbound edge
+is the cause." Severance walks backward from a cluster to
+transit nodes; it does not propagate forward to sever the
+cluster endpoints (the trusted-network severers update their
+edge to `U`, not to the cluster behind `U`, because they had
+no edge there to update — see §3.6). The cause information
+lives at the severers' content traversals, not in the inbound
+severance data the discovery surface sees.
+
+The cause-pointing aid lives in §3.7.2 (auto-detection via
+path patterns) and §3.7.3 (community bot-defense posts as
+supplementary evidence).
+
+#### 3.7.2 Bot-cluster identification — auto-detection from path patterns
+
+The cause-pointing gap closes via direct analysis of the
+viewer's subgraph for path patterns characteristic of bot
+bridges. This is graph math on existing state — no AI
+classification, no central allow/blocklist, no per-account
+verdict beyond what the path structure says. The client (or a
+delegated miner) computes the analysis from the same
+subgraph it pulls for ranking; the path-set the analysis
+reads is the same path-set used to compute `h(t)` (§4).
+
+**The hourglass signal.** For viewer `U` and any node `B` in
+`U`'s outbound subgraph, examine the paths from `U` to
+content and accounts behind `B`. Two patterns characterize:
+
+- **Fan pattern.** Content `t` behind `B` is reachable from
+  `U` via diverse paths through multiple intermediates — many
+  distinct chains, no common bottleneck. `B` is one of
+  several routes to that part of the graph. Normal
+  connectedness.
+- **Hourglass pattern.** Content `t` behind `B` is reachable
+  from `U` *only through `B`* (or with `B` on the
+  overwhelming majority of paths). `B` is the sole bridge
+  into that subgraph from `U`'s perspective.
+
+A pure hourglass is the bot-bridge signature. The cluster
+behind that node has no other entry into `U`'s graph — exactly
+the topology of a bot cluster a real user has bridged into.
+Bots cannot manufacture outgoing edges from real users
+([graph-model.md §7](graph-model.md)), so the cluster's only
+entry points are the legitimate user-created edges. If only
+one such edge exists from `U`'s reachable subgraph (or
+cascading severance has reduced the cluster's open bridges to
+one), the path pattern is unambiguous.
+
+**Differentiating from legit hubs.** Influencers, popular
+accounts, and big bridging nodes also generate hourglass-shaped
+paths — many users reach a lot of content through them. The
+differentiator is whether the content behind the suspect bridge
+has alternative paths into the broader graph. Real content
+circulates through multiple channels; bot content typically
+does not.
+
+For each suspect bridge `B`, the analysis samples some
+downstream content and checks: is this content reachable from
+`U` via *any* path that does not go through `B`? Even one
+alternative path within the traversal window indicates `B` is
+one route among several (legit hub). No alternative paths
+indicates `B` is the sole route (suspected bot bridge).
+
+The check is bounded computation — a 1–2 hop traversal beyond
+`B`'s downstream targets, looking for any inbound edge that
+does not trace back through `B`. False positives are still
+possible (a brand-new viral account with one early bridge would
+look bot-shaped briefly), but the heuristic is sharp enough for
+first-cut detection.
+
+**Detection sharpens with severance.** In a fresh, fully
+connected graph a bot cluster may have multiple live entries
+and the hourglass pattern is weak. As soon as any user severs
+one of the entries, the cluster's reach contracts and the
+hourglass forms more clearly for everyone else. The first
+detection often comes from a manually-identified bot
+(triggering a §3.7.3 post); auto-detection then takes over for
+the rest of the network as the cluster's bridges narrow. The
+two mechanisms reinforce each other.
+
+**Bot-defense page.** The frontend assembles a bot-defense
+page from this analysis: a list of suspect bridge nodes
+detected in the viewer's subgraph, each with a frontend-computed
+**score** representing the likelihood of being a bot bridge.
+Inputs to the score include (at minimum) hourglass-purity of
+the path pattern and the result of the alternative-paths check.
+Frontends may add additional inputs; the doc does not specify a
+formula. The page also surfaces the viewer's path to each
+suspect — the actual chain of intermediates — so users who
+want to verify the score's basis can drill in.
+
+**Path-length-aware action guidance.** The action recommendation
+for each suspect depends on hop count. Frontends present these
+as tooltips, not enforcement:
+
+- **1 hop** (direct edge `viewer → suspect`): clean fix by
+  updating the edge to `(0, 0)`. No collateral.
+- **2 hops** (`viewer → C → suspect`): updating `viewer → C`
+  to `(0, 0)` kills the path but with collateral — the viewer
+  loses everything else flowing through `C`, not just the bot
+  content. Frontend can surface "this also disconnects you
+  from N other accounts you reach via `C`." Alternative:
+  signal `C` to act (out-of-band, or via the post mechanism in
+  §3.7.3).
+- **3+ hops**: graph-level severance is high-collateral and
+  rarely worth the cost — the viewer is far from the bridge,
+  and closer-to-bridge users are the natural fixers.
+  Recommended approach: use the frontend filter (per §5.1) to
+  block content from the suspect directly, or signal a closer
+  user (the path itself names them — `D` in
+  `viewer → C → D → suspect` is the cheapest fixer).
+
+The cutoffs are frontend-tunable defaults. Some users may
+prefer aggressive (2-hop maximum direct action); others
+conservative (1-hop only). The doc does not enforce a number.
+
+**No automatic action.** Detection populates the page; the user
+always decides whether and how to act. The math does not
+auto-banish on hourglass detection. Severance still requires
+the user's `(0, 0)` gesture, exactly as specified in §3.5–§3.6.
+
+#### 3.7.3 Community bot-defense posts — supplementary evidence
+
+Auto-detection (§3.7.2) surfaces *structural* suspicion. A
+**community bot-defense post** adds what structure cannot
+capture: human-evaluated context. A real user who has
+identified a suspected bot publishes a regular post on the
+graph with a structural edge to a `bot-defense` Tag node.
+The post body holds the evidence the math can't see —
+screenshots of bot-like behavior, profile observations,
+content samples, written explanation — and links to the
+suspected node by ID.
+
+This is not a new graph mechanism. Posts and structural edges
+to Tag nodes already exist (per the data model). The
+bot-defense post is a **usage convention** that frontends
+recognize via the tag.
+
+**Authorship is open.** Anyone can author a bot-defense post.
+The post inherits the graph's existing trust mechanisms:
+
+- **Bot-authored posts don't reach trusted feeds.** Per the
+  inbound-edges-don't-affect-feeds rule
+  ([graph-model.md §7](graph-model.md)), a bot's post reaches
+  viewer `V` only if `V` (or a transitive contact) has an
+  outgoing edge into the bot's neighborhood. False accusations
+  by bot accounts about innocent targets mostly stay in the
+  bots' own cluster.
+- **False accusers are themselves severable.** A real user
+  publishing bad-faith bot-defense posts faces the same
+  community severance mechanism. The math doesn't carve out
+  a protected category for accusers.
+- **Source-distribution check.** The score for community posts
+  on the bot-defense page also accounts for where the post's
+  reach concentrates. A post reaching the viewer with high
+  `h(t)` only because a bot cluster is amplifying it from
+  inside — even when there is also fan-pattern reach from
+  trusted users alongside — has its score adjusted down. The
+  signature is the same hourglass-plus-fan combination as in
+  §3.7.2: a sudden burst of cluster-internal engagement on a
+  post that otherwise has organic reach is a manipulation
+  pattern, and the score down-weights it accordingly.
+
+**Surfacing on the bot-defense page.** Community posts appear
+alongside auto-detected suspects from §3.7.2. The page shows
+both signal sources together — they answer the same question
+from different angles:
+
+- Auto-detection says "this node has hourglass-shaped reach
+  into your subgraph."
+- A community post says "this node is doing X, and here is
+  the evidence."
+
+The two reinforce each other. A node flagged by both is
+high-confidence. A node flagged by only one is worth
+investigating but less conclusive.
+
+**The natural workflow.** A viewer notices an auto-detection
+ping — "hourglass shape detected at node `B`." They check,
+agree, and sever (`B` becomes `(0, 0)` from their outbound).
+The frontend can then offer to **scaffold a bot-defense
+post** about `B` — pre-filling the body with structural facts
+(the path the viewer just severed, hourglass score, layer-
+stack snapshot of `B`'s outbound at time of severance) and
+leaving the viewer to add free-text observations. The post
+then propagates to others' bot-defense pages, accelerating
+community detection. None of this is required — the viewer
+can sever silently — but the option lowers friction for
+spreading the signal.
+
+**Path-matching for community posts.** The same path-matching
+and hop-count action guidance from §3.7.2 apply: for each
+community post, the client computes whether the viewer has
+paths to the accused account, and presents action options
+based on hop count. Posts about accounts the viewer has no
+path to are interesting context but not actionable for that
+viewer.
+
+**Generalizes beyond bots.** Per §3.6, the math operates on
+path-set properties and applies uniformly to any cluster the
+broader community wants to disengage from — coordinated
+harassment groups, ideological cliques, content the broader
+graph judges as low-signal. Community posts can target any
+such cluster; the `bot-defense` tag is shorthand, not a
+type-restriction. The auto-detection mechanism in §3.7.2
+similarly does not check for "botness" specifically — it
+checks for path patterns characteristic of *isolated clusters
+reachable through narrow bridges*, which captures all of the
+above.
+
+#### 3.7.4 Severance redemption — the outbound side
+
+Per §3.6, append-only layers make severance reversible: the
+severed node updates their own outbound edges to the cluster
+to `(0, 0)`, and community members can append a new positive
+layer to their own outbound edge toward the redeeming node.
+The math allows this; the surface for the severer makes the
+redemption signal visible.
+
+**What signals redemption.** The clean answer comes from
+applying §3.7.2's hourglass detection to `T`'s outbound
+edges. `T` is in the redeemed state when they have **no
+remaining positive outbound edges to nodes exhibiting
+hourglass-bridge patterns** — `T` no longer holds open any
+isolated cluster reachable through a narrow bridge.
+
+This is graph-derivable; the severer does not need to
+remember why they severed `T`. Severance edges do not carry
+reasons (graph state does not represent intent), and the
+severer's app cannot reliably reconstruct intent from
+inbound edges weeks or months later. The hourglass check
+sidesteps the question by asking "does `T` *currently* bridge
+into any suspect cluster?" — a property of the graph state
+right now, not of past history.
+
+**The check is binary, not gradient.** A genuine transit-node
+case has one or two outbound edges to a suspect cluster,
+typically formed without scrutiny (an invite accepted
+casually, an early positive engagement that aged badly).
+Cleaning those up is a small, finite act. A user with *many*
+positive outbound edges to suspect bridges is much more
+likely a member of the cluster themselves than a transit, and
+the discovery and auto-detection surfaces (§3.7.1, §3.7.2)
+should already classify them accordingly — they are the
+cluster's body, not its bridge. The redemption check is thus
+naturally binary: `T` has no remaining bridges (redeemed), or
+`T` still has bridges (not redeemed). There is no "halfway
+redeemed" state worth surfacing as such.
+
+**Computing the check.** The severer's client makes an
+explicit self-query for `T`'s outbound state — analogous to
+the inbound self-query in §3.7.1, since `T` is severed and
+not in the severer's normal feed pull. For each of `T`'s
+positive-valued outbound edges to target `V`, the client runs
+the §3.7.2 hourglass-and-alternative-paths analysis on `V`
+from `T`'s subgraph perspective. If any `V` classifies as a
+suspect bridge, `T` still has open bridges. If none do, `T`'s
+bridges are clean.
+
+**Surfacing.** The severer's client surfaces:
+
+- A status: "`T` has [N] positive outbound edges to suspect
+  bridges. `T` appears [redeemed | still bridging]."
+- The list of bridges (if any remain) for inspection.
+- Full layer-stack history of `T`'s outbound, available for
+  audit. The severer can see when each edge was created, when
+  (and if) it was severed, and the sequence of changes over
+  time. The decision to restore is made against this complete
+  record, not against a single point-in-time signal.
+
+**Decision is individual.** The math signal is one input; the
+severer's own judgment and the visible layer history are
+others. The severer may add a new positive layer to `S → T`
+(restoring `T` from `S`'s perspective), wait for more
+evidence, or do nothing. **No automatic restoration.**
+
+The friction is intentional. Per the §3.7 intro: a severed
+user re-attaching to a live bot bridge is a network failure.
+Per-severer individual review with full history visible is the
+design's answer.
+
+**Ongoing watch.** The check runs continuously over the
+severer's watch list. If `T` re-attaches to a suspect bridge
+after a previous clean state, the signal flips back, and the
+severer's client surfaces the change.
+
+#### 3.7.5 Self-redemption posts
+
+The structural redemption signal in §3.7.4 (`T`'s outbound has
+no remaining suspect-bridge edges) is necessary but easy to
+miss — the severer has to be running the outbound-watch query
+and looking. To make redemption more discoverable and to add
+human-evaluated context, the severed user can author a
+**self-redemption post**, symmetric to the community
+bot-defense posts in §3.7.3.
+
+The post is a regular post on the graph with a structural edge
+to the same `bot-defense` Tag node (or a sibling redemption
+tag if the data model later distinguishes; the surface treats
+them equivalently). The body explains the fix in `T`'s own
+words — what edge they updated, what they observed, why they
+believe they were a transit node, what they will do
+differently.
+
+**Visibility despite severance.** The severed user's own feed
+is unaffected by severance (their feed runs on their outbound
+edges, which still work). Their *posts*, however, are
+zero-jailed for anyone who has severed them — the path through
+their content does not reach those severers' main feeds. The
+self-redemption post needs a different surface to reach the
+severers.
+
+The frontend's "review severed accounts" view (the surface
+from §3.7.4) is exactly that. The severer's client, which
+already runs the outbound-watch self-query, also fetches
+recent posts from severed accounts and surfaces them in this
+view. Self-redemption posts (recognized via the tag) are
+highlighted separately within that view.
+
+**Cross-checking against graph state.** The severer can
+compare the post's claims to the §3.7.4 structural signal.
+Post says "I severed my edge to V," graph confirms the
+hourglass check passes → consistent. Post claims redemption
+but graph still shows positive outbound to suspect bridges →
+inconsistent (likely a false claim, or `T` misunderstands what
+they need to fix). The severer trusts the math first, then
+reads the post for context.
+
+**Same trust mechanisms apply.** A bot can publish a
+self-redemption post claiming innocence. The same defenses
+cover it: the post is evaluated by each severer individually,
+against the full layer-stack history visible on graph and
+against the structural redemption signal. Post claims and
+graph state must be consistent for the severer to accept.
 
 ---
 
