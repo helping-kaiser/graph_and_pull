@@ -24,13 +24,12 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Onboarding | 1 | **Q6** | Now that the ranking math is defined (Q2), invitation-edge defaults can be designed against concrete ranking behavior. |
-| 2. Decay & layer signal | 2 | **Q4** | Decay composes with `R/h/i/j/k` — needs the metrics defined (now done) before decay can be designed. |
-| | 3 | **Q1** | Layer count finds its place once primitives and decay are settled (modifier? separate parameter? folded into `i`?). |
-| 3. Build on foundations | 4 | **Q5** | Informed by Q4 (decay may absorb part of "seen"). Q3 already ruled out the implicit-view-edge options. |
-| 4. Scale concerns | 5 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
-| 5. Policy, externally gated | 6 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
-| 6. Federation, post-spike | 7 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
+| 1. Decay & layer signal | 1 | **Q4** | Decay composes with `R/h/i/j/k` — needs the metrics defined (now done) before decay can be designed. |
+| | 2 | **Q1** | Layer count finds its place once primitives and decay are settled (modifier? separate parameter? folded into `i`?). |
+| 2. Build on foundations | 3 | **Q5** | Informed by Q4 (decay may absorb part of "seen"). Q3 already ruled out the implicit-view-edge options. |
+| 3. Scale concerns | 4 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
+| 4. Policy, externally gated | 5 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
+| 5. Federation, post-spike | 6 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -46,6 +45,7 @@ questions are closed.
 - Q12 — see [feed-ranking.md §3.7.1](primitive/feed-ranking.md) (severance discovery via inbound self-query, trust-weighted reading) and [feed-ranking.md §3.7.2](primitive/feed-ranking.md) (auto-detection of bot-bridge nodes via hourglass path patterns, with path-length-aware action guidance). Cause identification is the auto-detect's job, complemented by the community posts in §3.7.3.
 - Q13 — see [feed-ranking.md §3.7.4](primitive/feed-ranking.md) (severer-side redemption surface, hourglass check on the redeeming node's outbound) and [feed-ranking.md §3.7.5](primitive/feed-ranking.md) (self-redemption posts via the same `bot-defense` hashtag mechanism, surfaced in the severer's "review severed accounts" view).
 - Q14 — see [data-model.md "Node identity strategies"](implementation/data-model.md) (three-strategy framework: content-addressed UUIDv5 for canonical-string nodes like Hashtag, random UUID + UNIQUE handle for User/Collective, random UUID alone for per-creation nodes). Hashtag IDs are now content-addressed so independent creations of the same canonical name converge on one node. Cross-instance federation reconciliation for Types 2 and 3 is deferred as Q15.
+- Q6 — see [invitations.md "Default values and customization"](primitive/invitations.md). Defaults are `(+0.5, +0.5)` on both edges; both inviter and invitee choose their own outgoing edge during the invitation flow. The doc walks through the asymmetric-friend example (`(+1, -1)` on the invitee side as a deliberate "love them, not their content" stance that lets a later second edge dominate the feed).
 
 ---
 
@@ -177,44 +177,6 @@ How should "already seen" tracking work?
 ### Related
 
 Q4 (decay).
-
----
-
-## Q6 — Initial dimension values on invitation edges
-
-**Where it shows up:** [invitations.md](primitive/invitations.md)
-**Status:** open
-
-### Context
-
-When an existing actor invites a new actor, two edges are created —
-one in each direction (see [invitations.md](primitive/invitations.md) for
-the two-edge pattern). The new actor needs at least one outgoing edge
-the moment they join, or their feed has nothing to compute from.
-
-The values on the **new actor's edge toward the inviter** are the
-design call. The new actor can update the edge over time like any
-other, but the initial values shape the first week of their experience.
-
-### The question
-
-What should the default dimension values be on the new actor's
-outgoing edge toward the inviter?
-
-### Options considered
-
-- **High positive** (e.g. sentiment +0.8, interest +0.7) — you
-  presumably like the person who invited you. But this biases the new
-  user's feed heavily toward one person's graph neighborhood for their
-  first days.
-- **Moderate positive** (e.g. +0.3, +0.3) — softer start. The new
-  user's feed will be thin until they build more edges.
-- **Neutral** (0.0, 0.0) — no bias, but the new user has almost no
-  foothold. Feed may be nearly empty.
-
-### Related
-
-None directly.
 
 ---
 
