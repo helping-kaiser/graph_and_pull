@@ -8,7 +8,7 @@ co-op, a studio, a partnership, an NGO, a company. Collectives are
 Users can do.
 
 - Author posts, comments, items, chats.
-- Create outbound actor edges (sentiment, closeness) toward any other
+- Create outbound actor edges (sentiment, interest) toward any other
   node — including other collectives and other users.
 - Own items (via ItemOwnership).
 - Be followed, liked, disliked.

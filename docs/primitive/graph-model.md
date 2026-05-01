@@ -66,7 +66,7 @@ algorithm never needs to branch on edge category.
 
 Created by actor nodes (User, Collective) toward any other node. Express
 **opinion and interaction**. The 2 dimensions carry subjective meaning
-(sentiment, relevance, closeness — varies by edge type, see [edges.md](edges.md)).
+(sentiment, interest, relevance — varies by edge type, see [edges.md](edges.md)).
 
 ### Structural edges
 
@@ -116,7 +116,7 @@ expresses a position toward a node. The graph encodes actor
 The basic operation is: an actor sets the dimensions on an actor
 edge from themselves to a target node — either creating a new
 edge or adding a new layer to an existing one. Expressing
-sentiment toward another node, calibrating closeness or
+sentiment toward another node, calibrating interest or
 relevance, taking any other position the dimensions can encode
 — all reduce to this.
 
@@ -372,40 +372,73 @@ Across all actor edges, the two dimensions follow a uniform grammar:
 
 - **`dim1` is signed valence** — sentiment, approval, affirmation. The
   "do I feel positively or negatively about this?" axis.
-- **`dim2` is signed connection-weight** — closeness, relevance,
+- **`dim2` is signed connection-weight** — interest, relevance,
   importance. The "how much does this matter to me?" axis.
 
 The user-facing **labels** vary by edge type to surface the relevant
-aspect (closeness on `User → User`, relevance on `User → Post`,
+aspect (interest on `User → User`, relevance on `User → Post`,
 importance on `User → ChatMember`, etc.). The **role** each dimension
 plays in the math is uniform: dim1 carries direction; dim2 carries
 weight. See [edges.md](edges.md) for the per-edge-type label catalog.
 
 This unification keeps the ranking math single-shape — the algorithm
 reads `(dim1, dim2)` from any actor edge without branching on edge
-type. The interpretation (sentiment vs. closeness, sentiment vs.
+type. The interpretation (sentiment vs. interest, sentiment vs.
 relevance) lives at the user-presentation layer; the math sees a
 uniform 2D tensor. See [feed-ranking.md §3](feed-ranking.md) for how
 the two axes compose along a path under different rules — `dim1` via
 signed multiplication (signed-graph balance), `dim2` via taint sign ×
 magnitude product (no transitivity for connection).
 
+### Interest is not personal closeness
+
+The `dim2` label on `User → User` edges is **interest**, not personal
+closeness. The two are easy to conflate but the math depends on keeping
+them distinct.
+
+- **Personal closeness** (proximity in the social sense — frequency of
+  interaction, how well you know someone) is *not* what `dim2` measures.
+  Two users can know each other for decades and see each other every
+  day; this does not by itself imply high `dim2`.
+- **Interest** is how much you want the target's content/output flowing
+  through your feed — their posts, comments, items, hashtags. It is
+  a viewer-side judgment about *content relevance*, not a
+  relationship-depth statement.
+
+The decoupling is real and important. A valid edge shape:
+
+```
++1.0 sentiment, -0.5 interest  →  "I love this person, but their
+                                   content isn't for me"
+```
+
+This composes correctly under the existing math: the sentiment chain
+(`s_path`) carries the affection through traversal via signed
+multiplication, while the interest chain (`c_path`) is tainted negative
+so the path does not amplify the target's content into the viewer's
+feed. Loving someone and not following their posts are independent
+positions on the graph; the dim grammar respects that.
+
+The same independence applies on `User → Collective`, `User → Hashtag`,
+and elsewhere. `dim2` always asks "how much do I want this in my feed,"
+not "how close are we."
+
 ### Range and polarity
 
 Every actor-edge dimension is bipolar in `[-1.0, +1.0]`:
 
-- `0.0` = no opinion / no interaction / neutral.
-- Positive = the "forward" meaning (like, approve, close, want, relevant).
+- `0.0` = no opinion / no interest / neutral.
+- Positive = the "forward" meaning (like, approve, want-to-see, relevant).
 - Negative = the **active opposite**, not merely the absence.
 
 The polarity matters most where the forward meaning sounds like a one-sided
-scale — most notably **closeness**. A closeness of `0.0` means "we don't
-interact"; a negative closeness means "I am actively avoiding this person"
-(muted, blocked, ghosted). The two are distinct signals, and collapsing
-negative closeness into `0.0` would discard real information. The same
-reading extends to relevance (negative = "I actively don't want this in my
-feed") and to approval dimensions on junction nodes (negative = active
-rejection, not abstention).
+scale — most notably **interest**. An interest of `0.0` means "I don't
+engage with this target's content"; a negative interest means "I am actively
+avoiding this content / output" (muted, blocked, ghosted). The two are
+distinct signals, and collapsing negative interest into `0.0` would discard
+real information. The same reading extends to relevance (negative = "I
+actively don't want this in my feed") and to approval dimensions on junction
+nodes (negative = active rejection, not abstention).
 
 Holding the full `[-1.0, +1.0]` range for every dimension also keeps the
 ranking math uniform and avoids per-dimension clamping or branching logic.
@@ -414,7 +447,7 @@ ranking math uniform and avoids per-dimension clamping or branching logic.
 
 The graph math uses negative `dim2` as a **continuous taint signal**
 (see [feed-ranking.md §3.4](feed-ranking.md)): a path that crosses an
-avoided connection has its closeness signal flipped negative, but its
+avoided connection has its interest signal flipped negative, but its
 magnitude is the natural product of `|dim2|` along the path —
 proportional to the rest of the path's strength. Negative `dim2` is
 *not* snapped to zero in the math.
@@ -437,8 +470,10 @@ The two dimensions are independent. Examples:
 - **Low sentiment, high relevance**: I don't have strong feelings about a new
   tax law (0.0 sentiment), but it directly affects my business (+0.9
   relevance).
-- **User -> User**: I love a celebrity's work (+0.8 sentiment) but we've never
-  interacted and they don't know I exist (-0.8 closeness).
+- **User → User**: I love my childhood best friend (+0.9 sentiment), but our
+  hobbies have diverged completely; their posts are not what I want in my
+  feed (-0.5 interest). Personal closeness is real; interest in their
+  content is not.
 
 ---
 
@@ -459,8 +494,8 @@ If a cluster of bots likes Jakob's posts 10,000 times:
 This is only possible because all edges are directional. There is no concept
 of an undirected "connection." A friendship is explicitly:
 ```
-Jakob -[sentiment: +0.8, closeness: +0.9]-> Alice
-Alice -[sentiment: +0.7, closeness: +0.9]-> Jakob
+Jakob -[sentiment: +0.8, interest: +0.9]-> Alice
+Alice -[sentiment: +0.7, interest: +0.9]-> Jakob
 ```
 
 Two independent edges. Removing one does not remove the other.
@@ -518,6 +553,6 @@ The ranker composes these inputs along each path via **parallel
 tracks**: `dim1` chain via signed multiplication (signed-graph
 balance), `dim2` chain via taint sign × magnitude product (no
 transitivity for connection-weight). Each metric (`h`, `i`, `j`,
-`k`) is itself a 2-tuple `(sentiment-component, closeness-component)`,
+`k`) is itself a 2-tuple `(sentiment-component, interest-component)`,
 collapsed to a scalar (default: sum) only at sort time. See
 [feed-ranking.md §3-§4](feed-ranking.md) for the full rule.

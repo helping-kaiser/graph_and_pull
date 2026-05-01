@@ -88,7 +88,7 @@ When a user interacts with a post (e.g. likes it):
 
 When a user interacts with another user:
 - Memgraph: create/update actor edge from User to User with sentiment and
-  closeness values
+  interest values
 - Postgres: nothing (unless profile display data changes)
 
 ---

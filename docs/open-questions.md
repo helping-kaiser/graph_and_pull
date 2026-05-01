@@ -203,7 +203,7 @@ outgoing edge toward the inviter?
 
 ### Options considered
 
-- **High positive** (e.g. sentiment +0.8, closeness +0.7) — you
+- **High positive** (e.g. sentiment +0.8, interest +0.7) — you
   presumably like the person who invited you. But this biases the new
   user's feed heavily toward one person's graph neighborhood for their
   first days.

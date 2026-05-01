@@ -19,7 +19,7 @@ nodes. The 2 dimensions are set by the actor and follow the uniform
 Across every actor-edge type the two dimensions follow the same
 underlying grammar (see [graph-model.md §6](graph-model.md)):
 `dim1` is **signed valence** (sentiment / approval / affirmation);
-`dim2` is **signed connection-weight** (closeness / relevance /
+`dim2` is **signed connection-weight** (interest / relevance /
 importance). The labels in the tables below differ to highlight the
 relevant aspect of each edge type, but the role each dimension plays
 in the math is uniform.
@@ -28,8 +28,8 @@ in the math is uniform.
 
 | Edge type | Dimension 1 | Dimension 2 |
 |-----------|-------------|-------------|
-| User -> User | **Sentiment** (love to hate) | **Closeness** (how much we interact / know each other) |
-| User -> Collective | **Sentiment** (love to hate) | **Closeness** (how much I engage with this collective) |
+| User -> User | **Sentiment** (love to hate) | **Interest** (how interested I am in their content / output — distinct from how well I know them) |
+| User -> Collective | **Sentiment** (love to hate) | **Interest** (how interested I am in this collective's output) |
 | User -> Post | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
 | User -> Comment | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
 | User -> Chat | **Sentiment** (like to dislike) | **Relevance** (how important is this chat to me) |
@@ -113,7 +113,7 @@ and the schema explodes every time a node type is added.
 
 | Label | Applies to | Description |
 |---|---|---|
-| `:ACTOR` | All actor edges | Created by User or Collective actors; carries the 2-dimensional opinion tensor. Uniform across every actor-edge type — specific meaning (sentiment-toward-post vs closeness-to-user, etc.) derives from endpoint node labels. |
+| `:ACTOR` | All actor edges | Created by User or Collective actors; carries the 2-dimensional opinion tensor. Uniform across every actor-edge type — specific meaning (sentiment-toward-post vs interest-in-user, etc.) derives from endpoint node labels. |
 | `:STRUCTURAL` | All structural edges not otherwise labeled | System-created edges expressing containment or belonging. Dimensions typically `(0, 0)` unless they participate in a state-bearing pattern. |
 
 ### Sub-category labels

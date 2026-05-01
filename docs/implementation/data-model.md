@@ -132,7 +132,7 @@ CREATE TABLE hashtags (
 
 ## What is intentionally NOT in Postgres
 
-- **Edge data** (sentiment, relevance, closeness, layers) — graph-only
+- **Edge data** (sentiment, interest, relevance, layers) — graph-only
 - **Feed ordering / ranking** — graph-only
 - **Interaction history** (who liked what, who interacted with whom) —
   graph-only (encoded in tensor edges)

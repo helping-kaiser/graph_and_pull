@@ -22,7 +22,7 @@ A graph with:
   - **Actor edges**: created by actors. Carry a 2D tensor
     `(dim1, dim2)`, each in `[-1.0, +1.0]`.
     - `dim1` is **signed valence** (sentiment / approval / affirmation).
-    - `dim2` is **signed connection-weight** (closeness / relevance /
+    - `dim2` is **signed connection-weight** (interest / relevance /
       importance).
   - **Structural edges**: system-created topology. Do not contribute
     factors to the ranking math; only count toward path length and
@@ -98,7 +98,7 @@ if dim2(eᵢ) = 0 for any actor edge eᵢ in path  →  c_path = 0
 
 The two tracks are independent: a zero in one dim does not affect
 the other dim's chain. An edge `(0, +0.7)` zeros `s_path` while
-the closeness chain continues via `c_path`; `(+0.7, 0)` zeros
+the interest chain continues via `c_path`; `(+0.7, 0)` zeros
 `c_path` while sentiment continues via `s_path`.
 
 Defensible in feed terms: if I have no opinion on a hop, signal
@@ -130,11 +130,11 @@ math captures this structural property at every path length.
 ### 3.4 dim2 chain — taint sign × magnitude product
 
 `dim2` does not have a transitivity rule. "I avoid A; A avoids B"
-tells us nothing about my relationship to B — closeness doesn't
-compose the way sentiment does. Signed multiplication of `dim2`
-along a path would produce sign flips that don't correspond to any
-real social pattern (two avoidances would compose to a positive
-"connection," which is meaningless).
+tells us nothing about my interest in B — interest doesn't compose
+the way sentiment does. Signed multiplication of `dim2` along a
+path would produce sign flips that don't correspond to any real
+pattern (two avoidances would compose to a positive "connection,"
+which is meaningless).
 
 Instead, dim2 composes via a **taint rule**:
 
@@ -155,7 +155,7 @@ Two important properties:
   behavior of `s_path`. The two tracks scale together — neither
   dominates the other purely by path length.
 - **Any avoidance taints the path.** A single negative `dim2`
-  anywhere in the path flips the closeness signal to negative,
+  anywhere in the path flips the interest signal to negative,
   regardless of magnitude. Avoidance is non-transitive but
   *carrying*: any cut-off connection along a route reduces what
   flows through it.
@@ -814,12 +814,16 @@ d(R) = 0.1^(R-1)        (default)
 
 So `d(1) = 1`, `d(2) = 0.1`, `d(3) = 0.01`, `d(4) = 0.001`, ...
 
-Steep decay reflects "closeness is the most important factor in the
-graph." Direct connections (R=1) carry full weight; each additional
-hop reduces the path's contribution by 10×. Bots and viral-distant
+Steep decay reflects "graph proximity is the most important factor."
+Direct connections (R=1) carry full weight; each additional hop
+reduces the path's contribution by 10×. Bots and viral-distant
 content cannot dominate a user's feed by sheer multi-path count
 alone — at any reasonable graph density, distant paths contribute
-proportionally to how far they are.
+proportionally to how far they are. (Note: this is about path length
+through the graph, not `dim2` interest. Direct ≠ "high interest";
+a high-interest target many hops away still gets steep d(R) decay,
+and a low-interest target right next to you carries full d(1) weight
+on whatever signal its dims contribute.)
 
 The decay function is a frontend-tunable parameter. A user who wants
 a broader-network feed can soften the decay (e.g., `0.5^(R-1)`); one
@@ -843,7 +847,7 @@ by U's distance.
 
 Each metric is a **2-tuple** (one component per dim track):
 
-| Symbol | Name | Sentiment component (`*_s`) | Closeness component (`*_c`) |
+| Symbol | Name | Sentiment component (`*_s`) | Interest component (`*_c`) |
 |---|---|---|---|
 | `h` | personal opinion | `H_s = ∑_π d(R_π) · s_path(π)` over all paths to `t` | `H_c = ∑_π d(R_π) · c_path(π)` over all paths to `t` |
 | `i` | personal reach | `I_s = ∑_π d(R_π) · s_path_R−1(π)` over first R−1 edges of each path | `I_c = ∑_π d(R_π) · c_path_R−1(π)` over first R−1 edges |
@@ -892,7 +896,7 @@ score(metric) = α × M_s + β × M_c
 ```
 
 — for example, `α = 2, β = 1` to favor sentiment-weighted ordering,
-or `α = 1, β = 2` to favor closeness-weighted ordering.
+or `α = 1, β = 2` to favor interest-weighted ordering.
 
 Sum is the default because it correctly handles the case where both
 tracks are negative: a path the graph is pushing down on both axes
@@ -924,7 +928,7 @@ Strict R-bucketing was considered and rejected: it forced any
 direct connection (however weak) above any indirect connection
 (however strong). The score-based sort is more nuanced — it lets
 a target with many strong R=3 paths outrank a target with one
-weak R=2 path, while preserving "closeness is most important"
+weak R=2 path, while preserving "graph proximity matters most"
 through `d(R)`'s steep decay.
 
 Targets with `h(t) > 0` appear at the top of the feed; `h(t) < 0`

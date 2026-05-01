@@ -11,8 +11,8 @@ When an existing actor invites a new actor to the platform, **two
 actor edges** are created:
 
 ```
-Inviter   -[sentiment: +X, closeness: +Y]-> New Actor   (layer 1: "I invited them")
-New Actor -[sentiment: +X, closeness: +Y]-> Inviter    (layer 1: "they invited me")
+Inviter   -[sentiment: +X, interest: +Y]-> New Actor   (layer 1: "I invited them")
+New Actor -[sentiment: +X, interest: +Y]-> Inviter    (layer 1: "they invited me")
 ```
 
 Both are normal actor edges (see
