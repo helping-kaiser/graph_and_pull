@@ -87,7 +87,11 @@ lives in Postgres. Specific cases:
 - **Chat**: `title` (if needed for routing or display hints) and
   `content_privacy` (plaintext vs E2EE — the graph needs this to
   know what to route). See [chats.md](../instances/chats.md).
-- **Hashtag**: its tag string — the tag *is* the identifier.
+- **Hashtag**: its tag string — the tag *is* the identifier. The
+  UUID is content-addressed (`UUIDv5` of the canonical name with
+  a fixed namespace); see
+  [data-model.md "Node identity strategies"](../implementation/data-model.md)
+  for the full mechanism and the federation implications.
 - **Proposal**: `target_node_id`, `target_property`,
   `proposed_value`. A Proposal is fully specified by these three —
   no display content in Postgres. See
