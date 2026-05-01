@@ -563,6 +563,95 @@ always decides whether and how to act. The math does not
 auto-banish on hourglass detection. Severance still requires
 the user's `(0, 0)` gesture, exactly as specified in §3.5–§3.6.
 
+#### 3.7.3 Community bot-defense posts — supplementary evidence
+
+Auto-detection (§3.7.2) surfaces *structural* suspicion. A
+**community bot-defense post** adds what structure cannot
+capture: human-evaluated context. A real user who has
+identified a suspected bot publishes a regular post on the
+graph with a structural edge to a `bot-defense` Tag node.
+The post body holds the evidence the math can't see —
+screenshots of bot-like behavior, profile observations,
+content samples, written explanation — and links to the
+suspected node by ID.
+
+This is not a new graph mechanism. Posts and structural edges
+to Tag nodes already exist (per the data model). The
+bot-defense post is a **usage convention** that frontends
+recognize via the tag.
+
+**Authorship is open.** Anyone can author a bot-defense post.
+The post inherits the graph's existing trust mechanisms:
+
+- **Bot-authored posts don't reach trusted feeds.** Per the
+  inbound-edges-don't-affect-feeds rule
+  ([graph-model.md §7](graph-model.md)), a bot's post reaches
+  viewer `V` only if `V` (or a transitive contact) has an
+  outgoing edge into the bot's neighborhood. False accusations
+  by bot accounts about innocent targets mostly stay in the
+  bots' own cluster.
+- **False accusers are themselves severable.** A real user
+  publishing bad-faith bot-defense posts faces the same
+  community severance mechanism. The math doesn't carve out
+  a protected category for accusers.
+- **Source-distribution check.** The score for community posts
+  on the bot-defense page also accounts for where the post's
+  reach concentrates. A post reaching the viewer with high
+  `h(t)` only because a bot cluster is amplifying it from
+  inside — even when there is also fan-pattern reach from
+  trusted users alongside — has its score adjusted down. The
+  signature is the same hourglass-plus-fan combination as in
+  §3.7.2: a sudden burst of cluster-internal engagement on a
+  post that otherwise has organic reach is a manipulation
+  pattern, and the score down-weights it accordingly.
+
+**Surfacing on the bot-defense page.** Community posts appear
+alongside auto-detected suspects from §3.7.2. The page shows
+both signal sources together — they answer the same question
+from different angles:
+
+- Auto-detection says "this node has hourglass-shaped reach
+  into your subgraph."
+- A community post says "this node is doing X, and here is
+  the evidence."
+
+The two reinforce each other. A node flagged by both is
+high-confidence. A node flagged by only one is worth
+investigating but less conclusive.
+
+**The natural workflow.** A viewer notices an auto-detection
+ping — "hourglass shape detected at node `B`." They check,
+agree, and sever (`B` becomes `(0, 0)` from their outbound).
+The frontend can then offer to **scaffold a bot-defense
+post** about `B` — pre-filling the body with structural facts
+(the path the viewer just severed, hourglass score, layer-
+stack snapshot of `B`'s outbound at time of severance) and
+leaving the viewer to add free-text observations. The post
+then propagates to others' bot-defense pages, accelerating
+community detection. None of this is required — the viewer
+can sever silently — but the option lowers friction for
+spreading the signal.
+
+**Path-matching for community posts.** The same path-matching
+and hop-count action guidance from §3.7.2 apply: for each
+community post, the client computes whether the viewer has
+paths to the accused account, and presents action options
+based on hop count. Posts about accounts the viewer has no
+path to are interesting context but not actionable for that
+viewer.
+
+**Generalizes beyond bots.** Per §3.6, the math operates on
+path-set properties and applies uniformly to any cluster the
+broader community wants to disengage from — coordinated
+harassment groups, ideological cliques, content the broader
+graph judges as low-signal. Community posts can target any
+such cluster; the `bot-defense` tag is shorthand, not a
+type-restriction. The auto-detection mechanism in §3.7.2
+similarly does not check for "botness" specifically — it
+checks for path patterns characteristic of *isolated
+clusters reachable through narrow bridges*, which captures
+all of the above.
+
 ---
 
 ## 4. Per-target metrics
