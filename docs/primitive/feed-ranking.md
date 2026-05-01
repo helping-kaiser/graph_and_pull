@@ -569,16 +569,20 @@ Auto-detection (§3.7.2) surfaces *structural* suspicion. A
 **community bot-defense post** adds what structure cannot
 capture: human-evaluated context. A real user who has
 identified a suspected bot publishes a regular post on the
-graph with a structural edge to a `bot-defense` Tag node.
+graph with a structural edge to a `bot-defense` Hashtag node.
 The post body holds the evidence the math can't see —
 screenshots of bot-like behavior, profile observations,
 content samples, written explanation — and links to the
 suspected node by ID.
 
 This is not a new graph mechanism. Posts and structural edges
-to Tag nodes already exist (per the data model). The
+to Hashtag nodes already exist (per the data model). The
 bot-defense post is a **usage convention** that frontends
-recognize via the tag.
+recognize via the hashtag. Hashtag identity is content-
+addressed (UUIDv5 of the canonical name; see
+[data-model.md "Node identity strategies"](../implementation/data-model.md)),
+so any user creating `bot-defense` independently lands on the
+same Hashtag node automatically.
 
 **Authorship is open.** Anyone can author a bot-defense post.
 The post inherits the graph's existing trust mechanisms:
@@ -739,9 +743,10 @@ human-evaluated context, the severed user can author a
 bot-defense posts in §3.7.3.
 
 The post is a regular post on the graph with a structural edge
-to the same `bot-defense` Tag node (or a sibling redemption
-tag if the data model later distinguishes; the surface treats
-them equivalently). The body explains the fix in `T`'s own
+to the same `bot-defense` Hashtag node (or a sibling redemption
+hashtag if the data model later distinguishes; the surface
+treats them equivalently). The body explains the fix in `T`'s
+own
 words — what edge they updated, what they observed, why they
 believe they were a transit node, what they will do
 differently.
