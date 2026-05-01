@@ -24,13 +24,13 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Identity foundations | 1 | **Q14** | Node identity and conceptual deduplication. Already relevant — cluster severance ([feed-ranking.md §3.6](primitive/feed-ranking.md)) creates effectively-separate parts of the graph that can each create new nodes; uniqueness must hold across both. Touches every node type that gets referenced by ID. |
-| 2. Onboarding | 2 | **Q6** | Now that the ranking math is defined (Q2), invitation-edge defaults can be designed against concrete ranking behavior. |
-| 3. Decay & layer signal | 3 | **Q4** | Decay composes with `R/h/i/j/k` — needs the metrics defined (now done) before decay can be designed. |
-| | 4 | **Q1** | Layer count finds its place once primitives and decay are settled (modifier? separate parameter? folded into `i`?). |
-| 4. Build on foundations | 5 | **Q5** | Informed by Q4 (decay may absorb part of "seen"). Q3 already ruled out the implicit-view-edge options. |
-| 5. Scale concerns | 6 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
-| 6. Policy, externally gated | 7 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
+| 1. Onboarding | 1 | **Q6** | Now that the ranking math is defined (Q2), invitation-edge defaults can be designed against concrete ranking behavior. |
+| 2. Decay & layer signal | 2 | **Q4** | Decay composes with `R/h/i/j/k` — needs the metrics defined (now done) before decay can be designed. |
+| | 3 | **Q1** | Layer count finds its place once primitives and decay are settled (modifier? separate parameter? folded into `i`?). |
+| 3. Build on foundations | 4 | **Q5** | Informed by Q4 (decay may absorb part of "seen"). Q3 already ruled out the implicit-view-edge options. |
+| 4. Scale concerns | 5 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
+| 5. Policy, externally gated | 6 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
+| 6. Federation, post-spike | 7 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -44,102 +44,8 @@ questions are closed.
 - Q2 — see [feed-ranking.md §3-§4](primitive/feed-ranking.md) (per-edge composition, parallel tracks, taint rule, sum collapser) and [graph-model.md §6](primitive/graph-model.md) (dim1/dim2 unification, filtering vs. graph math). S's intrinsic derivation deferred — flagged as a forward sub-question.
 - Q11 — see [feed-ranking.md §3.5–§3.6](primitive/feed-ranking.md) (`(0, 0)` severance edge, cascading severance, redemption) and [feed-ranking.md §5](primitive/feed-ranking.md) (zero-jail banishment of `h(t) = 0`). Self-discovery and return-pathway UX surfaces are tracked as forward sub-questions Q12 and Q13.
 - Q12 — see [feed-ranking.md §3.7.1](primitive/feed-ranking.md) (severance discovery via inbound self-query, trust-weighted reading) and [feed-ranking.md §3.7.2](primitive/feed-ranking.md) (auto-detection of bot-bridge nodes via hourglass path patterns, with path-length-aware action guidance). Cause identification is the auto-detect's job, complemented by the community posts in §3.7.3.
-- Q13 — see [feed-ranking.md §3.7.4](primitive/feed-ranking.md) (severer-side redemption surface, hourglass check on the redeeming node's outbound) and [feed-ranking.md §3.7.5](primitive/feed-ranking.md) (self-redemption posts via the same `bot-defense` tag mechanism, surfaced in the severer's "review severed accounts" view).
-
----
-
-## Q14 — Node identity and conceptual deduplication
-
-**Where it shows up:** [feed-ranking.md §3.7.3](primitive/feed-ranking.md) (Tag nodes referenced by structural edges from posts), [feed-ranking.md §3.6](primitive/feed-ranking.md) (cluster severance creates effectively-separate parts of the graph), [data-model.md](implementation/data-model.md) (UUID primary keys)
-**Status:** open
-
-### Context
-
-Two related concerns sit under this question:
-
-**1. Conceptual identity of "the same thing."** Multiple parts
-of the graph can independently create what is conceptually one
-node. The most concrete case from the recent design work: two
-users in different parts of the graph each create a Tag node
-named `bot-defense`. The data-model assigns each a fresh UUID,
-so they are different nodes despite being intended-to-be-one.
-Posts attached to one tag don't aggregate with posts attached
-to the other; the bot-defense page (per
-[feed-ranking.md §3.7.3](primitive/feed-ranking.md)) sees
-fragmented signal even though the community thought they were
-naming one concept.
-
-**2. Uniqueness across cluster-severance boundaries.** Per
-[feed-ranking.md §3.6](primitive/feed-ranking.md), severance
-can cut clusters off from the main flow. The cut-off part
-still shares the underlying graph (the edges persist as
-`(0, 0)` layers), but operates effectively independently —
-both sides can create new nodes without each other's
-visibility. Whatever identity scheme is in place must hold
-across this boundary so that if the cluster ever rejoins (via
-redemption, or via a new bridge), there are no broken
-references or accidental collisions.
-
-For purely random UUIDs (the current data-model default):
-collisions are negligible at any practical scale, but
-conceptual deduplication does not happen — every `bot-defense`
-tag created independently is its own node.
-
-For content-derived identifiers (hash of a canonical
-representation): same content always gets the same ID across
-the graph, so conceptual deduplication happens for free for
-stable nodes (tags). But this doesn't fit nodes whose content
-can change (accounts with layered profile properties, posts
-that gain reactions over time).
-
-### The question
-
-How does the graph mint node identifiers such that:
-
-- Conceptually-equivalent nodes (e.g. tags with the same name)
-  deduplicate to the same identifier when created
-  independently by different users or different parts of the
-  graph
-- Identifiers remain unique and consistent across
-  cluster-severance boundaries so a rejoined cluster does not
-  produce broken references or duplicates
-- The mechanism does not require a central authority
-  (decentralization principle)
-
-A per-node-type strategy is plausible — content-derived IDs
-for nodes whose identity is canonical (tags), UUIDs for nodes
-whose identity is per-creation (posts, individual edges) — but
-the boundaries of which node types get which scheme need to be
-worked out, along with how the schemes interact at the data-
-model layer.
-
-### Options considered
-
-None worked out yet. Possibilities only:
-
-- **Random UUIDs everywhere (status quo per
-  [data-model.md](implementation/data-model.md)).**
-  Collision-free, no conceptual deduplication. Tags fragment
-  whenever they are created in more than one place.
-- **Content-derived IDs for stable-identity node types.** Same
-  content always produces the same ID; tags collapse cleanly.
-  Doesn't fit accounts or posts whose content can change.
-- **Per-node-type strategy.** Hybrid: content-derived for
-  tags, UUIDs for accounts/posts. Lines drawn per type by the
-  data model.
-- **Federated reconciliation.** Local UUIDs everywhere, with
-  explicit alias or merge edges connecting nodes that turn out
-  to be conceptually one. Higher complexity, defers the
-  decision to a per-pair gesture.
-
-### Related
-
-[feed-ranking.md §3.6](primitive/feed-ranking.md) (cluster
-severance — the cross-boundary uniqueness concern),
-[feed-ranking.md §3.7.3](primitive/feed-ranking.md)
-(bot-defense Tag node — the concrete first case),
-[data-model.md](implementation/data-model.md) (current UUID
-defaults; doesn't yet address conceptual identity).
+- Q13 — see [feed-ranking.md §3.7.4](primitive/feed-ranking.md) (severer-side redemption surface, hourglass check on the redeeming node's outbound) and [feed-ranking.md §3.7.5](primitive/feed-ranking.md) (self-redemption posts via the same `bot-defense` hashtag mechanism, surfaced in the severer's "review severed accounts" view).
+- Q14 — see [data-model.md "Node identity strategies"](implementation/data-model.md) (three-strategy framework: content-addressed UUIDv5 for canonical-string nodes like Hashtag, random UUID + UNIQUE handle for User/Collective, random UUID alone for per-creation nodes). Hashtag IDs are now content-addressed so independent creations of the same canonical name converge on one node. Cross-instance federation reconciliation for Types 2 and 3 is deferred as Q15.
 
 ---
 
@@ -397,4 +303,100 @@ Q1 (layer count as signal — compaction changes what layer count
 means), Q9 (redaction authority — retention decisions affect what
 can still be redacted).
 
+---
 
+## Q15 — Cross-instance federation: identity reconciliation for handle-based and per-creation nodes
+
+**Where it shows up:** [data-model.md "Node identity strategies"](implementation/data-model.md) (Type 2 and Type 3 federation notes)
+**Status:** open (deferred — post-spike)
+
+### Context
+
+The Q14 resolution settled three identity strategies in the data
+model, with very different federation properties:
+
+- **Type 1 — canonical-string identity, content-addressed
+  UUIDv5** (Hashtag). Federates by construction. Same canonical
+  name produces the same UUID across any instance or fork. No
+  reconciliation needed.
+- **Type 2 — handle-based identity, random UUID + UNIQUE handle
+  per instance** (User, Collective). Within an instance, the
+  UNIQUE constraint prevents collision. Across separated
+  instances, instance A's `@alice` and instance B's `@alice`
+  have different UUIDs and could be the same person, two
+  different people, or one impersonating another.
+- **Type 3 — per-creation identity, random UUID alone** (Post,
+  Comment, ChatMessage, Chat, Item, junction nodes). Within an
+  instance, every creation is a distinct node. Across instances,
+  cross-references (e.g. a post in instance A linked from
+  content in instance B) require translation between local
+  identities.
+
+Type 1 is solved. Types 2 and 3 are open for any future
+federation between Cogra instances.
+
+### The question
+
+When two separately-running instances begin to exchange data —
+through a federation protocol, partial sync, or content embedded
+in one another — how do their identity spaces reconcile?
+
+Specifically:
+
+- **Type 2 reconciliation (handles).** Instance A's `@alice` and
+  instance B's `@alice`: same person or two? Manual claim by the
+  owner with a cryptographic key? Inferred from external
+  signals? Aliased explicitly via a graph mechanism? Always
+  treated as different unless explicitly merged?
+- **Type 3 reconciliation (per-creation).** A post in instance A
+  referenced from instance B: does it get a "shadow" UUID in
+  B's namespace? Is the original UUID preserved with an
+  instance-prefix? How does cross-instance authorship
+  attribution work?
+- **Federation protocol surface.** How do instances discover
+  each other, agree on synchronization scope, and handle
+  disagreements (e.g. instance A says "Bob is a bot, severed,"
+  instance B disagrees)?
+
+### Constraints (from established principles)
+
+- **No central authority.** Per CLAUDE.md, anyone can fork and
+  self-host. Federation cannot depend on a central registry.
+- **Append-only.** Per [layers.md](primitive/layers.md),
+  reconciliation cannot retroactively rewrite local state. New
+  layers / new edges may be appended; old ones stay.
+- **Transparency.** Reconciliation choices (alias, claim, merge)
+  leave a visible trace on-graph.
+- **Severance is local to the severing community.** Per
+  [feed-ranking.md §3.6](primitive/feed-ranking.md), the math is
+  per-viewer. Federation should not import or export severance
+  state automatically.
+
+### Options considered
+
+None worked out yet. Surfaced as possibilities only:
+
+- **Cryptographic claim / proof.** Users hold a key pair;
+  claiming an identity across instances requires signing with
+  the private key. Solves the "is this the same person?"
+  question but raises key-management questions and introduces a
+  cryptographic dependency.
+- **Aliasing edges.** A new edge type that maps "instance A's
+  `@alice` → instance B's `@alice`" as an explicit graph-level
+  claim. Requires consensus on what counts as authoritative
+  aliasing.
+- **Always-distinct.** Instances treat each other's identities
+  as separate. Federation only allows reading, not merging.
+  Loses the cross-instance same-person semantics but is the
+  simplest model.
+- **Hybrid (per-strategy).** Different reconciliation rules for
+  Type 2 (cryptographic claim) and Type 3 (instance-prefix
+  cross-references).
+
+### Related
+
+Q14 (resolved — sets up the per-type strategies that this
+question completes for the cross-instance case),
+[feed-ranking.md §3.6](primitive/feed-ranking.md) (cluster
+severance — local to the severing community per principle, but
+federation could change this).
