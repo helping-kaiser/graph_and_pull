@@ -92,9 +92,10 @@ CREATE TABLE comments (
 
 -- Chats: conversation containers
 CREATE TABLE chats (
-    id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    name       TEXT,       -- null for 1:1 chats
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    name        TEXT,       -- null for 1:1 chats
+    description TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Chat messages: individual messages within a chat
