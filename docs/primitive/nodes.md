@@ -139,8 +139,9 @@ Per-type properties committed so far:
 
 - **ChatMember**: `role` (`admin` / `mod` / `member`).
 - **CollectiveMember**: `role` (`founder` / `shareholder` / `worker` /
-  `band member` / `subsidiary`), plus `ownership_pct` where the
-  role carries an equity stake.
+  `band member` / `subsidiary` / `partner` / `member`, examples — the
+  set is open-ended per the social contract), plus `ownership_pct`
+  where the role carries an equity stake.
 
 ### Postgres-side content
 
