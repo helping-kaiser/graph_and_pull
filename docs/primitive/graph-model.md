@@ -105,7 +105,7 @@ These are two different facts, so two edges is correct. In contrast,
 would carry the same fact and just duplicate storage. See §5 for the full
 junction approval pattern.
 
-### What creates an actor edge — stances, not events
+### What creates an actor edge — stances-not-events
 
 Actor edges are created or updated only when an **actor** (User
 or Collective) takes an **explicit, deliberate gesture** that
@@ -532,7 +532,7 @@ edge has been revised N times" indicator, or a stale-edge prompt
 suggesting review) and to anyone auditing the graph's history, but
 they do not amplify or attenuate the ranking math.
 
-This follows from **stances, not events** (§3): the graph trusts
+This follows from **stances-not-events** (§3): the graph trusts
 the user's last-expressed stance until they change it. Most users
 update reactively — when they notice their feed reflecting
 connections they no longer care about — rather than actively
