@@ -133,43 +133,55 @@ Shared types with no external dependencies. Responsibilities:
 
 ## Request Lifecycle: Feed Query
 
-A GraphQL query for a personalized feed shows how the two databases compose:
+A personalized feed splits across two locations: the central backend
+serves the **data**; the viewer's device computes the **ranking**.
+This split is structural, not an optimization — per-actor ranking
+cannot run on the central hot path at any real user count. See
+[feed-ranking.md §9](../primitive/feed-ranking.md) for the full
+reasoning and the math/deployment separation.
 
 ```
-Client -> POST /graphql { feed(limit: 20) }
+Phase 1 — central backend serves subgraph + seen-list
 
-1. API receives query, calls postgres-store to fetch the viewer's
-   seen-list (user_view_log) — a per-viewer set of already-shown
-   content UUIDs. See feed-ranking.md §8.
+1. Client -> POST /graphql to fetch the viewer's relevant graph
+   slice.
+2. API calls graph-engine: traverse N hops outward from the
+   viewing user; return the relevant subgraph (nodes + their
+   incident actor and structural edges, with top-layer tensor
+   values intact).
+3. API calls postgres-store: fetch the viewer's seen-list from
+   user_view_log — a per-viewer set of already-shown content
+   UUIDs. See feed-ranking.md §8.
+4. API returns subgraph + seen-list to the client.
 
-2. API calls graph-engine, passing the seen-list as an exclusion
-   parameter alongside R, decay shape, etc.
+Phase 2 — viewer-side ranking and filtering
 
-3. graph-engine: Cypher queries to Memgraph
-   - Traverse outgoing edges from the viewing user
-   - Exclude already-seen content nodes from the candidate set
-     before computing metrics (pre-rank pruning)
-   - For each remaining target node, compute ranking metrics
-     (h, i, j, k) from the tensor edge dimensions
-   - Sort by R (hops), then order by h -> h+i -> h+i+j -> h+i+j+k
-   - Return ranked list of node IDs
+5. Client filters the subgraph by node type (per
+   feed-ranking.md §9, "Filtering sits alongside ranking") and
+   removes seen content from the candidate set (pre-rank
+   exclusion per feed-ranking.md §8).
+6. Client runs the feed-ranking algorithm (feed-ranking.md
+   §1–§5) over the remaining candidates: a single sort by h(t)
+   with cumulative tie-breakers (h, h+i, h+i+j, h+i+j+k), and
+   S(t) as the final fallback. Output: an ordered list of
+   node IDs.
 
-4. API calls postgres-store with the ranked node IDs
-5. postgres-store: SQL queries to Postgres
-   - Fetch display metadata for the ranked nodes (post content,
-     user profiles, media, etc.)
+Phase 3 — display-content fetch and render
 
-6. API merges results, preserving the graph-determined order
-7. Returns JSON to client
-
-8. Frontend renders, batches the IDs of items that pass through
-   the viewport, and POSTs them back to user_view_log on natural
-   checkpoints (batch-fill, scroll pause, app close).
+7. Client requests display metadata for the top-N items it is
+   about to render (post bodies, profile fields, media URLs)
+   from postgres-store via the API.
+8. Client renders. As items pass through the viewport, the
+   client batches their IDs and POSTs them back to
+   user_view_log on natural checkpoints (batch-fill, scroll
+   pause, app close). See feed-ranking.md §8.
 ```
 
-The graph engine decides *which* nodes to show and in *what order* (topology
-+ edge-weight-based ranking). Postgres tells us *what* those nodes contain
-*and* tracks the per-viewer seen-list that prunes the candidate set up front.
+The central backend serves graph slices, seen-lists, and display
+content; it does **not** rank. Ranking and filtering live on the
+viewer's side — client by default, an optional delegate "miner" in
+the future, both running the same algorithm (feed-ranking.md §9).
+That is what keeps per-actor compute off the central hot path.
 
 ---
 
