@@ -832,6 +832,10 @@ who wants only direct-friend signal can steepen it (e.g.,
 R=2 path roughly matches ~15 strong R=3 paths' aggregate
 contribution — balancing direct signal with friend-of-friend buzz.
 
+A separate **time-decay** factor `f(Δt)` is applied alongside `d(R)`
+on the reactor edge of each path — see §7. Both are
+frontend-tunable.
+
 ### 4.2 The four metrics
 
 The four metrics form a symmetric grid: **opinion** vs. **reach**,
@@ -849,10 +853,15 @@ Each metric is a **2-tuple** (one component per dim track):
 
 | Symbol | Name | Sentiment component (`*_s`) | Interest component (`*_c`) |
 |---|---|---|---|
-| `h` | personal opinion | `H_s = ∑_π d(R_π) · s_path(π)` over all paths to `t` | `H_c = ∑_π d(R_π) · c_path(π)` over all paths to `t` |
-| `i` | personal reach | `I_s = ∑_π d(R_π) · s_path_R−1(π)` over first R−1 edges of each path | `I_c = ∑_π d(R_π) · c_path_R−1(π)` over first R−1 edges |
-| `j` | absolute opinion | `J_s = ∑_B dim1(B → t)` over reactors `B` (signed) | `J_c = ∑_B dim2(B → t)` over reactors (signed) |
-| `k` | absolute reach | `K_s = ∑_B \|dim1(B → t)\|` over reactors | `K_c = ∑_B \|dim2(B → t)\|` over reactors |
+| `h` | personal opinion | `H_s = ∑_π d(R_π) · f(Δt_π) · s_path(π)` over all paths to `t` | `H_c = ∑_π d(R_π) · f(Δt_π) · c_path(π)` over all paths to `t` |
+| `i` | personal reach | `I_s = ∑_π d(R_π) · f(Δt_π) · s_path_R−1(π)` over first R−1 edges of each path | `I_c = ∑_π d(R_π) · f(Δt_π) · c_path_R−1(π)` over first R−1 edges |
+| `j` | absolute opinion | `J_s = ∑_B f(Δt_B→t) · dim1(B → t)` over reactors `B` (signed) | `J_c = ∑_B f(Δt_B→t) · dim2(B → t)` over reactors (signed) |
+| `k` | absolute reach | `K_s = ∑_B f(Δt_B→t) · \|dim1(B → t)\|` over reactors | `K_c = ∑_B f(Δt_B→t) · \|dim2(B → t)\|` over reactors |
+
+`f(Δt)` is the time-decay factor on the reactor edge (the last
+actor edge in the path, or `B → t` directly for `j` and `k`); see
+§7 for its definition and rationale. `Δt` is the elapsed time
+since that edge's top layer was added.
 
 Reading:
 - `h` — personal opinion: trust- and connection-weighted opinion
@@ -1097,10 +1106,135 @@ real feeds in practice.
 
 ## 7. Time and recency
 
-Time decay must exist in some form but is not yet designed. The full
-question — constraints, plausible decay shapes, and how decay
-composes with the ranking parameters — is tracked in
-[open-questions.md Q4](../open-questions.md).
+The path math in §3–§5 has no time component on its own. Without
+one, ranking exhibits a **cold-start failure**: a brand-new post
+from a close friend can rank below an old viral post that no one
+is currently engaging with, because accumulated multi-path signal
+outweighs a single fresh path. Worked example below
+(§7.3) shows the gap is concretely ~3.5× under the default `d(R)`.
+
+Time decay closes this gap by attenuating contributions from
+**stale reactor activity**, leaving fresh signal at full weight.
+
+### 7.1 What decays — reactor-edge top-layer age
+
+Decay anchors on the **top-layer timestamp of the reactor edge**:
+the last actor edge in the path (`B → t`), the edge that
+expresses a stance toward the target. Per
+[layers.md](layers.md), every edge has a stack of timestamped
+layers; the top layer is the most recent stance expression.
+
+A new layer on the reactor edge — a friend re-liking,
+commenting again, updating their reaction — resets the age clock
+and restores full freshness. This is how old content resurfaces:
+not through a special "resurface" mechanism, but because new
+reactor-edge layers naturally re-enter the math at full weight
+through the same formulas. The append-only layer system is the
+mechanism.
+
+**Intermediate edges don't decay.** For a path `U → A → B → t`,
+the time-decay factor is applied only on the `B → t` hop. The
+`U → A` and `A → B` edges are full-weight regardless of when
+their top layer was added. This carries the **stances-not-events**
+rule (§3, [graph-model.md §3](graph-model.md)) through to time:
+silence on a relationship edge is not a partial revocation of the
+stance — the stance still holds until the actor changes it.
+Active-relationship signal lives in **layer count**
+([open-questions.md Q1](../open-questions.md)) — frequency of
+interaction, not recency of last interaction.
+
+**Post-node age has no separate decay.** It falls out
+automatically: the **authorship edge** is itself a normal actor
+edge, and is the reactor edge for the path through the author
+(per [authorship.md:1-10](authorship.md#L1-L10)). Its top layer
+ages with the post. An old post with no engagement → only the
+stale authorship path survives → naturally decayed by `f(Δt)`
+on that hop. An old post with new engagement → fresh reactor
+edges from new reactors carry the path at full weight. Node age
+never enters the math directly.
+
+### 7.2 Composition — scalar multiplier per path
+
+Decay is a positive scalar in `(0, 1]` multiplied into each
+path's contribution to the metric, alongside `d(R)`. The full
+formulas are stated in §4.2; in summary, every term in the sum
+that defines `H_s, H_c, I_s, I_c, J_s, J_c, K_s, K_c` carries an
+`f(Δt)` factor on the reactor edge.
+
+Because decay is a positive scalar, it does not interact with the
+**kill rule** (§3.2) — a `0` in a dim chain still zeros that
+dim's path product irreversibly; decay only scales the surviving
+contribution. Dim values themselves are never mangled by time,
+preserving their meaning as **stances** (§3.3 signed-graph
+balance reasoning depends on the dim values being the actor's
+expressed stance, not a time-mangled approximation of it).
+
+### 7.3 Shape — exponential, 30-day half-life, frontend-tunable
+
+Default decay function:
+
+```
+f(Δt) = 0.5^(Δt / 30 days)         (default)
+```
+
+So `f(0d) = 1.0`, `f(30d) = 0.5`, `f(90d) = 0.125`, `f(1y) ≈ 7×10⁻⁴`.
+
+Worked cold-start example, with and without decay:
+
+**Setup.**
+- `U → A`: close friend, `(+0.9, +0.9)`, fresh.
+- A just authored post P. Authorship edge `A → P`: `(+0.9, +0.9)`,
+  fresh.
+- `U → B`: also a close friend, `(+0.8, +0.8)`.
+- B authored post Q 3 years ago. `B → Q`: `(+0.9, +0.9)`, top
+  layer 3 years old.
+- 100 R=3 paths reach Q via U's network. For each:
+  `U → C` = `(+0.5, +0.5)`, `C → reactor` = `(+0.6, +0.6)`,
+  `reactor → Q` = `(+0.7, +0.7)`.
+
+**Without decay:**
+- `h(P) = d(2) · (s_path + c_path) = 0.1 · (0.81 + 0.81) = 0.162`.
+- `h(Q)` direct: `0.1 · (0.72 + 0.72) = 0.144`.
+- `h(Q)` per R=3 path: `0.01 · (0.21 + 0.21) = 0.0042`. Times 100:
+  `0.42`.
+- `h(Q) = 0.144 + 0.42 = 0.564`. **Q wins ~3.5× over P.**
+
+**With decay (default 30-day half-life):**
+- P: authorship edge fresh → `f = 1.0` → `h(P) = 0.162`.
+- Q direct: `f(1095d) ≈ 8×10⁻¹²` → contribution collapses to ~0.
+- Q reactor paths: assume 10 of 100 reactor edges are recent
+  (≤30d, average `f ≈ 0.7`); the remaining 90 are years old
+  (`f ≈ 0`).
+  - Recent: `10 · 0.0042 · 0.7 ≈ 0.029`.
+  - Old: ≈ 0.
+- `h(Q) ≈ 0.029`. **P wins ~5.5× over Q.** Cold start fixed.
+
+**Currently-surging old post.** If 50 of the 100 reactor edges
+are fresh instead of 10 (the post is currently being re-engaged
+across the network), `h(Q) ≈ 0.147` — under P (0.162) but
+visibly competitive. With even fresher reactor activity (≤7d,
+`f ≈ 0.85`) and stronger reactor edges, Q can overtake P. **This
+is correct behavior**: 50 people in U's network currently
+engaging with content is genuinely a stronger signal than one
+fresh post from one friend. The §4.1 calibration ("a single
+strong R=2 path roughly matches ~15 strong R=3 paths") is
+preserved on freshly-active content; only stale aggregate signal
+is suppressed.
+
+**Frontend tunability.** Same pattern as `d(R)` (§4.1). A user
+who wants longer-tail visibility softens the half-life (e.g. 90
+days). One who wants strict freshness shortens it (e.g. 7 days).
+Setting `f(Δt) = 1` constant disables decay entirely — useful as
+an opt-in "no-decay" sort for users who want pure-graph signal.
+
+### 7.4 What this does not solve
+
+Time decay attenuates content that is **old and quiet**. It does
+**not** suppress content that is **old, currently active, and
+already seen by U**. The "already seen" problem is tracked
+separately as [open-questions.md Q5](../open-questions.md); it
+requires its own mechanism (client-side seen-set, per-viewer
+markers, or similar) and is not absorbed by reactor-edge decay.
 
 ---
 
