@@ -24,12 +24,11 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Decay & layer signal | 1 | **Q4** | Decay composes with `R/h/i/j/k` — needs the metrics defined (now done) before decay can be designed. |
-| | 2 | **Q1** | Layer count finds its place once primitives and decay are settled (modifier? separate parameter? folded into `i`?). |
-| 2. Build on foundations | 3 | **Q5** | Informed by Q4 (decay may absorb part of "seen"). Q3 already ruled out the implicit-view-edge options. |
-| 3. Scale concerns | 4 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
-| 4. Policy, externally gated | 5 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
-| 5. Federation, post-spike | 6 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
+| 1. Layer signal | 1 | **Q1** | Decay (Q4) now resolved on its own track; layer count finds its place (modifier? separate parameter? folded into `i`?). [feed-ranking.md §7.1](primitive/feed-ranking.md) explicitly leaves "active relationship" signal to layer count. |
+| 2. Build on foundations | 2 | **Q5** | Q3 already ruled out the implicit-view-edge options; Q4's decay attenuates *old-and-quiet* but not *old-and-already-seen* (per [feed-ranking.md §7.4](primitive/feed-ranking.md)), so Q5 still needs its own mechanism. |
+| 3. Scale concerns | 3 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
+| 4. Policy, externally gated | 4 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
+| 5. Federation, post-spike | 5 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -46,6 +45,7 @@ questions are closed.
 - Q13 — see [feed-ranking.md §3.7.4](primitive/feed-ranking.md) (severer-side redemption surface, hourglass check on the redeeming node's outbound) and [feed-ranking.md §3.7.5](primitive/feed-ranking.md) (self-redemption posts via the same `bot-defense` hashtag mechanism, surfaced in the severer's "review severed accounts" view).
 - Q14 — see [data-model.md "Node identity strategies"](implementation/data-model.md) (three-strategy framework: content-addressed UUIDv5 for canonical-string nodes like Hashtag, random UUID + UNIQUE handle for User/Collective, random UUID alone for per-creation nodes). Hashtag IDs are now content-addressed so independent creations of the same canonical name converge on one node. Cross-instance federation reconciliation for Types 2 and 3 is deferred as Q15.
 - Q6 — see [invitations.md "Default values and customization"](primitive/invitations.md). Defaults are `(+0.5, +0.5)` on both edges; both inviter and invitee choose their own outgoing edge during the invitation flow. The doc walks through the asymmetric-friend example (`(+1, -1)` on the invitee side as a deliberate "love them, not their content" stance that lets a later second edge dominate the feed).
+- Q4 — see [feed-ranking.md §7](primitive/feed-ranking.md). Time decay anchors on the **reactor edge's top-layer age** (the last actor edge in the path), applied as a scalar `f(Δt)` multiplier alongside `d(R)` to all four metrics (`h, i, j, k`). Default exponential with **30-day half-life**, frontend-tunable. Intermediate edges don't decay — silence on a relationship edge is not stance revocation; "active relationship" signal is left to Q1 (layer count). Post-node age has no separate decay — the authorship edge is itself a reactor edge and ages with the post, so old-with-no-engagement decays naturally and old-with-fresh-engagement resurfaces via fresh reactor-edge layers. Worked cold-start example in §7.3 shows the math.
 
 ---
 
@@ -75,7 +75,11 @@ How should layer count factor into ranking? Is it:
   amplifies a strong, long-standing relationship)?
 - A separate ranking parameter alongside `h/i/j/k`?
 - Folded into an existing parameter (e.g. part of `i` "importance")?
-- Used only for time decay and recency weighting, not structural ranking?
+
+(A fourth option — "used only for time-decay weighting, not
+structural ranking" — was closed by Q4. Time decay anchors on
+reactor-edge top-layer age, not on layer count, so layer count is
+free to be a *structural* signal independent of time.)
 
 ### Options considered
 
@@ -87,51 +91,10 @@ The dim1/dim2 grammar is now uniform project-wide
 ([graph-model.md §6](primitive/graph-model.md)), so a layer-count
 modifier on a dimension would compose consistently across edge types.
 
----
-
-## Q4 — Time and recency: decay shape
-
-**Where it shows up:** [feed-ranking.md §7](primitive/feed-ranking.md)
-**Status:** open
-
-### Context
-
-Time decay must exist in some form but is not designed. Known
-constraints:
-
-- Old content can become newly relevant (a friend comments on a post I
-  liked years ago — I should see the comment, and the post becomes
-  slightly more relevant again).
-- New content can be irrelevant (a brand-new post from someone 5 hops
-  away that no one I know has interacted with).
-- **Recency is not importance.** Time is a factor but not a dominant
-  one.
-
-### The question
-
-What shape should the decay function take, and how does it compose
-with the ranking parameters `R`, `h`, `i`, `j`, `k`?
-
-### Options considered
-
-Shapes plausible but not evaluated:
-
-- **Exponential decay** on edge age — standard in most feed systems;
-  simple but makes old content vanish quickly.
-- **Linear decay with a floor** — old content never goes below some
-  minimum weight.
-- **Step function** — "active" vs "archived" buckets.
-- **No decay on edge weight; decay only on the *target node*'s
-  recency score** — separates "my relationship" from "this post is
-  old."
-
-Composition with `R/h/i/j/k` is open: decay could multiply `h`, act
-as a separate dimension in the sort/order chain, or modify `R` (old
-content pushed into a higher bucket).
-
-### Related
-
-Q1 (layer count), Q5 (already-seen).
+Q4 (resolved) explicitly leaves "active relationship" signal to
+layer count (per [feed-ranking.md §7.1](primitive/feed-ranking.md)),
+which positions this question as covering the
+relationship-amplification role.
 
 ---
 
@@ -176,7 +139,10 @@ How should "already seen" tracking work?
 
 ### Related
 
-Q4 (decay).
+Q4 (decay) — resolved; see the resolved list above. Decay
+attenuates old-and-quiet content but does not suppress
+old-but-still-active content the viewer has already seen, so
+this question still needs its own mechanism.
 
 ---
 
