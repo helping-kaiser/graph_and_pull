@@ -174,12 +174,32 @@ exception exists because append-only alone cannot solve "this layer
 
 ### Out of scope
 
-Two questions are deliberately not answered here and are tracked
+One question is deliberately not answered here and is tracked
 separately:
 
 - **Who authorizes a redaction, and through what process** — a policy
   question (thresholds, legal process, appeal rights). See
   [open-questions.md Q9](../open-questions.md).
-- **Retention / pruning for storage cost** — an implementation
-  optimization concern separate from the principle. See
-  [open-questions.md Q10](../open-questions.md).
+
+### Side note on long-term storage
+
+Append-only means every interaction adds a layer, forever. In
+principle this is unbounded; in practice, **typical actor
+behavior bounds it tightly**. People update an edge a handful of
+times over its lifetime, not hundreds. Node properties change
+even less frequently — most don't change at all. The storage
+worst case (an actor edge or node property accumulating dozens
+or hundreds of layers) is a corner case, not a typical user.
+The plausible scenarios for genuine accumulation — e.g., a
+decades-old company restructuring constantly through its
+CollectiveMember edges — are precisely the cases where
+**preserving the full history is the value**, not a cost worth
+optimizing away.
+
+If a real instance ever runs into a storage problem from layer
+accumulation, compaction-friendly approaches exist that don't
+break the no-silent-deletion principle (e.g., a rollup layer
+that summarizes a window of past layers while leaving a visible
+marker that compaction occurred). That's an
+implementation-time decision contingent on real data, not a
+design-time one. We are not designing for it preemptively.
