@@ -64,21 +64,8 @@ Memgraph Lab (visual graph browser): http://localhost:3000
 
 ## Make Commands
 
-```
-make init         first-time setup: copy .env, check/install dependencies
-make run          full start: init + dev (first-time friendly)
-make dev          start DBs + migrate + start API
-make api          start the API server
-make up           start all services (Postgres + Memgraph)
-make down         stop all services
-make reset-db     wipe all data and re-migrate
-make migrate      run pending Postgres migrations
-make ci           full CI pipeline (lint + test)
-make lint         clippy + fmt check
-make fmt          format all code
-make test         cargo test --all
-make logs         follow docker compose logs
-```
+Full make-target list and dev workflow live in
+[docs/implementation/development.md](docs/implementation/development.md).
 
 ## Documentation
 

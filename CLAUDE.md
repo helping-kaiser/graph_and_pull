@@ -149,18 +149,8 @@ make api    # just the API (if DBs already running)
 
 ### Common Commands
 
-```bash
-make init       # copy .env, check/install dependencies
-make up         # start Postgres + Memgraph
-make down       # stop services
-make migrate    # run pending Postgres migrations
-make reset-db   # wipe all data, re-migrate
-make lint       # clippy + fmt check
-make fmt        # format code
-make test       # cargo test --all
-make ci         # lint + test
-make logs       # follow docker logs
-```
+Full make-target list lives in
+[docs/implementation/development.md](docs/implementation/development.md).
 
 ### Environment
 
