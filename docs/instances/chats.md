@@ -244,7 +244,7 @@ the primitive, not from a special rule.
 
 Beyond disavowal, the chat's other state changes use the Proposal
 mechanism (see [governance.md §2.1](../primitive/governance.md)). `ChatMember.role`
-(promote / demote), `Chat.title`, `Chat.content_privacy`, and
+(promote / demote), `Chat.name`, `Chat.content_privacy`, and
 `Chat.join_policy` are all node properties; each change is a
 Proposal voted on by chat members under chat-defined parameters.
 
@@ -253,7 +253,7 @@ Suggested defaults (starting points, not fixed rules):
 | Property change                    | Quorum | Threshold | Eligibility                                    |
 |------------------------------------|--------|-----------|------------------------------------------------|
 | `ChatMember.role`                  | ≥ 30%  | > 50%     | Active members, excluding the subject member   |
-| `Chat.title`                       | ≥ 10%  | > 50%     | Active members                                 |
+| `Chat.name`                        | ≥ 10%  | > 50%     | Active members                                 |
 | `Chat.content_privacy`             | ≥ 50%  | ≥ 2/3     | Active members                                 |
 | `Chat.join_policy`                 | ≥ 30%  | ≥ 2/3     | Active members                                 |
 | Disavowal thresholds (the table above) | ≥ 30% | ≥ 2/3 | Active members                                 |

@@ -282,7 +282,7 @@ design discussion (§9).
 - **Chat member disavowal** — [chats.md §6](../instances/chats.md). Shape B.
   Higher quorum + weighted-supermajority threshold.
 - **Chat property and role changes** — [chats.md §6](../instances/chats.md).
-  Proposals on `Chat.title`, `Chat.content_privacy`,
+  Proposals on `Chat.name`, `Chat.content_privacy`,
   `Chat.join_policy`, and `ChatMember.role`. Defaults vary by
   stakes; thresholds are themselves chat properties.
 - **Collective governance (full social contract)** —

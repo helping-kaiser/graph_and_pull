@@ -131,7 +131,7 @@ erasing from it would defeat the whole point.
 
 The contents of a specific layer on a node property can be redacted
 **in place** when the content itself is illegal (an illegal username,
-an illegal chat title, etc.). Redaction replaces the stored value
+an illegal chat name, etc.). Redaction replaces the stored value
 with a marker like `[redacted — illegal content, removed at T=X]`;
 the layer's timestamp, layer number, and position in the stack are
 preserved. The fact that a layer existed at that time, and that

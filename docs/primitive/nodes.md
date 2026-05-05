@@ -84,7 +84,7 @@ Entities that are acted upon by actors.
 Most content nodes have minimal graph-side properties — the substance
 lives in Postgres. Specific cases:
 
-- **Chat**: `title` (if needed for routing or display hints) and
+- **Chat**: `name` (if needed for routing or display hints) and
   `content_privacy` (plaintext vs E2EE — the graph needs this to
   know what to route). See [chats.md](../instances/chats.md).
 - **Hashtag**: its tag string — the tag *is* the identifier. The
