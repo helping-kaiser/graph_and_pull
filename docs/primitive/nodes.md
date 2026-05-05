@@ -137,11 +137,19 @@ toward the junction are evaluated.
 
 Per-type properties committed so far:
 
-- **ChatMember**: `role` (`admin` / `mod` / `member`).
+- **ChatMember**: `role` (`admin` / `mod` / `member`), plus
+  `voting_weight` (numeric, optional) where the chat wants to set
+  per-member weight directly rather than deriving it from `role`
+  at tally time.
 - **CollectiveMember**: `role` (`founder` / `shareholder` / `worker` /
   `band member` / `subsidiary` / `partner` / `member`, examples — the
-  set is open-ended per the social contract), plus `ownership_pct`
-  where the role carries an equity stake.
+  set is open-ended per the social contract), `ownership_pct`
+  where the role carries an equity stake, and `voting_weight`
+  (numeric, optional) where the collective wants to set per-member
+  weight directly rather than deriving it from `role` /
+  `ownership_pct` at tally time. See
+  [governance.md §2.3](governance.md) for how the weight function
+  reads these.
 - **ItemOwnership**: properties pending — to be committed alongside
   the items.md design pass.
 
