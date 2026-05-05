@@ -38,7 +38,7 @@ Memgraph. If it is needed to **display** something, it goes in Postgres.
 | Node ID (UUID) | Both | Shared key between databases |
 | User bio, avatar, display name | Postgres | Display only |
 | Post content, media URLs | Postgres | Display only |
-| Actor edges (sentiment, relevance) | Memgraph | Graph topology + ranking |
+| Actor edges (dim1, dim2 — see [edges.md](../primitive/edges.md) for per-edge-type labels) | Memgraph | Graph topology + ranking |
 | Structural edges (containment, tagging) | Memgraph | Graph topology |
 | Cached author_id on nodes | Both | Derived from earliest incoming edge, cached for fast lookup |
 
@@ -71,25 +71,29 @@ All graph state lives in edges. Edges are:
 - **Append-only** — new layers on top, never delete or overwrite
 - **Uniform** — actor and structural edges have the same tensor shape
 
-There are no named relationship types like FOLLOWS, LIKED, or CREATED. All
-edges are uniform tensors. The meaning is derived from the node types at each
-end and the dimension values. See [Graph Model](../primitive/graph-model.md).
+There are no per-action relationship types like FOLLOWS, LIKED, or CREATED.
+Actor edges share one `:ACTOR` label and structural edges have a small fixed
+sub-label set (see [edges.md §3](../primitive/edges.md)). The meaning of any
+single edge is derived from the node types at each end and the dimension
+values, not from a per-action relationship name. See
+[Graph Model](../primitive/graph-model.md).
 
 ### 5. Writes are dual (content + topology)
 
 When a user creates a post:
 - Postgres: insert row into `posts` table (content + metadata)
 - Memgraph: create Post node + actor edge from User to Post (layer 1 =
-  authorship, with sentiment/relevance values)
+  authorship, with dim1/dim2 values)
 
-When a user interacts with a post (e.g. likes it):
-- Memgraph: create actor edge from User to Post (or add layer if edge exists)
-  with the user's sentiment and relevance values
+When a user reacts to a post:
+- Memgraph: create actor edge from User to Post (or add a layer if the edge
+  exists) with the user's dim1/dim2 values for that node type
 - Postgres: nothing
 
-When a user interacts with another user:
-- Memgraph: create/update actor edge from User to User with sentiment and
-  interest values
+When a user expresses a stance toward another user:
+- Memgraph: create/update actor edge from User to User with dim1/dim2 values
+  (per [edges.md](../primitive/edges.md): sentiment + interest for this edge
+  type)
 - Postgres: nothing (unless profile display data changes)
 
 ---
@@ -133,43 +137,55 @@ Shared types with no external dependencies. Responsibilities:
 
 ## Request Lifecycle: Feed Query
 
-A GraphQL query for a personalized feed shows how the two databases compose:
+A personalized feed splits across two locations: the central backend
+serves the **data**; the viewer's device computes the **ranking**.
+This split is structural, not an optimization — per-actor ranking
+cannot run on the central hot path at any real user count. See
+[feed-ranking.md §9](../primitive/feed-ranking.md) for the full
+reasoning and the math/deployment separation.
 
 ```
-Client -> POST /graphql { feed(limit: 20) }
+Phase 1 — central backend serves subgraph + seen-list
 
-1. API receives query, calls postgres-store to fetch the viewer's
-   seen-list (user_view_log) — a per-viewer set of already-shown
-   content UUIDs. See feed-ranking.md §8.
+1. Client -> POST /graphql to fetch the viewer's relevant graph
+   slice.
+2. API calls graph-engine: traverse N hops outward from the
+   viewing user; return the relevant subgraph (nodes + their
+   incident actor and structural edges, with top-layer tensor
+   values intact).
+3. API calls postgres-store: fetch the viewer's seen-list from
+   user_view_log — a per-viewer set of already-shown content
+   UUIDs. See feed-ranking.md §8.
+4. API returns subgraph + seen-list to the client.
 
-2. API calls graph-engine, passing the seen-list as an exclusion
-   parameter alongside R, decay shape, etc.
+Phase 2 — viewer-side ranking and filtering
 
-3. graph-engine: Cypher queries to Memgraph
-   - Traverse outgoing edges from the viewing user
-   - Exclude already-seen content nodes from the candidate set
-     before computing metrics (pre-rank pruning)
-   - For each remaining target node, compute ranking metrics
-     (h, i, j, k) from the tensor edge dimensions
-   - Sort by R (hops), then order by h -> h+i -> h+i+j -> h+i+j+k
-   - Return ranked list of node IDs
+5. Client filters the subgraph by node type (per
+   feed-ranking.md §9, "Filtering sits alongside ranking") and
+   removes seen content from the candidate set (pre-rank
+   exclusion per feed-ranking.md §8).
+6. Client runs the feed-ranking algorithm (feed-ranking.md
+   §1–§5) over the remaining candidates: a single sort by h(t)
+   with cumulative tie-breakers (h, h+i, h+i+j, h+i+j+k), and
+   S(t) as the final fallback. Output: an ordered list of
+   node IDs.
 
-4. API calls postgres-store with the ranked node IDs
-5. postgres-store: SQL queries to Postgres
-   - Fetch display metadata for the ranked nodes (post content,
-     user profiles, media, etc.)
+Phase 3 — display-content fetch and render
 
-6. API merges results, preserving the graph-determined order
-7. Returns JSON to client
-
-8. Frontend renders, batches the IDs of items that pass through
-   the viewport, and POSTs them back to user_view_log on natural
-   checkpoints (batch-fill, scroll pause, app close).
+7. Client requests display metadata for the top-N items it is
+   about to render (post bodies, profile fields, media URLs)
+   from postgres-store via the API.
+8. Client renders. As items pass through the viewport, the
+   client batches their IDs and POSTs them back to
+   user_view_log on natural checkpoints (batch-fill, scroll
+   pause, app close). See feed-ranking.md §8.
 ```
 
-The graph engine decides *which* nodes to show and in *what order* (topology
-+ edge-weight-based ranking). Postgres tells us *what* those nodes contain
-*and* tracks the per-viewer seen-list that prunes the candidate set up front.
+The central backend serves graph slices, seen-lists, and display
+content; it does **not** rank. Ranking and filtering live on the
+viewer's side — client by default, an optional delegate "miner" in
+the future, both running the same algorithm (feed-ranking.md §9).
+That is what keeps per-actor compute off the central hot path.
 
 ---
 
