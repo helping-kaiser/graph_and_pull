@@ -991,7 +991,98 @@ separation lets the math stay smooth and continuous while still
 letting users enforce hard exclusions in their UI.
 
 For where ranking and filtering compute (client-side, miner nodes,
-etc.), see §8.
+etc.), see §9.
+
+### 5.2 Frontend reordering: friend-authored fresh posts
+
+The ranking math in §1–§5 produces a clean graph-signal-driven
+order. It does, however, have one practical consequence worth
+softening as a viewer-side overlay: a single fresh path from a
+close friend — e.g., a friend's brand-new post with no
+reactions yet — loses to any old post that has even modest
+currently-active multi-path signal. Per the §4.1 calibration,
+~15 strong R=3 paths beat one strong R=2 path; the worked
+example in §7.3 shows the same effect with realistic numbers.
+For most users — especially newer ones with sparse graphs —
+the more useful default is "see my friends' brand-new posts
+near the top, without waiting for them to accumulate signal."
+
+This is solved as a **frontend reordering layer**, not a
+change to the ranking math.
+
+#### Mechanism
+
+After §5's ranking produces the ordered list, the frontend
+identifies posts whose **author is a direct R=2 friend** of U
+**and** whose **authorship edge is fresh** (top-layer age below
+a frontend-tunable threshold — e.g. 24h or 7d). These are
+reordered to surface near the top: interleaved with, or above,
+the regular feed depending on frontend choice.
+
+The ranking math itself is untouched. `h(t)` still reflects
+"what the graph says is most relevant." This layer is purely a
+viewer-side reorder that says "and also, surface
+just-from-friends content even if its `h` is modest."
+
+#### Detection
+
+A post is "friend-authored" from U's perspective if:
+
+1. There exists a direct R=2 actor edge `U → A` with non-zero
+   top-layer `dim2` (A is in U's network), **and**
+2. `post.author_id == A`.
+
+`author_id` is a cached property on the post node (per
+[authorship.md "Caching"](authorship.md)) — derived from the
+earliest incoming layer-1 timestamp but read directly without
+scanning at view time. The check is one property read per
+candidate post.
+
+Authorship-edge freshness comes from the same top-layer
+timestamp used for `f(Δt)` in §7.
+
+#### Scope: R=2 only
+
+R=3 friend-of-friend-authored posts are left to the regular
+multi-path math, which already aggregates them appropriately.
+Extending the boost to deeper rings would gradually re-introduce
+the cold-start asymmetry at every depth and is out of scope for
+this layer.
+
+#### Default: on, with frontend opt-out
+
+Default is **on**. Reasons:
+
+- A user with few connections has very few sources of high-`h`
+  multi-path signal, so their friends' fresh posts get buried
+  without the boost — exactly the opposite of what they joined
+  for.
+- "See your friends' new posts near the top" matches the feed
+  intuition users bring from existing platforms.
+
+Power users with dense graphs may opt out (pure-`h` ordering),
+or tune the freshness threshold and placement. The frontend
+toggle is the only knob — the doc does not enforce numbers.
+
+#### Why a reordering layer, not pre-rank math
+
+A pre-rank multiplier (boost `h(t)` directly when
+`author == friend`) was considered and rejected:
+
+- It breaks the principle that `h` is a graph-signal scalar
+  with consistent semantics across all targets — `h = 0.4` on
+  a regular post and `h = 0.4` on a boosted friend-authored
+  post would mean different things.
+- It makes the boost non-disableable without a "compute `h`
+  two ways" branch.
+- It generalizes from no other primitive in the spec — every
+  other ranking input is a graph property, not an
+  actor-identity special case.
+
+A reordering layer keeps the math principled and the policy
+adjustable. Same architectural position as the §5.1 filter
+layer and the §7 frontend-tunable decay function: viewer-side
+preferences over a clean ranking core.
 
 ---
 
