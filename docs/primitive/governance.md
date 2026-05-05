@@ -109,9 +109,20 @@ member) counts once their status flips.
 How each vote's contribution is scaled. Derived from properties on
 the voter's eligibility junction:
 
-- ChatMember: `role` (admin / mod / member).
-- CollectiveMember: `role` + `ownership_pct` combine into a composite.
+- ChatMember: `role` (admin / mod / member). Optionally a direct
+  `voting_weight` property when the chat sets per-member weight
+  explicitly instead of deriving it from `role`.
+- CollectiveMember: `role` + `ownership_pct` combine into a
+  composite. Optionally a direct `voting_weight` for collectives
+  whose weight is not tied to equity (e.g. one-member-one-vote
+  with role-based multipliers, or per-member negotiated weight).
 - Future cases: whatever properties the junction exposes.
+
+`voting_weight` is the escape hatch for any junction whose weight
+doesn't naturally fall out of role + ownership. When present it is
+read directly as the voter's weight; when absent the instance falls
+back to whatever rule it defines over `role` and other properties.
+See [nodes.md §3](nodes.md) for the property declaration.
 
 ### 2.4 Threshold policy
 
