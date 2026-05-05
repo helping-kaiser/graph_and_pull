@@ -137,25 +137,38 @@ A GraphQL query for a personalized feed shows how the two databases compose:
 ```
 Client -> POST /graphql { feed(limit: 20) }
 
-1. API receives query, calls graph-engine
-2. graph-engine: Cypher queries to Memgraph
+1. API receives query, calls postgres-store to fetch the viewer's
+   seen-list (user_view_log) — a per-viewer set of already-shown
+   content UUIDs. See feed-ranking.md §8.
+
+2. API calls graph-engine, passing the seen-list as an exclusion
+   parameter alongside R, decay shape, etc.
+
+3. graph-engine: Cypher queries to Memgraph
    - Traverse outgoing edges from the viewing user
-   - For each reachable target node, compute ranking metrics
+   - Exclude already-seen content nodes from the candidate set
+     before computing metrics (pre-rank pruning)
+   - For each remaining target node, compute ranking metrics
      (h, i, j, k) from the tensor edge dimensions
    - Sort by R (hops), then order by h -> h+i -> h+i+j -> h+i+j+k
    - Return ranked list of node IDs
 
-3. API calls postgres-store with the ranked node IDs
-4. postgres-store: SQL queries to Postgres
+4. API calls postgres-store with the ranked node IDs
+5. postgres-store: SQL queries to Postgres
    - Fetch display metadata for the ranked nodes (post content,
      user profiles, media, etc.)
 
-5. API merges results, preserving the graph-determined order
-6. Returns JSON to client
+6. API merges results, preserving the graph-determined order
+7. Returns JSON to client
+
+8. Frontend renders, batches the IDs of items that pass through
+   the viewport, and POSTs them back to user_view_log on natural
+   checkpoints (batch-fill, scroll pause, app close).
 ```
 
 The graph engine decides *which* nodes to show and in *what order* (topology
-+ edge-weight-based ranking). Postgres tells us *what* those nodes contain.
++ edge-weight-based ranking). Postgres tells us *what* those nodes contain
+*and* tracks the per-viewer seen-list that prunes the candidate set up front.
 
 ---
 
