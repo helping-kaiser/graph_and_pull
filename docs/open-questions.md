@@ -24,9 +24,8 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Scale concerns | 1 | **Q10** | Pure storage-cost optimization for graph-side layer history. With Q1 resolved (layer count is not a ranking signal) and Q5 resolved (seen-list compaction is its own track in Postgres), compaction only needs to preserve audit and transparency goals, not a ranking input. Only pressing at scale. |
-| 2. Policy, externally gated | 2 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
-| 3. Federation, post-spike | 3 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
+| 1. Policy, externally gated | 1 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
+| 2. Federation, post-spike | 2 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -46,6 +45,7 @@ questions are closed.
 - Q4 — see [feed-ranking.md §7](primitive/feed-ranking.md). Time decay anchors on the **reactor edge's top-layer age** (the last actor edge in the path), applied as a scalar `f(Δt)` multiplier alongside `d(R)` to all four metrics (`h, i, j, k`). Default exponential with **30-day half-life**, frontend-tunable. Intermediate edges don't decay — silence on a relationship edge is not stance revocation. Post-node age has no separate decay — the authorship edge is itself a reactor edge and ages with the post, so old-with-no-engagement decays naturally and old-with-fresh-engagement resurfaces via fresh reactor-edge layers. Worked cold-start example in §7.3 shows the math.
 - Q1 — see [graph-model.md §8](primitive/graph-model.md). Layer count, layer timestamps, and the sequence of past edge values are **not ranking inputs**. They are metadata for audit, history, and UI surfaces (e.g., a "this edge has been revised N times" indicator, or a stale-edge prompt). Ranking sees only the top layer of each edge — the user's current expressed stance. Rationale: introducing layer-count amplification would let the system infer intent from interaction frequency, in tension with both **stances, not events** ([graph-model.md §3](primitive/graph-model.md)) and the user-controlled-ranking principle. Edge cases like "two friends with identical edges but very different real-world contact frequency" are explicitly not auto-resolved by the system; users update stances reactively (similar to pruning a stale subscription list) rather than the system inferring from behavior.
 - Q5 — see [feed-ranking.md §8](primitive/feed-ranking.md). The seen-list is a per-viewer set of content UUIDs treated as **another input to the feed-ranking computation**, alongside `R`, `d(R)`, `f(Δt)`, and the §5.2 friend-author-boost. Pre-rank exclusion (perf win — already-seen content never enters the math). New activity on a seen post does **not** resurface it; the new comment/reaction is independently rankable as its own node. Storage location is the viewer's choice — backend-side `user_view_log` table in Postgres is the central frontend's default ([data-model.md](implementation/data-model.md)), but self-hosted clients/miners can keep the same data locally and pass it to the calculator (the math is the same regardless of where the JSON came from). Default frontend rule for "seen": every content item that passes through the viewport during a render. Frontend batches and flushes on natural checkpoints (batch-fill, scroll pause, app close); cache-clear before flush is an accepted small loss-window. Default 1-year compaction bounds storage at ~7 MB per active-user-year; the trade-off (a resurging old post will reappear if its view-log entry has been compacted) is documented and treated as acceptable feed character. No privacy-concealment story — viewing history is no more sensitive than reaction history per the network's transparency posture; "history" becomes a UI feature using the same data.
+- Q10 — reframed as a side note rather than an open design question. See [layers.md "Side note on long-term storage"](primitive/layers.md). Typical actor behavior bounds layer accumulation tightly — people update an edge a handful of times over its lifetime, not hundreds, and node properties change even less frequently. The corner cases that *would* accumulate substantial history (e.g., a decades-old company restructuring through CollectiveMember edges) are precisely the ones where preserving history has value. If a real instance ever runs into storage pressure, compaction-friendly approaches that respect the no-silent-deletion principle exist — but it's an implementation-time decision contingent on real data, not a design-time one to settle preemptively.
 
 ---
 
@@ -86,57 +86,10 @@ model.
 
 ### Related
 
-Q10 (retention). Chat moderation (resolved Q8 — see
+Chat moderation (resolved Q8 — see
 [chats.md §6](instances/chats.md)) is a similar "who decides" shape with
-much lower stakes.
-
----
-
-## Q10 — Layer retention and pruning for storage cost
-
-**Where it shows up:** [layers.md §5](primitive/layers.md) (Out of scope)
-**Status:** open (implementation optimization)
-
-### Context
-
-Append-only means every interaction adds a layer, forever. At some
-point, storing infinite history has a cost — both at the graph layer
-(edge layer stacks) and at the Postgres layer (version rows on
-display content).
-
-The principle in [layers.md](primitive/layers.md) is non-negotiable: no silent
-deletion. But there's a spectrum between "keep every layer verbatim
-forever" and "compact old layers into summaries" that preserves the
-principle.
-
-### The question
-
-Should we compact old layers? If yes, how — and what's preserved vs.
-summarized?
-
-- Is there a retention horizon after which old layers are compacted
-  into a rollup (e.g. "100 layers between T=0 and T=5"
-  → one summary layer)?
-- Does compaction apply to edges, node properties, Postgres content,
-  or all three? Different data has different decay curves.
-- Does compaction need to preserve exact layer count, or can it
-  become an estimate? (Layer count is no longer a ranking signal
-  per Q1, so the constraint is only audit/transparency — see
-  Related.)
-
-### Options considered
-
-None worked out. Pure optimization concern — the principle is
-decided; this is how cheaply it can be implemented without breaking
-the principle.
-
-### Related
-
-Q9 (redaction authority — retention decisions affect what can still
-be redacted). The previous "Q1 gates this — layer count must be
-preserved as a ranking signal" relationship is gone with Q1
-resolved (layer count is not a ranking input); the only remaining
-constraint on compaction is audit/transparency, not ranking math.
+much lower stakes. Q10 (resolved as a side note — see resolved list)
+no longer carries a retention-question relationship.
 
 ---
 
