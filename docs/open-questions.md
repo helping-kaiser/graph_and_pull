@@ -24,11 +24,10 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Layer signal | 1 | **Q1** | Decay (Q4) now resolved on its own track; layer count finds its place (modifier? separate parameter? folded into `i`?). [feed-ranking.md §7.1](primitive/feed-ranking.md) explicitly leaves "active relationship" signal to layer count. |
-| 2. Build on foundations | 2 | **Q5** | Q3 already ruled out the implicit-view-edge options; Q4's decay attenuates *old-and-quiet* but not *old-and-already-seen* (per [feed-ranking.md §7.4](primitive/feed-ranking.md)), so Q5 still needs its own mechanism. |
-| 3. Scale concerns | 3 | **Q10** | Gated by Q1 — compaction has to preserve (or explicitly degrade) the layer-count signal. Only pressing at scale. |
-| 4. Policy, externally gated | 4 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
-| 5. Federation, post-spike | 5 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
+| 1. Build on foundations | 1 | **Q5** | Q3 already ruled out the implicit-view-edge options; Q4's decay attenuates *old-and-quiet* but not *old-and-already-seen* (per [feed-ranking.md §7.4](primitive/feed-ranking.md)), so Q5 still needs its own mechanism. |
+| 2. Scale concerns | 2 | **Q10** | Pure storage-cost optimization. With Q1 resolved (layer count is not a ranking signal), compaction only needs to preserve audit and transparency goals, not a ranking input. Only pressing at scale. |
+| 3. Policy, externally gated | 3 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
+| 4. Federation, post-spike | 4 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -45,56 +44,8 @@ questions are closed.
 - Q13 — see [feed-ranking.md §3.7.4](primitive/feed-ranking.md) (severer-side redemption surface, hourglass check on the redeeming node's outbound) and [feed-ranking.md §3.7.5](primitive/feed-ranking.md) (self-redemption posts via the same `bot-defense` hashtag mechanism, surfaced in the severer's "review severed accounts" view).
 - Q14 — see [data-model.md "Node identity strategies"](implementation/data-model.md) (three-strategy framework: content-addressed UUIDv5 for canonical-string nodes like Hashtag, random UUID + UNIQUE handle for User/Collective, random UUID alone for per-creation nodes). Hashtag IDs are now content-addressed so independent creations of the same canonical name converge on one node. Cross-instance federation reconciliation for Types 2 and 3 is deferred as Q15.
 - Q6 — see [invitations.md "Default values and customization"](primitive/invitations.md). Defaults are `(+0.5, +0.5)` on both edges; both inviter and invitee choose their own outgoing edge during the invitation flow. The doc walks through the asymmetric-friend example (`(+1, -1)` on the invitee side as a deliberate "love them, not their content" stance that lets a later second edge dominate the feed).
-- Q4 — see [feed-ranking.md §7](primitive/feed-ranking.md). Time decay anchors on the **reactor edge's top-layer age** (the last actor edge in the path), applied as a scalar `f(Δt)` multiplier alongside `d(R)` to all four metrics (`h, i, j, k`). Default exponential with **30-day half-life**, frontend-tunable. Intermediate edges don't decay — silence on a relationship edge is not stance revocation; "active relationship" signal is left to Q1 (layer count). Post-node age has no separate decay — the authorship edge is itself a reactor edge and ages with the post, so old-with-no-engagement decays naturally and old-with-fresh-engagement resurfaces via fresh reactor-edge layers. Worked cold-start example in §7.3 shows the math.
-
----
-
-## Q1 — Layer count as a ranking signal
-
-**Where it shows up:** [graph-model.md §8](primitive/graph-model.md) (append-only history)
-**Status:** open
-
-### Context
-
-Every edge is a stack of append-only layers. Each interaction adds a
-new layer; old layers are never removed (see
-[layers.md](primitive/layers.md)). The number of layers on an edge is
-therefore itself a signal: an edge with 50 layers represents a deep,
-frequently-revisited relationship; an edge with 1 layer is a passing
-interaction.
-
-The [feed ranking algorithm](primitive/feed-ranking.md) currently has no
-input for layer count. Its metrics `h`, `i`, `j`, `k` operate on edge
-values and presence, not on how many times an edge has been touched.
-
-### The question
-
-How should layer count factor into ranking? Is it:
-
-- A modifier on the top-layer dimension values (e.g. a multiplier that
-  amplifies a strong, long-standing relationship)?
-- A separate ranking parameter alongside `h/i/j/k`?
-- Folded into an existing parameter (e.g. part of `i` "importance")?
-
-(A fourth option — "used only for time-decay weighting, not
-structural ranking" — was closed by Q4. Time decay anchors on
-reactor-edge top-layer age, not on layer count, so layer count is
-free to be a *structural* signal independent of time.)
-
-### Options considered
-
-None yet.
-
-### Related
-
-The dim1/dim2 grammar is now uniform project-wide
-([graph-model.md §6](primitive/graph-model.md)), so a layer-count
-modifier on a dimension would compose consistently across edge types.
-
-Q4 (resolved) explicitly leaves "active relationship" signal to
-layer count (per [feed-ranking.md §7.1](primitive/feed-ranking.md)),
-which positions this question as covering the
-relationship-amplification role.
+- Q4 — see [feed-ranking.md §7](primitive/feed-ranking.md). Time decay anchors on the **reactor edge's top-layer age** (the last actor edge in the path), applied as a scalar `f(Δt)` multiplier alongside `d(R)` to all four metrics (`h, i, j, k`). Default exponential with **30-day half-life**, frontend-tunable. Intermediate edges don't decay — silence on a relationship edge is not stance revocation. Post-node age has no separate decay — the authorship edge is itself a reactor edge and ages with the post, so old-with-no-engagement decays naturally and old-with-fresh-engagement resurfaces via fresh reactor-edge layers. Worked cold-start example in §7.3 shows the math.
+- Q1 — see [graph-model.md §8](primitive/graph-model.md). Layer count, layer timestamps, and the sequence of past edge values are **not ranking inputs**. They are metadata for audit, history, and UI surfaces (e.g., a "this edge has been revised N times" indicator, or a stale-edge prompt). Ranking sees only the top layer of each edge — the user's current expressed stance. Rationale: introducing layer-count amplification would let the system infer intent from interaction frequency, in tension with both **stances, not events** ([graph-model.md §3](primitive/graph-model.md)) and the user-controlled-ranking principle. Edge cases like "two friends with identical edges but very different real-world contact frequency" are explicitly not auto-resolved by the system; users update stances reactively (similar to pruning a stale subscription list) rather than the system inferring from behavior.
 
 ---
 
@@ -216,8 +167,10 @@ summarized?
   → one summary layer)?
 - Does compaction apply to edges, node properties, Postgres content,
   or all three? Different data has different decay curves.
-- Does "layer count" (see Q1) stay exact or become an estimate after
-  compaction?
+- Does compaction need to preserve exact layer count, or can it
+  become an estimate? (Layer count is no longer a ranking signal
+  per Q1, so the constraint is only audit/transparency — see
+  Related.)
 
 ### Options considered
 
@@ -227,9 +180,11 @@ the principle.
 
 ### Related
 
-Q1 (layer count as signal — compaction changes what layer count
-means), Q9 (redaction authority — retention decisions affect what
-can still be redacted).
+Q9 (redaction authority — retention decisions affect what can still
+be redacted). The previous "Q1 gates this — layer count must be
+preserved as a ranking signal" relationship is gone with Q1
+resolved (layer count is not a ranking input); the only remaining
+constraint on compaction is audit/transparency, not ranking math.
 
 ---
 
