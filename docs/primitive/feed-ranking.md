@@ -38,7 +38,7 @@ target nodes as seen from `U`.
 | Symbol | Name | Meaning |
 |--------|------|---------|
 | `R` | Real number of graph hops | Path length (number of edges) from `U` to the target. Targets with the same `R` form a comparison group. Both actor and structural edges count toward `R`. |
-| `S` | Scalar value of a node | An intrinsic scalar assigned to each node. Used in the **sort** phase to pre-order nodes within an `R` group. (S's exact derivation is left as a follow-up — see [open-questions.md](../open-questions.md).) |
+| `S` | Scalar value of a node | An intrinsic scalar assigned to each node. Used in the **sort** phase to pre-order nodes within an `R` group. (S's exact derivation is open — tracked as [Q16](../open-questions.md).) |
 
 ---
 
@@ -990,8 +990,7 @@ With float math, exact ties on `h` are rare; the cascade kicks in
 mostly for sparse graphs (where many targets have `h ≈ 0` exactly)
 and for users who default to `+1/0/-1` integer values (where ties
 are common). `S` (the intrinsic node scalar) is the deepest
-fallback — see [open-questions.md](../open-questions.md) for its
-derivation.
+fallback — see [Q16](../open-questions.md) for its derivation.
 
 ### 5.1 Filtering vs ranking
 
