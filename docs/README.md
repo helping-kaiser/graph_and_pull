@@ -79,7 +79,7 @@ If you find yourself defining a new mechanism inside an
 - [development](implementation/development.md) — local setup,
   tools, workflows.
 - [api-spec](implementation/api-spec.md) — GraphQL spec
-  (currently outdated, pending rewrite).
+  (outdated, pending redesign).
 - [graph-db-options](implementation/graph-db-options.md) — why
   Memgraph; alternatives considered.
 
