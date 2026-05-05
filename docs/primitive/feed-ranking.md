@@ -317,21 +317,34 @@ groups, ideological cliques, content the broader graph judges as
 low-signal. The math operates on path-set properties; it does not
 inspect cluster composition. The community decides cluster-by-
 cluster via their severance edges, and the math executes
-identically.
+identically. There is no special category for "humans" vs. "bots";
+there is only *reachable from your graph* vs. *not*.
 
-A cluster of real humans who behave as a closed group can therefore
-itself be placed in zero-jail. **Internal interactions within the
-cluster continue unchanged** — each member's outgoing edges to
-other members are unaffected, so their feeds of each other still
-function. The cluster only loses external reach. There is no
-special category for "humans" vs. "bots"; there is only *reachable
-from your graph* vs. *not*.
+#### Severance is local — the severing community moves away
 
-This is consistent with the architecture's broader stance: anyone
-can fork or self-host (CLAUDE.md), and clusters that have been
-severed from one part of the graph can continue to operate among
-themselves or on a separate instance entirely. Severance is local
-to the severing community; it is not a global ban.
+A severance is the severing community's own action on its own
+edges. The mental model is that the severing community is
+**moving infinitely far away** from the severed node or cluster —
+not that the cluster is being "banned" from anywhere else. This
+follows directly from the no-push principle
+([graph-model.md §7](graph-model.md)): a community can only ever
+reduce its *own* paths.
+
+- **Internal interactions within the severed cluster continue
+  unchanged** — each member's outgoing edges to other members are
+  unaffected; their feeds of each other still function. The cluster
+  loses external reach toward the severing community, nothing more.
+- **Other communities are unaffected.** A community that has not
+  severed retains its own paths to the cluster on its own terms.
+  Severance does not propagate, federate, or globalize.
+- **Self-hosting and forking remain available** (CLAUDE.md). A
+  severed cluster can operate among themselves or on a separate
+  instance entirely. There is no global ban anywhere in the system.
+
+This is a load-bearing constraint on any future federation work
+(see [open-questions.md Q15](../open-questions.md)): cross-instance
+federation must not import or export severance state automatically.
+Each community owns its own edges.
 
 #### Redemption
 

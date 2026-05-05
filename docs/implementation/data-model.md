@@ -151,14 +151,11 @@ CREATE INDEX user_view_log_recency_idx
 ```
 
 Unlike display content (which follows the append-only versioning
-rule from [layers.md](../primitive/layers.md)), `user_view_log`
-is **operational filter state**, not graph history. It does not
-need to be preserved indefinitely, and a periodic compaction job
-drops entries older than **1 year** to bound storage at
-~7 MB per active-user-year. The trade-off — that an old post
-which resurges after compaction will reappear in the viewer's
-feed — is documented in [feed-ranking.md §8.5](../primitive/feed-ranking.md)
-and treated as acceptable feed character rather than a defect.
+rule from [layers.md](../primitive/layers.md)), `user_view_log` is
+**operational filter state**, not graph history. The full
+compaction policy (1-year default, ~7 MB/active-user-year bound,
+trade-off, frontend tunability) lives with the seen-list mechanism
+in [feed-ranking.md §8.5](../primitive/feed-ranking.md).
 
 ---
 

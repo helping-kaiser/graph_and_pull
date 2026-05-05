@@ -96,6 +96,16 @@ truth, never layered. Examples:
 If the underlying graph changes, rebuild the cache. Layering them
 would duplicate history that already lives in the source data.
 
+### Operational filter state — explicit exception
+
+`user_view_log` (per-viewer seen-list, see
+[feed-ranking.md §8](feed-ranking.md)) is **operational filter
+state**, not graph history. It is exempt from append-only and
+runs a periodic compaction (1-year default — see
+[feed-ranking.md §8.5](feed-ranking.md)). The trace it leaves is
+the visible "history" UI surface fed by the same data, not a
+preserved layer stack.
+
 ---
 
 ## 4. Layers on Postgres-side display content
