@@ -180,11 +180,9 @@ and treated as acceptable feed character rather than a defect.
 ### author_id is a cached derivation
 
 The `author_id` columns on `posts`, `comments`, and `chat_messages` are
-**caches** of a fact that lives in the graph. The true author is the actor
-whose incoming edge to the node has the earliest layer 1 timestamp (see
-[authorship.md](../primitive/authorship.md)). The
-Postgres column exists because "who wrote this?" is asked on every render and
-scanning all incoming edges every time would be expensive.
+caches of the authorship derivation. The graph is the source of truth; see
+[authorship.md](../primitive/authorship.md) for the rule and the cache-
+rebuild semantics.
 
 ### author_id + author_type — discriminator, not foreign key
 
