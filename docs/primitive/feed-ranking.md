@@ -1227,7 +1227,7 @@ mechanism.
 the time-decay factor is applied only on the `B → t` hop. The
 `U → A` and `A → B` edges are full-weight regardless of when
 their top layer was added. This carries the **stances-not-events**
-rule (§3, [graph-model.md §3](graph-model.md)) through to time:
+rule ([graph-model.md §3](graph-model.md)) through to time:
 silence on a relationship edge is not a partial revocation of the
 stance — the stance still holds until the actor changes it. A user
 who wants their feed to reflect a closer or more distant
@@ -1238,7 +1238,7 @@ count itself does not amplify the contribution (see
 **Post-node age has no separate decay.** It falls out
 automatically: the **authorship edge** is itself a normal actor
 edge, and is the reactor edge for the path through the author
-(per [authorship.md:1-10](authorship.md#L1-L10)). Its top layer
+(per [authorship.md](authorship.md)). Its top layer
 ages with the post. An old post with no engagement → only the
 stale authorship path survives → naturally decayed by `f(Δt)`
 on that hop. An old post with new engagement → fresh reactor
@@ -1323,10 +1323,8 @@ an opt-in "no-decay" sort for users who want pure-graph signal.
 
 Time decay attenuates content that is **old and quiet**. It does
 **not** suppress content that is **old, currently active, and
-already seen by U**. The "already seen" problem is tracked
-separately as [open-questions.md Q5](../open-questions.md); it
-requires its own mechanism (client-side seen-set, per-viewer
-markers, or similar) and is not absorbed by reactor-edge decay.
+already seen by U**. The "already seen" problem is handled by
+the seen-list mechanism (§8), not by reactor-edge decay.
 
 ---
 
