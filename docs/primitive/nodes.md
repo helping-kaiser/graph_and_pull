@@ -142,6 +142,8 @@ Per-type properties committed so far:
   `band member` / `subsidiary` / `partner` / `member`, examples — the
   set is open-ended per the social contract), plus `ownership_pct`
   where the role carries an equity stake.
+- **ItemOwnership**: properties pending — to be committed alongside
+  the items.md design pass.
 
 ### Postgres-side content
 
