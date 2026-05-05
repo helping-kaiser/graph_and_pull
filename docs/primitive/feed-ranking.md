@@ -1330,13 +1330,117 @@ markers, or similar) and is not absorbed by reactor-edge decay.
 
 ---
 
-## 8. The "already seen" problem
+## 8. The "already-seen" filter
 
-Users should not be re-shown content they've already seen unless
-something meaningful happened (e.g. a friend commented on it). The
-options (graph-native view edges, separate store, client-side,
-compaction) and their tradeoffs are tracked in
-[open-questions.md Q5](../open-questions.md).
+Once a viewer has seen a content node, that **specific node**
+should not surface in their feed again. New activity on it (a
+fresh comment, a new reaction) is **separate, independently-
+rankable content** — the comment is its own node with its own
+`h(t)` and its own surfacing decision. The post itself stays
+seen; the comment competes on its own merits.
+
+This is a per-(viewer, content) state question, distinct from
+ranking math (§3–§5) and time decay (§7). Decay attenuates
+old-and-quiet content; the seen-filter suppresses
+old-and-already-shown content even when it's currently active.
+They compose orthogonally.
+
+### 8.1 Mechanism — seen-list as a ranking input
+
+The seen-list is a per-viewer set of content UUIDs treated as
+**another input to the feed-ranking computation**, alongside
+`R`, `d(R)`, `f(Δt)`, and the §5.2 friend-author-boost toggle.
+The calculator (client, miner, or central worker — see §9)
+accepts the seen-list as a JSON array of UUIDs and excludes
+those nodes from the candidate set **before** ranking begins.
+
+Pre-rank exclusion matters: for an active user, the majority of
+candidates under a wide-`R` pull are already seen. Excluding
+before computing `h(t)` for each candidate avoids ranking work
+that would just be thrown away.
+
+### 8.2 Storage — wherever the viewer prefers
+
+The seen-list belongs to the viewer, not to the backend. Its
+storage location is independent of the math:
+
+- **Backend (default for the central frontend).** Per-user
+  table in Postgres — see
+  [data-model.md](../implementation/data-model.md)
+  `user_view_log`. Multi-device sync for free; survives client
+  cache-clears.
+- **Local on a single device.** Frontend-only storage. Lost on
+  cache-clear; that's an explicit user trade-off, not a
+  privacy concession (the network is transparent — viewing
+  history is no more sensitive than reaction history).
+- **Miner / self-hosted client.** Per §9, ranking can run on a
+  chosen delegate; the seen-list lives with the delegate.
+  Aligned with the decentralization vision.
+- **Nowhere at all.** A user who doesn't want filtering accepts
+  seeing repeats. The math degrades gracefully: an empty
+  seen-list parameter excludes nothing.
+
+The calculator doesn't care where the data came from — it gets
+a JSON list as a parameter and applies it.
+
+### 8.3 What counts as "seen" — frontend's call
+
+The reference frontend's default rule:
+
+> Every content item that **passes through the viewport during
+> a render** counts as seen.
+
+No dwell threshold, no watch-time inference, no
+read-confirmation ceremony. The frontend fetches a batch of
+candidates (and their display payload from Postgres), renders
+them, and any item the user scrolls past is marked seen. Items
+fetched but never reaching the viewport (e.g. user closed the
+app early) stay unseen.
+
+The frontend batches seen-IDs and uploads them at natural
+checkpoints: batch-fill thresholds, scroll pauses, app close.
+A user whose client crashes or who clears cache between scroll
+and flush will see those items again — that's the cost of the
+simple mechanism, small enough to accept.
+
+This is the reference frontend's rule. Other frontends may
+choose different definitions of "seen" (dwell threshold,
+explicit mark-as-read, etc.). The backend just records what's
+reported.
+
+### 8.4 Bypass and history
+
+- **"Show everything" toggle** in the frontend bypasses the
+  seen-filter for users who want to browse the full ranked set
+  (review, search, deliberate revisit).
+- **Direct navigation always bypasses** the filter. Opening a
+  post by URL or via author profile shows it regardless of
+  seen-state — the filter only applies to feed *rendering*,
+  not to access.
+- **History tab** falls out of the same data: a UI surface
+  showing the user's view-log in chronological order, the way
+  a YouTube or browser history view works. No new mechanism,
+  just a different read over the same data.
+
+### 8.5 Compaction — drop entries older than 1 year
+
+By default, view-log entries older than **1 year** are dropped
+(by a periodic backend job for backend-stored lists; by the
+client/miner for self-stored lists). This bounds storage at
+~7 MB per active-user-year worst case.
+
+**Trade-off acknowledged:** an old post that resurges (a "late
+hype wave" — community sentiment somehow lands on year-old
+content) will reappear in the viewer's feed if its view-log
+entry has been compacted. Per §7's `f(Δt)`, this is rare in
+practice — decay attenuates such content heavily — but it
+does happen, and arguably is a positive: occasional
+nostalgia-resurfaces of resurging old content are part of feed
+character, not a defect.
+
+Frontends and self-hosted setups can adjust the horizon
+(longer for users who want stricter filtering, shorter for
+storage-constrained miners) or disable compaction entirely.
 
 ---
 

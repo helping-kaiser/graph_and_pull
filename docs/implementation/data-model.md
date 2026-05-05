@@ -128,6 +128,37 @@ CREATE TABLE hashtags (
 );
 ```
 
+### Per-viewer ranking-input state
+
+```sql
+-- View log: per-viewer record of which content nodes have been seen.
+-- Used by the feed-ranking computation as an exclusion set
+-- (see feed-ranking.md §8).
+--
+-- Storage location is the viewer's choice — this table is the
+-- backend-side default for the central frontend. Self-hosted
+-- clients and miners can keep the same data locally and pass it
+-- to the calculator as a JSON array; the math is the same.
+CREATE TABLE user_view_log (
+    user_id        UUID        NOT NULL,
+    content_id     UUID        NOT NULL,
+    first_seen_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, content_id)
+);
+CREATE INDEX user_view_log_recency_idx
+    ON user_view_log (user_id, first_seen_at);
+```
+
+Unlike display content (which follows the append-only versioning
+rule from [layers.md](../primitive/layers.md)), `user_view_log`
+is **operational filter state**, not graph history. It does not
+need to be preserved indefinitely, and a periodic compaction job
+drops entries older than **1 year** to bound storage at
+~7 MB per active-user-year. The trade-off — that an old post
+which resurges after compaction will reappear in the viewer's
+feed — is documented in [feed-ranking.md §8.5](../primitive/feed-ranking.md)
+and treated as acceptable feed character rather than a defect.
+
 ---
 
 ## What is intentionally NOT in Postgres

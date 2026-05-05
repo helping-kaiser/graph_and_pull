@@ -24,10 +24,9 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Build on foundations | 1 | **Q5** | Q3 already ruled out the implicit-view-edge options; Q4's decay attenuates *old-and-quiet* but not *old-and-already-seen* (per [feed-ranking.md §7.4](primitive/feed-ranking.md)), so Q5 still needs its own mechanism. |
-| 2. Scale concerns | 2 | **Q10** | Pure storage-cost optimization. With Q1 resolved (layer count is not a ranking signal), compaction only needs to preserve audit and transparency goals, not a ranking input. Only pressing at scale. |
-| 3. Policy, externally gated | 3 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
-| 4. Federation, post-spike | 4 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
+| 1. Scale concerns | 1 | **Q10** | Pure storage-cost optimization for graph-side layer history. With Q1 resolved (layer count is not a ranking signal) and Q5 resolved (seen-list compaction is its own track in Postgres), compaction only needs to preserve audit and transparency goals, not a ranking input. Only pressing at scale. |
+| 2. Policy, externally gated | 2 | **Q9** | Independent of technical work and independent of what blocks technical work. Needs legal + decentralization-roadmap input; don't let it gate anything else. |
+| 3. Federation, post-spike | 3 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -46,54 +45,7 @@ questions are closed.
 - Q6 — see [invitations.md "Default values and customization"](primitive/invitations.md). Defaults are `(+0.5, +0.5)` on both edges; both inviter and invitee choose their own outgoing edge during the invitation flow. The doc walks through the asymmetric-friend example (`(+1, -1)` on the invitee side as a deliberate "love them, not their content" stance that lets a later second edge dominate the feed).
 - Q4 — see [feed-ranking.md §7](primitive/feed-ranking.md). Time decay anchors on the **reactor edge's top-layer age** (the last actor edge in the path), applied as a scalar `f(Δt)` multiplier alongside `d(R)` to all four metrics (`h, i, j, k`). Default exponential with **30-day half-life**, frontend-tunable. Intermediate edges don't decay — silence on a relationship edge is not stance revocation. Post-node age has no separate decay — the authorship edge is itself a reactor edge and ages with the post, so old-with-no-engagement decays naturally and old-with-fresh-engagement resurfaces via fresh reactor-edge layers. Worked cold-start example in §7.3 shows the math.
 - Q1 — see [graph-model.md §8](primitive/graph-model.md). Layer count, layer timestamps, and the sequence of past edge values are **not ranking inputs**. They are metadata for audit, history, and UI surfaces (e.g., a "this edge has been revised N times" indicator, or a stale-edge prompt). Ranking sees only the top layer of each edge — the user's current expressed stance. Rationale: introducing layer-count amplification would let the system infer intent from interaction frequency, in tension with both **stances, not events** ([graph-model.md §3](primitive/graph-model.md)) and the user-controlled-ranking principle. Edge cases like "two friends with identical edges but very different real-world contact frequency" are explicitly not auto-resolved by the system; users update stances reactively (similar to pruning a stale subscription list) rather than the system inferring from behavior.
-
----
-
-## Q5 — The "already seen" problem
-
-**Where it shows up:** [feed-ranking.md §8](primitive/feed-ranking.md)
-**Status:** open
-
-### Context
-
-Users should not be re-shown content they've already seen, **unless**
-something meaningful happened (e.g. a friend commented on it since
-they last saw it). Any solution must:
-
-1. Not flood the graph with low-signal edges.
-2. Not be a black box.
-3. Allow users to revisit content manually.
-4. Surface content again when something meaningful changes (new
-   interactions from people the user cares about).
-
-### The question
-
-How should "already seen" tracking work?
-
-### Options considered
-
-- **~~A. View edges on the graph~~** — ruled out by Q3
-  (graph-model.md §3 "stances, not events"): a viewed-but-unreacted
-  node does not create an actor edge.
-- **B. Separate "seen" store outside the graph** (e.g. Redis set,
-  bitset, bloom filter).
-  - Pro: doesn't pollute the graph; compact data structures possible.
-  - Con: breaks the "everything is in the graph" property. Adds a
-    third data store.
-- **C. Client-side "seen" tracking.**
-  - Pro: aligns with the decentralized/compute-close-to-viewer vision
-    (see [feed-ranking.md §9](primitive/feed-ranking.md)). The client already
-    has the subgraph and knows what it rendered.
-  - Con: doesn't sync across devices without additional infra.
-- **~~D. View edges with aggressive compaction~~** — ruled out by Q3
-  for the same reason as A.
-
-### Related
-
-Q4 (decay) — resolved; see the resolved list above. Decay
-attenuates old-and-quiet content but does not suppress
-old-but-still-active content the viewer has already seen, so
-this question still needs its own mechanism.
+- Q5 — see [feed-ranking.md §8](primitive/feed-ranking.md). The seen-list is a per-viewer set of content UUIDs treated as **another input to the feed-ranking computation**, alongside `R`, `d(R)`, `f(Δt)`, and the §5.2 friend-author-boost. Pre-rank exclusion (perf win — already-seen content never enters the math). New activity on a seen post does **not** resurface it; the new comment/reaction is independently rankable as its own node. Storage location is the viewer's choice — backend-side `user_view_log` table in Postgres is the central frontend's default ([data-model.md](implementation/data-model.md)), but self-hosted clients/miners can keep the same data locally and pass it to the calculator (the math is the same regardless of where the JSON came from). Default frontend rule for "seen": every content item that passes through the viewport during a render. Frontend batches and flushes on natural checkpoints (batch-fill, scroll pause, app close); cache-clear before flush is an accepted small loss-window. Default 1-year compaction bounds storage at ~7 MB per active-user-year; the trade-off (a resurging old post will reappear if its view-log entry has been compacted) is documented and treated as acceptable feed character. No privacy-concealment story — viewing history is no more sensitive than reaction history per the network's transparency posture; "history" becomes a UI feature using the same data.
 
 ---
 
