@@ -12,8 +12,8 @@ see [Graph Model](../primitive/graph-model.md).
 
 ## The Boundary Rule
 
-> If the data is needed to **navigate or weight** the graph -> Memgraph.
-> If the data is needed to **display** something -> Postgres.
+> If the data is needed to **navigate or weight** the graph → Memgraph.
+> If the data is needed to **display** something → Postgres.
 
 UUIDs are the shared key. Both databases store the same ID for the same
 entity; neither database stores the other's fields.

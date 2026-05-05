@@ -190,7 +190,7 @@ ChatMember_Jakob_ChatY -[dim1: -1, dim2: 0]-> ChatMessage_X
 ```
 
 - Decouples the vote from the voter's personal sentiment. Their
-  `User -> ChatMessage` edge is untouched.
+  `User → ChatMessage` edge is untouched.
 - Voter identity is the eligibility junction, expressing "I vote as
   a member of this chat," not "I personally dislike this content."
 - Eligibility loss handled naturally: if the junction goes inactive,

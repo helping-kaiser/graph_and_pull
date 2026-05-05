@@ -110,9 +110,9 @@ with (liked, voted on, etc.).
 
 | Node type | Connects | Why it's a node |
 |-----------|----------|-----------------|
-| **ChatMember** | Chat <-> User/Collective | Has roles (admin, mod, member). Entry can require multi-sig approval (invite-only chats). Can be interacted with (vote to kick, promote to admin). See [chats.md](../instances/chats.md). |
-| **CollectiveMember** | Collective <-> User/Collective | Has roles (founder, shareholder, worker, band member, subsidiary, partner, member). Multi-sig for adding/removing members. Ownership stakes where applicable. Collectives can be members of other collectives (holdings, subsidiaries, label rosters, households as members of co-ops). See [collectives.md](../instances/collectives.md). |
-| **ItemOwnership** | Item <-> User/Collective | Represents ownership claim. Multi-sig for transfer (acquirer requests, current owner approves). Full ownership history. See [items.md](../instances/items.md). |
+| **ChatMember** | Chat ↔ User/Collective | Has roles (admin, mod, member). Entry can require multi-sig approval (invite-only chats). Can be interacted with (vote to kick, promote to admin). See [chats.md](../instances/chats.md). |
+| **CollectiveMember** | Collective ↔ User/Collective | Has roles (founder, shareholder, worker, band member, subsidiary, partner, member). Multi-sig for adding/removing members. Ownership stakes where applicable. Collectives can be members of other collectives (holdings, subsidiaries, label rosters, households as members of co-ops). See [collectives.md](../instances/collectives.md). |
+| **ItemOwnership** | Item ↔ User/Collective | Represents ownership claim. Multi-sig for transfer (acquirer requests, current owner approves). Full ownership history. See [items.md](../instances/items.md). |
 
 ### Why junction nodes exist
 

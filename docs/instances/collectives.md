@@ -75,7 +75,7 @@ CollectiveMember uses the **two-edge approval pattern** described in
 
 1. Actor (User or Collective) creates an actor edge toward a new
    **CollectiveMember** node.
-2. System creates `CollectiveMember -> Collective` (claim).
+2. System creates `CollectiveMember → Collective` (claim).
 3. Required approving actors create actor edges toward the same
    CollectiveMember node. Approval policy depends on the target
    role — a new shareholder may require approval from existing
@@ -83,7 +83,7 @@ CollectiveMember uses the **two-edge approval pattern** described in
    worker may be at founder discretion; adding a household member
    may need only the existing members' approval.
 4. Once the collective's approval policy is satisfied, the system
-   creates `Collective -> CollectiveMember` (approval).
+   creates `Collective → CollectiveMember` (approval).
 5. Actor is an active member.
 
 Multi-sig approval thresholds are expressed as "N actor edges from

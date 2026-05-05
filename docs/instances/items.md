@@ -31,11 +31,11 @@ ItemOwnership uses the **two-edge approval pattern** described in
 
 1. **Acquirer** (User or Collective) creates an actor edge toward a new
    **ItemOwnership** node.
-2. System creates `ItemOwnership -> Item` (claim, pending).
+2. System creates `ItemOwnership → Item` (claim, pending).
 3. **Current owner** creates an actor edge toward the same
    ItemOwnership node with positive sentiment (approval).
 4. Approval policy is satisfied; system creates
-   `Item -> ItemOwnership` (approval).
+   `Item → ItemOwnership` (approval).
 5. Transfer is complete; the new ItemOwnership is now the active one.
 
 No one can take ownership without the current owner's explicit
@@ -43,9 +43,9 @@ approval — there is no "take" operation in the graph.
 
 ## Supersession: exactly one active ItemOwnership per item
 
-When a transfer completes and the new `Item -> ItemOwnership` approval
+When a transfer completes and the new `Item → ItemOwnership` approval
 edge is created, the system **automatically** adds a new layer on the
-**previous** ItemOwnership's `Item -> ItemOwnership` approval edge
+**previous** ItemOwnership's `Item → ItemOwnership` approval edge
 with `dim1 < 0` — marking it revoked/superseded. This uses the
 general state-transition mechanism on structural edges described in
 [graph-model.md §5](../primitive/graph-model.md).
@@ -53,7 +53,7 @@ general state-transition mechanism on structural edges described in
 The invariant is: **at most one ItemOwnership per item has a positive
 top layer on its approval edge at any time.** Identifying the current
 owner is therefore a single-edge query — "find the ItemOwnership
-whose `Item -> ItemOwnership` top layer has `dim1 > 0`" — with no
+whose `Item → ItemOwnership` top layer has `dim1 > 0`" — with no
 timestamp comparisons required.
 
 The cascade is why this works under append-only: the old approval
@@ -61,7 +61,7 @@ edge isn't removed, it just has a newer layer that flips its state to
 revoked.
 
 An item with **no** active ItemOwnership (no positive top layer on
-any `Item -> ItemOwnership` edge) is considered abandoned. The
+any `Item → ItemOwnership` edge) is considered abandoned. The
 history of all previous owners remains visible in the layer stacks.
 
 ## Shared ownership routes through a Collective

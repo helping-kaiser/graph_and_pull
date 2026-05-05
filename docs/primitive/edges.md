@@ -28,35 +28,35 @@ in the math is uniform.
 
 | Edge type | Dimension 1 | Dimension 2 |
 |-----------|-------------|-------------|
-| User -> User | **Sentiment** (love to hate) | **Interest** (how interested I am in their content / output — distinct from how well I know them) |
-| User -> Collective | **Sentiment** (love to hate) | **Interest** (how interested I am in this collective's output) |
-| User -> Post | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
-| User -> Comment | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
-| User -> Chat | **Sentiment** (like to dislike) | **Relevance** (how important is this chat to me) |
-| User -> ChatMessage | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
-| User -> ChatMember | **Sentiment** (approve to reject) | **Importance** (how important is this membership to me) |
-| User -> CollectiveMember | **Sentiment** (approve to reject) | **Importance** (how important is this membership to me) |
-| User -> ItemOwnership | **Sentiment** (approve to reject) | **Importance** (how important is this transfer to me) |
-| User -> Item | **Sentiment** (want to avoid) | **Relevance** (how interesting to me) |
-| User -> Hashtag | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
-| User -> Proposal | **Sentiment** (support to oppose) | **Importance** (how strongly I want this change) |
+| User → User | **Sentiment** (love to hate) | **Interest** (how interested I am in their content / output — distinct from how well I know them) |
+| User → Collective | **Sentiment** (love to hate) | **Interest** (how interested I am in this collective's output) |
+| User → Post | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
+| User → Comment | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
+| User → Chat | **Sentiment** (like to dislike) | **Relevance** (how important is this chat to me) |
+| User → ChatMessage | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
+| User → ChatMember | **Sentiment** (approve to reject) | **Importance** (how important is this membership to me) |
+| User → CollectiveMember | **Sentiment** (approve to reject) | **Importance** (how important is this membership to me) |
+| User → ItemOwnership | **Sentiment** (approve to reject) | **Importance** (how important is this transfer to me) |
+| User → Item | **Sentiment** (want to avoid) | **Relevance** (how interesting to me) |
+| User → Hashtag | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
+| User → Proposal | **Sentiment** (support to oppose) | **Importance** (how strongly I want this change) |
 
 ### Collective as actor
 
 | Edge type | Dimension 1 | Dimension 2 |
 |-----------|-------------|-------------|
-| Collective -> User | **Sentiment** | **Relevance** (how valuable is this user to the collective) |
-| Collective -> Collective | **Sentiment** | **Relevance** |
-| Collective -> Post | **Sentiment** | **Relevance** |
-| Collective -> Comment | **Sentiment** | **Relevance** |
-| Collective -> Chat | **Sentiment** | **Relevance** |
-| Collective -> ChatMessage | **Sentiment** | **Relevance** |
-| Collective -> ChatMember | **Sentiment** (approve to reject) | **Importance** |
-| Collective -> CollectiveMember | **Sentiment** (approve to reject) | **Importance** |
-| Collective -> ItemOwnership | **Sentiment** (approve to reject) | **Importance** |
-| Collective -> Item | **Sentiment** | **Relevance** (how important is this product) |
-| Collective -> Hashtag | **Sentiment** | **Relevance** |
-| Collective -> Proposal | **Sentiment** (support to oppose) | **Importance** (how strongly the collective wants this change) |
+| Collective → User | **Sentiment** | **Relevance** (how valuable is this user to the collective) |
+| Collective → Collective | **Sentiment** | **Relevance** |
+| Collective → Post | **Sentiment** | **Relevance** |
+| Collective → Comment | **Sentiment** | **Relevance** |
+| Collective → Chat | **Sentiment** | **Relevance** |
+| Collective → ChatMessage | **Sentiment** | **Relevance** |
+| Collective → ChatMember | **Sentiment** (approve to reject) | **Importance** |
+| Collective → CollectiveMember | **Sentiment** (approve to reject) | **Importance** |
+| Collective → ItemOwnership | **Sentiment** (approve to reject) | **Importance** |
+| Collective → Item | **Sentiment** | **Relevance** (how important is this product) |
+| Collective → Hashtag | **Sentiment** | **Relevance** |
+| Collective → Proposal | **Sentiment** (support to oppose) | **Importance** (how strongly the collective wants this change) |
 
 ---
 
@@ -70,15 +70,15 @@ see [graph-model.md](graph-model.md) for the rule).
 
 | Edge type | Meaning |
 |-----------|---------|
-| Comment -> Post | This comment is on this post |
-| Comment -> Comment | This comment is a reply to that comment |
-| Comment -> Chat | This comment is on this chat as a whole |
-| Comment -> ChatMessage | This comment is on this specific message |
-| Comment -> Item | This comment is on this item |
-| ChatMessage -> Chat | This message belongs to this chat |
-| ChatMember -> Chat | This membership claims to be about this chat (claim) |
-| CollectiveMember -> Collective | This membership claims to be about this collective (claim) |
-| ItemOwnership -> Item | This ownership claim relates to this item (claim) |
+| Comment → Post | This comment is on this post |
+| Comment → Comment | This comment is a reply to that comment |
+| Comment → Chat | This comment is on this chat as a whole |
+| Comment → ChatMessage | This comment is on this specific message |
+| Comment → Item | This comment is on this item |
+| ChatMessage → Chat | This message belongs to this chat |
+| ChatMember → Chat | This membership claims to be about this chat (claim) |
+| CollectiveMember → Collective | This membership claims to be about this collective (claim) |
+| ItemOwnership → Item | This ownership claim relates to this item (claim) |
 
 ### Approval completion
 
@@ -87,16 +87,16 @@ Paired with the claim edges above — see
 
 | Edge type | Meaning |
 |-----------|---------|
-| Chat -> ChatMember | This chat has accepted this member |
-| Collective -> CollectiveMember | This collective has accepted this member |
-| Item -> ItemOwnership | This item's ownership transfer to this claim is complete |
+| Chat → ChatMember | This chat has accepted this member |
+| Collective → CollectiveMember | This collective has accepted this member |
+| Item → ItemOwnership | This item's ownership transfer to this claim is complete |
 
 ### Tagging
 
 | Edge type | Meaning |
 |-----------|---------|
-| Post -> Hashtag | This post is tagged with this hashtag |
-| Item -> Hashtag | This item is tagged with this hashtag |
+| Post → Hashtag | This post is tagged with this hashtag |
+| Item → Hashtag | This item is tagged with this hashtag |
 
 ### Voting (Shape B)
 
@@ -108,8 +108,8 @@ direction (`+1` support, `-1` oppose, intermediate values allowed),
 
 | Edge type | Meaning |
 |-----------|---------|
-| ChatMember -> Proposal | A chat-eligible vote on a proposed property change |
-| CollectiveMember -> Proposal | A collective-eligible vote on a proposed property/role change |
+| ChatMember → Proposal | A chat-eligible vote on a proposed property change |
+| CollectiveMember → Proposal | A collective-eligible vote on a proposed property/role change |
 
 ---
 
@@ -138,8 +138,8 @@ enough that the endpoint-label-filter approach adds cost or noise.
 
 | Label | Applies to | Rationale |
 |---|---|---|
-| `:CLAIM` | Junction → Parent (e.g. `ChatMember -> Chat`) | The claim side of the two-edge approval pattern. Frequently queried as "what is this actor a member of (including pending)?" |
-| `:APPROVAL` | Parent → Junction (e.g. `Chat -> ChatMember`) | The approval side. "Is this relationship currently active?" queries scan only `:APPROVAL` edges with positive top-layer `dim1`. |
+| `:CLAIM` | Junction → Parent (e.g. `ChatMember → Chat`) | The claim side of the two-edge approval pattern. Frequently queried as "what is this actor a member of (including pending)?" |
+| `:APPROVAL` | Parent → Junction (e.g. `Chat → ChatMember`) | The approval side. "Is this relationship currently active?" queries scan only `:APPROVAL` edges with positive top-layer `dim1`. |
 | `:CONTAINMENT` | Comment → Post, Comment → Comment, ChatMessage → Chat, Comment → Chat, Comment → ChatMessage, Comment → Item | Content containment and reply structure. Queried for feed assembly and thread rendering. |
 | `:TAGGING` | Post → Hashtag, Item → Hashtag | Tag associations. Queried by hashtag-centric browsing. |
 

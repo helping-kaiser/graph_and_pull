@@ -66,9 +66,9 @@ The two axes are independent. Every combination is valid:
 A chat is not just a bag of messages. It has its own node identity that
 can be reacted to and ranked:
 
-- `User -> Chat` actor edge — sentiment and relevance toward the chat
+- `User → Chat` actor edge — sentiment and relevance toward the chat
   itself ("this chat is a great space", "this chat has gone toxic").
-- `Comment -> Chat` structural edge — comment on the chat as a whole.
+- `Comment → Chat` structural edge — comment on the chat as a whole.
 - Chats can appear in feeds alongside posts, ranked like any other
   content.
 
@@ -90,8 +90,8 @@ chats simply participate in it alongside every other node type.
 Each individual message is also a node — not a row in a table hidden
 inside the chat:
 
-- `User -> ChatMessage` actor edge — like, dislike, mark interesting.
-- `Comment -> ChatMessage` structural edge — comment on a specific
+- `User → ChatMessage` actor edge — like, dislike, mark interesting.
+- `Comment → ChatMessage` structural edge — comment on a specific
   message. Without this, pointing at "that wild take three messages up"
   requires prose description; with it, the comment links the exact
   message.
@@ -126,7 +126,7 @@ from outside — sees:
 - That the ChatMessage exists.
 - Its author (see [authorship.md](../primitive/authorship.md)).
 - Its creation timestamp.
-- Its structural position (`ChatMessage -> Chat`).
+- Its structural position (`ChatMessage → Chat`).
 - A ciphertext blob as the payload.
 
 They do **not** see the plaintext. Decryption requires the per-chat
@@ -180,16 +180,16 @@ both use Shape B (the vote travels from the voter's `ChatMember`
 junction to the subject, so the chat stance stays decoupled from
 personal sentiment).
 
-### Level 1 — Message disavowal (`Chat -> ChatMessage`)
+### Level 1 — Message disavowal (`Chat → ChatMessage`)
 
 Members vote to disavow a specific `ChatMessage`. If the vote
-passes, a new layer on the `Chat -> ChatMessage` structural edge
+passes, a new layer on the `Chat → ChatMessage` structural edge
 signals that the chat no longer associates itself with the message.
 The message is **not** removed — append-only applies. A reader who
 wants to see disavowed content still can; a reader who treats the
 chat's current stance as authoritative simply won't.
 
-### Level 2 — Member disavowal (`Chat -> ChatMember`)
+### Level 2 — Member disavowal (`Chat → ChatMember`)
 
 A chat can also move away from a *member*, not just a message.
 This is the heavier decision and is a separate governance act —
@@ -199,7 +199,7 @@ severe one; the community decides when to escalate. The count of
 incoming `disavow` edges on a `ChatMember` is a visible signal,
 but never a trigger.
 
-If the vote passes, a new layer on the `Chat -> ChatMember`
+If the vote passes, a new layer on the `Chat → ChatMember`
 structural edge reflects that the chat no longer accepts the
 member. The full membership history stays in the graph; only the
 current stance changes.
@@ -214,7 +214,7 @@ Starting points, not fixed rules:
 | Role weights    | `admin = 5`, `mod = 3`, `member = 1`                                  | Same                                                                  |
 | Quorum          | ≥ 20% of total eligible weight has cast a vote                        | ≥ 40% of total eligible weight has cast a vote                        |
 | Threshold       | > 50% of cast weight disavowing                                       | ≥ 2/3 of cast weight disavowing                                       |
-| Outcome         | New layer on `Chat -> ChatMessage`                                    | New layer on `Chat -> ChatMember`                                     |
+| Outcome         | New layer on `Chat → ChatMessage`                                    | New layer on `Chat → ChatMember`                                     |
 | Takes effect at | New-vote threshold-crossing ([governance.md §6](../primitive/governance.md))       | Same                                                                  |
 
 **Every number above is a node property on the `Chat`.** Role

@@ -66,7 +66,7 @@ system runs it (per-viewer, off the central hot path).
 ### 4. Edges are the source of truth
 
 All graph state lives in edges. Edges are:
-- **Directional** — A -> B and B -> A are independent
+- **Directional** — A → B and B → A are independent
 - **Multi-dimensional** — 2 user dimensions + system dimensions
 - **Append-only** — new layers on top, never delete or overwrite
 - **Uniform** — actor and structural edges have the same tensor shape
@@ -147,7 +147,7 @@ reasoning and the math/deployment separation.
 ```
 Phase 1 — central backend serves subgraph + seen-list
 
-1. Client -> POST /graphql to fetch the viewer's relevant graph
+1. Client → POST /graphql to fetch the viewer's relevant graph
    slice.
 2. API calls graph-engine: traverse N hops outward from the
    viewing user; return the relevant subgraph (nodes + their

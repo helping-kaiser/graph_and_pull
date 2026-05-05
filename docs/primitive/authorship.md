@@ -11,10 +11,10 @@ values — the author's initial feelings about their own content
 
 ## Example
 
-Jakob creates a post. His actor edge `Jakob -> Post_X` is layer 1, with
+Jakob creates a post. His actor edge `Jakob → Post_X` is layer 1, with
 the earliest timestamp of any incoming edge on Post_X. That makes Jakob
 the author. Later, Alice likes the same post — her edge
-`Alice -> Post_X` also has a layer 1, but its timestamp is later than
+`Alice → Post_X` also has a layer 1, but its timestamp is later than
 Jakob's. The author is always the earliest.
 
 ## Caching
