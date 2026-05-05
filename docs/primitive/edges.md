@@ -39,6 +39,7 @@ in the math is uniform.
 | User -> ItemOwnership | **Sentiment** (approve to reject) | **Importance** (how important is this transfer to me) |
 | User -> Item | **Sentiment** (want to avoid) | **Relevance** (how interesting to me) |
 | User -> Hashtag | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
+| User -> Proposal | **Sentiment** (support to oppose) | **Importance** (how strongly I want this change) |
 
 ### Collective as actor
 
@@ -55,6 +56,7 @@ in the math is uniform.
 | Collective -> ItemOwnership | **Sentiment** (approve to reject) | **Importance** |
 | Collective -> Item | **Sentiment** | **Relevance** (how important is this product) |
 | Collective -> Hashtag | **Sentiment** | **Relevance** |
+| Collective -> Proposal | **Sentiment** (support to oppose) | **Importance** (how strongly the collective wants this change) |
 
 ---
 
@@ -95,6 +97,19 @@ Paired with the claim edges above — see
 |-----------|---------|
 | Post -> Hashtag | This post is tagged with this hashtag |
 | Item -> Hashtag | This item is tagged with this hashtag |
+
+### Voting (Shape B)
+
+System-created when a voter casts a Shape B vote (see
+[governance.md §3](governance.md)). The edge runs from the voter's
+**eligibility junction** to the subject; `dim1` carries vote
+direction (`+1` support, `-1` oppose, intermediate values allowed),
+`dim2` is `0`.
+
+| Edge type | Meaning |
+|-----------|---------|
+| ChatMember -> Proposal | A chat-eligible vote on a proposed property change |
+| CollectiveMember -> Proposal | A collective-eligible vote on a proposed property/role change |
 
 ---
 
