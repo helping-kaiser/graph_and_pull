@@ -34,9 +34,9 @@ in the math is uniform.
 | User -> Comment | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
 | User -> Chat | **Sentiment** (like to dislike) | **Relevance** (how important is this chat to me) |
 | User -> ChatMessage | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
-| User -> ChatMember | **Sentiment** (approve to reject) | **Relevance** (how important is this membership to me) |
-| User -> CollectiveMember | **Sentiment** (approve to reject) | **Relevance** (how important is this membership to me) |
-| User -> ItemOwnership | **Sentiment** (approve to reject) | **Relevance** (how important is this transfer to me) |
+| User -> ChatMember | **Sentiment** (approve to reject) | **Importance** (how important is this membership to me) |
+| User -> CollectiveMember | **Sentiment** (approve to reject) | **Importance** (how important is this membership to me) |
+| User -> ItemOwnership | **Sentiment** (approve to reject) | **Importance** (how important is this transfer to me) |
 | User -> Item | **Sentiment** (want to avoid) | **Relevance** (how interesting to me) |
 | User -> Hashtag | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
 
@@ -50,9 +50,9 @@ in the math is uniform.
 | Collective -> Comment | **Sentiment** | **Relevance** |
 | Collective -> Chat | **Sentiment** | **Relevance** |
 | Collective -> ChatMessage | **Sentiment** | **Relevance** |
-| Collective -> ChatMember | **Sentiment** (approve to reject) | **Relevance** |
-| Collective -> CollectiveMember | **Sentiment** (approve to reject) | **Relevance** |
-| Collective -> ItemOwnership | **Sentiment** (approve to reject) | **Relevance** |
+| Collective -> ChatMember | **Sentiment** (approve to reject) | **Importance** |
+| Collective -> CollectiveMember | **Sentiment** (approve to reject) | **Importance** |
+| Collective -> ItemOwnership | **Sentiment** (approve to reject) | **Importance** |
 | Collective -> Item | **Sentiment** | **Relevance** (how important is this product) |
 | Collective -> Hashtag | **Sentiment** | **Relevance** |
 
