@@ -143,6 +143,10 @@ What does NOT create or update an actor edge:
 - Sharing content externally (link copy, share-to-another-app,
   export). The act of sharing is a frontend event — not a stance
   the actor took toward the content.
+- Bookmarking content. Bookmarks are private per-user state (see
+  `user_bookmarks` in [data-model.md](../implementation/data-model.md)),
+  not a public stance — they say "I want to find this later," not
+  "I want this to reach my network."
 - Tagging an own post with a hashtag. The `Post → Hashtag`
   structural edge already encodes the association; the actor
   reaches the hashtag via the `Actor → Post → Hashtag` path.
