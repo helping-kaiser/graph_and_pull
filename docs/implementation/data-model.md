@@ -284,6 +284,36 @@ CREATE INDEX user_bookmarks_recency_idx
 
 ---
 
+### User preferences
+
+Per-user settings stored backend-side so they cross devices.
+**Storage location is not flexible** for this category (unlike the
+"Personal frontend state" tables above): iOS App Store rules forbid
+in-app changes to mature-content settings, so users adjust them in
+the web UI and the setting carries over to mobile clients — which
+means the central backend has to be the source of truth.
+
+```sql
+-- User preferences: per-user frontend settings the backend persists
+-- so they cross devices (see section intro for the App Store
+-- rationale).
+--
+-- content_filtering_severity_level: how aggressive the viewer wants
+-- the sensitive-content filter to be. 0 = show everything,
+-- 10 = strictest. NULL = unset (frontend default applies).
+-- Sensitive-content classification itself is community-moderated;
+-- the moderation mechanism lives in moderation.md (forthcoming PR).
+CREATE TABLE user_preferences (
+    user_id                          UUID     PRIMARY KEY,
+    content_filtering_severity_level SMALLINT CHECK (
+        content_filtering_severity_level IS NULL OR
+        (content_filtering_severity_level BETWEEN 0 AND 10)
+    )
+);
+```
+
+---
+
 ### Application registry
 
 ```sql
