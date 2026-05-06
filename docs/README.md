@@ -58,6 +58,9 @@ If you find yourself defining a new mechanism inside an
   from the earliest incoming edge.
 - [invitations](primitive/invitations.md) — two-edge onboarding
   pattern for new actors.
+- [network](primitive/network.md) — the global community of all
+  users on an instance; `network_role` (member / moderator);
+  genesis-mod bootstrap; multi-sig role changes.
 
 ### `instances/`
 
