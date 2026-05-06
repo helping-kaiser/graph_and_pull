@@ -98,6 +98,20 @@ Paired with the claim edges above — see
 | Post → Hashtag | This post is tagged with this hashtag |
 | Item → Hashtag | This item is tagged with this hashtag |
 
+### Subject targeting
+
+System-created when a Proposal node is created. Records which node
+the Proposal targets (the node whose property is proposed for
+change — see [governance.md §2.1](governance.md)).
+
+| Edge type | Meaning |
+|-----------|---------|
+| Proposal → Target Node (any node) | This proposal targets this node's property |
+
+The property name and proposed value are properties on the Proposal
+node, not on this edge — the change is intrinsic to the Proposal,
+not to the relationship.
+
 ### Voting (Shape B)
 
 System-created when a voter casts a Shape B vote (see
@@ -142,6 +156,7 @@ enough that the endpoint-label-filter approach adds cost or noise.
 | `:APPROVAL` | Parent → Junction (e.g. `Chat → ChatMember`) | The approval side. "Is this relationship currently active?" queries scan only `:APPROVAL` edges with positive top-layer `dim1`. |
 | `:CONTAINMENT` | Comment → Post, Comment → Comment, ChatMessage → Chat, Comment → Chat, Comment → ChatMessage, Comment → Item | Content containment and reply structure. Queried for feed assembly and thread rendering. |
 | `:TAGGING` | Post → Hashtag, Item → Hashtag | Tag associations. Queried by hashtag-centric browsing. |
+| `:TARGETS` | Proposal → Target Node | The proposal-to-subject relationship. Common query: "what proposals target this node?" needed by the governance cascade. |
 
 All sub-category labels **replace** `:STRUCTURAL`, not add to it — a
 relationship has exactly one label in Memgraph.

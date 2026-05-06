@@ -85,17 +85,24 @@ Most content nodes have minimal graph-side properties — the substance
 lives in Postgres. Specific cases:
 
 - **Chat**: `name` (if needed for routing or display hints) and
-  `content_privacy` (plaintext vs E2EE — the graph needs this to
-  know what to route). See [chats.md](../instances/chats.md).
+  `join_policy` (`open` / `invite-only` / `request-entry` /
+  `multi-sig`) — the graph reads `join_policy` when an actor's claim
+  toward a `ChatMember` arrives, to decide what approval is required.
+  See [chats.md §2](../instances/chats.md). The `content_privacy`
+  setting (plaintext vs E2EE) lives in Postgres alongside the chat
+  row — message bodies are always a Postgres concern (see
+  [chats.md §4-5](../instances/chats.md)), so the graph never reads
+  the privacy setting.
 - **Hashtag**: its tag string — the tag *is* the identifier. The
   UUID is content-addressed (`UUIDv5` of the canonical name with
   a fixed namespace); see
   [data-model.md "Node identity strategies"](../implementation/data-model.md)
   for the full mechanism and the federation implications.
-- **Proposal**: `target_node_id`, `target_property`,
-  `proposed_value`. A Proposal is fully specified by these three —
-  no display content in Postgres. See
-  [governance.md §2.1](governance.md) for the mechanism.
+- **Proposal**: `target_property` and `proposed_value` as node
+  properties; the **target node** is reached via a `:TARGETS`
+  structural edge (`Proposal → Target`). No display content in
+  Postgres. See [governance.md §2.1](governance.md) for the
+  mechanism and [edges.md §2](edges.md) for the `:TARGETS` label.
 
 Post bodies, Comment bodies, ChatMessage payloads, Item descriptions
 and media, Chat descriptions all live in Postgres — not on the graph.

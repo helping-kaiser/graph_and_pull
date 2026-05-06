@@ -99,11 +99,16 @@ CREATE INDEX ON :Comment(id);
 
 #### `:Chat`
 
-| Property          | Type   | Notes |
+| Property      | Type   | Notes |
 |---|---|---|
-| `id`              | String | UUID v4. |
-| `name`            | String | Optional; layered. The graph carries it for routing/display hints. |
-| `content_privacy` | String | `'plaintext'` or `'e2ee'`. Per current [nodes.md L88](../primitive/nodes.md). **Pending redesign in PR A** — see chat-content note below. |
+| `id`          | String | UUID v4. |
+| `name`        | String | Optional; layered. The graph carries it for routing/display hints. |
+| `join_policy` | String | `'open'` / `'invite-only'` / `'request-entry'` / `'multi-sig'`. Layered. Read by the system when an actor's claim toward a `:ChatMember` arrives, to decide what approval is required. See [chats.md §2](../instances/chats.md). |
+
+The `content_privacy` setting (plaintext vs E2EE) lives in Postgres,
+not on the graph — message bodies are always Postgres-side per
+[chats.md §4-5](../instances/chats.md), so the graph never reads it.
+See [data-model.md](data-model.md).
 
 ```cypher
 CREATE CONSTRAINT ON (c:Chat) ASSERT c.id IS UNIQUE;
@@ -151,9 +156,12 @@ CREATE INDEX ON :Hashtag(id);
 | Property          | Type    | Notes |
 |---|---|---|
 | `id`              | String  | UUID v4. |
-| `target_node_id`  | String  | UUID of the node whose property is being proposed for change. **Pending redesign in PR A** — see proposal-target note below. |
 | `target_property` | String  | Name of the property on the target node. |
 | `proposed_value`  | Variant | The proposed new value (type matches the target property). |
+
+The target node itself is reached via a `:TARGETS` structural edge
+(`Proposal → Target`), not a foreign-key property — see
+[edges.md §2](../primitive/edges.md).
 
 ```cypher
 CREATE CONSTRAINT ON (p:Proposal) ASSERT p.id IS UNIQUE;
@@ -221,6 +229,7 @@ for picking the right one live in
 | `:APPROVAL`    | Parent → Junction (e.g. `Chat → ChatMember`)                             | System     |
 | `:CONTAINMENT` | Comment → Post / Comment / Chat / ChatMessage / Item; ChatMessage → Chat | System     |
 | `:TAGGING`     | Post → Hashtag, Item → Hashtag                                           | System     |
+| `:TARGETS`     | Proposal → Target Node                                                   | System     |
 | `:STRUCTURAL`  | Any structural edge not in a sub-category above                          | System     |
 
 ## Edge properties
@@ -254,22 +263,3 @@ unified two-axis dimension grammar.
   the viewer chooses to store it. See
   [data-model.md](data-model.md).
 
----
-
-## Pending redesigns (tracked for PR A)
-
-Two items in the schema above are documented as currently committed but
-flagged for revision in the next PR:
-
-- **`Chat.content_privacy` as a graph property.** Reaffirming that
-  message content is exclusively a Postgres concern (the lean-graph
-  principle) makes `content_privacy` Postgres-only. The graph never
-  reads or routes on it. PR A removes it from `:Chat`. Also resolves
-  the §4 / §5 inconsistency in [chats.md](../instances/chats.md)
-  about message body location.
-- **`Proposal.target_node_id` / `target_property` / `proposed_value`
-  as properties.** A foreign-key-in-a-graph-DB anti-pattern. PR A
-  replaces with a `(:Proposal)-[:TARGETS]->(target)` structural edge,
-  keeping `target_property` and `proposed_value` as Proposal-node
-  properties (the change is intrinsic to the proposal, not the
-  relationship).

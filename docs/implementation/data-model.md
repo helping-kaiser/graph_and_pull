@@ -91,11 +91,15 @@ CREATE TABLE comments (
 );
 
 -- Chats: conversation containers
+-- content_privacy controls how message bodies in chat_messages are stored
+-- (plaintext vs ciphertext). The graph never reads it — see chats.md §4-5.
 CREATE TABLE chats (
-    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    name        TEXT,       -- null for 1:1 chats
-    description TEXT,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    name            TEXT,       -- null for 1:1 chats
+    description     TEXT,
+    content_privacy TEXT        NOT NULL DEFAULT 'plaintext'
+                                CHECK (content_privacy IN ('plaintext', 'e2ee')),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Chat messages: individual messages within a chat

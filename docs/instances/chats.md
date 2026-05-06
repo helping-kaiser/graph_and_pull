@@ -45,11 +45,14 @@ two-edge approval pattern. Four shapes:
 
 ### Content privacy — who can read messages
 
-- **Plaintext** — ChatMessage payloads are stored as readable text.
-  Anyone walking the graph can read them.
-- **End-to-end encrypted (E2EE)** — ChatMessage payloads are
-  ciphertext. Only members holding the decryption key can read. The
-  graph layer never sees plaintext.
+Message bodies always live in Postgres — see §4 below. The privacy
+setting controls how that body row is stored:
+
+- **Plaintext** — ChatMessage bodies are stored in Postgres as
+  readable text. Anyone with API or database access can read them.
+- **End-to-end encrypted (E2EE)** — ChatMessage bodies are stored
+  in Postgres as ciphertext. Only members holding the decryption
+  key can read; even the database operator never sees plaintext.
 
 The two axes are independent. Every combination is valid:
 
@@ -119,26 +122,30 @@ Postgres-side display content.
 
 ## 5. Encryption as the privacy mechanism
 
-For an E2EE chat, the ChatMessage payload stored on the graph is a
-**ciphertext blob**. The graph layer — and anyone reading the graph
-from outside — sees:
+The graph carries chat **topology only** — it never holds message
+bodies, encrypted or not. Per §4, every body lives in Postgres. For an
+E2EE chat the body row in Postgres is a **ciphertext blob**; for a
+plaintext chat it's readable text.
 
-- That the ChatMessage exists.
-- Its author (see [authorship.md](../primitive/authorship.md)).
-- Its creation timestamp.
-- Its structural position (`ChatMessage → Chat`).
-- A ciphertext blob as the payload.
+An observer with API or database access sees:
 
-They do **not** see the plaintext. Decryption requires the per-chat
-symmetric key held by members.
+- Graph: that the ChatMessage exists, its author (see
+  [authorship.md](../primitive/authorship.md)), its creation
+  timestamp, its structural position (`ChatMessage → Chat`).
+- Postgres: the body row — ciphertext if the chat is E2EE,
+  plaintext otherwise.
+
+For E2EE chats, decrypting the body requires the per-chat symmetric
+key held by members.
 
 Important to be explicit about:
 
-- **The graph layer is never a trusted party for decryption.** It has
-  no access to plaintext at any point.
-- **Privacy is key management, not a graph feature.** If a member
-  leaks the key or forwards decrypted content, nothing in the graph can
-  prevent it — same as every E2EE system.
+- **No layer of the system is a trusted party for decryption.** The
+  graph holds no body content at all. The Postgres operator holds
+  ciphertext for E2EE chats and never sees the key.
+- **Privacy is key management, not a graph or database feature.** If a
+  member leaks the key or forwards decrypted content, nothing in the
+  system can prevent it — same as every E2EE system.
 - **Metadata is public by design.** The fact that users A and B share
   a chat is a public graph fact. This is a deliberate departure from
   apps that try to hide who talks to whom.
