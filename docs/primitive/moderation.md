@@ -80,18 +80,21 @@ weighted-voters.
 The Network ([network.md](network.md)) is the eligibility-and-
 voting body for moderation Proposals.
 
-- **Eligibility:** all active Network members (every User).
+- **Eligibility:** all active Network members (every User with at
+  least one outgoing actor edge inside the
+  `Network.active_threshold_days` window).
 - **Vote weight:** 1 per voter — mod or member.
 - **Vote shape:** Shape B from the voter's User node directly.
   See [governance.md §3](governance.md) for the relaxation
   that permits a User node (rather than a junction) to carry
   the vote for Network-level governance.
-- **Default thresholds (starting points, not fixed rules):**
+- **Thresholds (read from the `:Network` singleton — see
+  [graph-data-model.md](../implementation/graph-data-model.md)):**
 
-  | Action | Quorum (% of active Network) | Pass-threshold (of cast) | Mod gate |
+  | Action | Quorum property | Pass-threshold property | Mod gate |
   |---|---|---|---|
-  | Classify `sensitive` | ≥1% | >50% | ≥1 mod positive |
-  | Classify `illegal` | ≥2% | ≥2/3 | ≥1 mod positive |
+  | Classify `sensitive`         | `Network.moderation_sensitive_quorum` (default 1%) | `Network.moderation_sensitive_threshold` (default >50%) | ≥1 mod positive |
+  | Classify `illegal`           | `Network.moderation_illegal_quorum` (default 2%) | `Network.moderation_illegal_threshold` (default ≥2/3) | ≥1 mod positive |
   | Un-classify back to `normal` | symmetric to the original action | symmetric | ≥1 mod positive |
 
 Quorum percentages are deliberately low so decisions can actually
@@ -99,9 +102,10 @@ finish — at network scale, even 1-2% participation in a specific
 decision is high. The mod gate carries the integrity guarantee;
 quorum just keeps a single mod from acting unilaterally.
 
-Every number above is a Network-level parameter, itself amendable
-via the same Proposal primitive ([governance.md §2.4](governance.md)).
-Defaults exist to bootstrap; they are not fixed rules.
+Every number above is a property of the `:Network` singleton,
+itself amendable via the same Proposal primitive
+([governance.md §2.4](governance.md)). Defaults exist to bootstrap;
+they are not fixed rules.
 
 ## 5. Scope
 
