@@ -61,6 +61,10 @@ If you find yourself defining a new mechanism inside an
 - [network](primitive/network.md) — the global community of all
   users on an instance; `network_role` (member / moderator);
   genesis-mod bootstrap; multi-sig role changes.
+- [moderation](primitive/moderation.md) — content classifications
+  (`normal` / `sensitive` / `illegal`); reports as Proposals on
+  the graph; mod-vote-required-for-every-classification gate;
+  redaction cascade for illegal.
 
 ### `instances/`
 
