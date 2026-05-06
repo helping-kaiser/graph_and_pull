@@ -166,6 +166,9 @@ Collectives, Items) own the display content.
 - **Not the conceptual model.** The three categories (actor,
   content, junction) and why they matter are in
   [graph-model.md §2](graph-model.md).
+- **Not the Memgraph schema.** Concrete property types,
+  constraints, and per-label indexes live in
+  [graph-data-model.md](../implementation/graph-data-model.md).
 - **Not the Postgres schema.** Actual column definitions, version
   tables, and display-content shapes live in
   [data-model.md](../implementation/data-model.md).

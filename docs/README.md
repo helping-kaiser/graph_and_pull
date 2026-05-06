@@ -76,6 +76,8 @@ If you find yourself defining a new mechanism inside an
   dual-database split, data flow.
 - [data-model](implementation/data-model.md) — Postgres schema for
   display metadata.
+- [graph-data-model](implementation/graph-data-model.md) — Memgraph
+  schema: node labels, edge labels, properties, indexes, constraints.
 - [development](implementation/development.md) — local setup,
   tools, workflows.
 - [api-spec](implementation/api-spec.md) — GraphQL spec

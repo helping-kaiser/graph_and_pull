@@ -180,5 +180,8 @@ or edge dimensions.
 - **Not the conceptual model.** What edges are, their dimensions,
   directionality, append-only rule — see
   [graph-model.md](graph-model.md).
+- **Not the Memgraph schema.** Concrete edge-property types and
+  per-label declarations live in
+  [graph-data-model.md](../implementation/graph-data-model.md).
 - **Not a storage tuning guide.** Operational concerns for
   performance live in a future storage/ops doc.

@@ -216,9 +216,9 @@ LEFT JOIN collectives c ON p.author_type = 'collective' AND c.id = p.author_id;
    gen_random_uuid()` fallback, but the API always supplies it explicitly.
    (Exception: hashtags drop the DEFAULT — see "Node identity strategies"
    below.)
-4. Memgraph nodes store the UUID as a `String` property named `id`.
-5. Memgraph indexes: `CREATE INDEX ON :User(id)`, `CREATE INDEX ON :Post(id)`,
-   etc. for all node types.
+
+For how UUIDs are stored on the Memgraph side and the per-label index
+declarations, see [graph-data-model.md](graph-data-model.md).
 
 ---
 
