@@ -182,14 +182,20 @@ most bad content without ever needing the deletion exception. The
 exception exists because append-only alone cannot solve "this layer
 4 content is still illegal and still findable."
 
-### Out of scope
+### Authorization
 
-One question is deliberately not answered here and is tracked
-separately:
+Layers.md defines the redaction *mechanism*; the *authorization* —
+who decides a piece of content is illegal, by what process — runs
+through the Network-level governance instance described in
+[moderation.md](moderation.md). Any User can author a Proposal
+classifying content as `'illegal'`; threshold-cross requires at
+least one moderator's positive vote, a community quorum, and a
+supermajority. The cascade then triggers the redaction defined
+above.
 
-- **Who authorizes a redaction, and through what process** — a policy
-  question (thresholds, legal process, appeal rights). See
-  [open-questions.md Q9](../open-questions.md).
+External pressure (court orders, legal demands) does not bypass
+the mechanism; it prompts a moderator to start the same Proposal,
+which the community resolves on the graph.
 
 ### Side note on long-term storage
 
