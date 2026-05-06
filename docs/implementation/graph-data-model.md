@@ -50,10 +50,12 @@ constraints/indexes the application relies on.
 
 #### `:User`
 
-| Property   | Type   | Notes |
+| Property       | Type   | Notes |
 |---|---|---|
-| `id`       | String | UUID v4. Always set by the API. |
-| `username` | String | Handle for mentions/lookups. Layered per [layers.md](../primitive/layers.md). |
+| `id`                | String | UUID v4. Always set by the API. |
+| `username`          | String | Handle for mentions/lookups. Layered per [layers.md](../primitive/layers.md). |
+| `network_role`      | String | `'member'` or `'moderator'`. Layered. Backs platform-wide governance — see [network.md](../primitive/network.md). |
+| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. Set via Network-level governance — see [moderation.md](../primitive/moderation.md). |
 
 ```cypher
 CREATE CONSTRAINT ON (u:User) ASSERT u.id IS UNIQUE;
@@ -63,10 +65,11 @@ CREATE INDEX ON :User(id);
 
 #### `:Collective`
 
-| Property | Type   | Notes |
+| Property            | Type   | Notes |
 |---|---|---|
-| `id`     | String | UUID v4. |
-| `name`   | String | Handle, analogous to `User.username`. Layered. |
+| `id`                | String | UUID v4. |
+| `name`              | String | Handle, analogous to `User.username`. Layered. |
+| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. See [moderation.md](../primitive/moderation.md). |
 
 ```cypher
 CREATE CONSTRAINT ON (c:Collective) ASSERT c.id IS UNIQUE;
@@ -78,10 +81,11 @@ CREATE INDEX ON :Collective(id);
 
 #### `:Post`
 
-| Property    | Type   | Notes |
+| Property            | Type   | Notes |
 |---|---|---|
-| `id`        | String | UUID v4. |
-| `author_id` | String | Cached derivation; rebuilt from earliest incoming layer-1 edge. See [authorship.md](../primitive/authorship.md). |
+| `id`                | String | UUID v4. |
+| `author_id`         | String | Cached derivation; rebuilt from earliest incoming layer-1 edge. See [authorship.md](../primitive/authorship.md). |
+| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. See [moderation.md](../primitive/moderation.md). |
 
 ```cypher
 CREATE CONSTRAINT ON (p:Post) ASSERT p.id IS UNIQUE;
@@ -90,7 +94,10 @@ CREATE INDEX ON :Post(id);
 
 #### `:Comment`
 
-Same shape as `:Post`: `id` plus cached `author_id`.
+Same shape as `:Post`: `id`, cached `author_id`, and
+`moderation_status` (`'normal'` / `'sensitive'` / `'illegal'`,
+layered, default `'normal'` — see
+[moderation.md](../primitive/moderation.md)).
 
 ```cypher
 CREATE CONSTRAINT ON (c:Comment) ASSERT c.id IS UNIQUE;
@@ -99,11 +106,12 @@ CREATE INDEX ON :Comment(id);
 
 #### `:Chat`
 
-| Property      | Type   | Notes |
+| Property            | Type   | Notes |
 |---|---|---|
-| `id`          | String | UUID v4. |
-| `name`        | String | Optional; layered. The graph carries it for routing/display hints. |
-| `join_policy` | String | `'open'` / `'invite-only'` / `'request-entry'` / `'multi-sig'`. Layered. Read by the system when an actor's claim toward a `:ChatMember` arrives, to decide what approval is required. See [chats.md §2](../instances/chats.md). |
+| `id`                | String | UUID v4. |
+| `name`              | String | Optional; layered. The graph carries it for routing/display hints. |
+| `join_policy`       | String | `'open'` / `'invite-only'` / `'request-entry'` / `'multi-sig'`. Layered. Read by the system when an actor's claim toward a `:ChatMember` arrives, to decide what approval is required. See [chats.md §2](../instances/chats.md). |
+| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. See [moderation.md](../primitive/moderation.md). |
 
 The `content_privacy` setting (plaintext vs E2EE) lives in Postgres,
 not on the graph — message bodies are always Postgres-side per
@@ -117,10 +125,11 @@ CREATE INDEX ON :Chat(id);
 
 #### `:ChatMessage`
 
-| Property    | Type   | Notes |
+| Property            | Type   | Notes |
 |---|---|---|
-| `id`        | String | UUID v4. |
-| `author_id` | String | Cached. |
+| `id`                | String | UUID v4. |
+| `author_id`         | String | Cached. |
+| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. **Plaintext chats only** — community moderation can't classify content it can't read. See [moderation.md](../primitive/moderation.md). |
 
 ```cypher
 CREATE CONSTRAINT ON (m:ChatMessage) ASSERT m.id IS UNIQUE;
@@ -129,9 +138,10 @@ CREATE INDEX ON :ChatMessage(id);
 
 #### `:Item`
 
-| Property | Type   | Notes |
+| Property            | Type   | Notes |
 |---|---|---|
-| `id`     | String | UUID v4. |
+| `id`                | String | UUID v4. |
+| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. See [moderation.md](../primitive/moderation.md). |
 
 ```cypher
 CREATE CONSTRAINT ON (i:Item) ASSERT i.id IS UNIQUE;
@@ -140,10 +150,11 @@ CREATE INDEX ON :Item(id);
 
 #### `:Hashtag`
 
-| Property | Type   | Notes |
+| Property            | Type   | Notes |
 |---|---|---|
-| `id`     | String | UUIDv5, content-addressed from `name`. See [data-model.md "Node identity strategies"](data-model.md). |
-| `name`   | String | Canonical form: lowercase, no `#`. |
+| `id`                | String | UUIDv5, content-addressed from `name`. See [data-model.md "Node identity strategies"](data-model.md). |
+| `name`              | String | Canonical form: lowercase, no `#`. |
+| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. See [moderation.md](../primitive/moderation.md). |
 
 ```cypher
 CREATE CONSTRAINT ON (h:Hashtag) ASSERT h.id IS UNIQUE;

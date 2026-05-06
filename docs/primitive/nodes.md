@@ -36,6 +36,21 @@ Authored graph-side properties are listed per-type below only where
 the graph genuinely needs them. Most content nodes have minimal
 graph-side properties because their substance is display content.
 
+### Universal: `moderation_status`
+
+Every node type that carries open user-authored content — avatars,
+profile text, post bodies, comment bodies, message bodies, chat
+descriptions, item descriptions, hashtag names — carries an
+additional `moderation_status` graph property:
+`'normal'` / `'sensitive'` / `'illegal'`, default `'normal'`,
+layered. The Network-wide governance instance described in
+[moderation.md](moderation.md) is what sets it.
+
+The property applies to: **User, Collective, Post, Comment,
+ChatMessage, Chat, Item, Hashtag**. Junction nodes (`ChatMember`,
+`CollectiveMember`, `ItemOwnership`) and `Proposal` have no
+user-input fields and carry no `moderation_status`.
+
 ---
 
 ## 1. Actor nodes
@@ -49,7 +64,9 @@ Entities that take actions and create edges.
 
 ### Graph-side properties
 
-- **User**: `username` (the handle used for mentions and lookups).
+- **User**: `username` (the handle used for mentions and lookups);
+  `network_role` (`member` / `moderator`) — backs platform-wide
+  governance per [network.md](network.md).
 - **Collective**: `name` (the handle used for mentions and lookups,
   analogous to `username` on User).
 
