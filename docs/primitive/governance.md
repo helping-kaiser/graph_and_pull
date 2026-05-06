@@ -77,13 +77,15 @@ at properties. Each subject type has a natural node to address:
   never the target of a vote.
 - **Node property** — a **Proposal** node (see
   [nodes.md §2](nodes.md)) is created as the subject. It carries
-  `target_node_id`, `target_property`, and `proposed_value`. Votes
-  point at the Proposal; when the tally crosses threshold, a
-  cascade (see [graph-model.md §5](graph-model.md)) writes a new
-  layer on the target property with `proposed_value`. Multiple
-  Proposals targeting the same property coexist; each passes or
-  fails on its own votes. Reverting a passed change requires a
-  counter-Proposal — consistent with §6.
+  `target_property` and `proposed_value` as node properties, and a
+  `:TARGETS` structural edge to the target node (see
+  [edges.md §2](edges.md)). Votes point at the Proposal; when the
+  tally crosses threshold, a cascade (see
+  [graph-model.md §5](graph-model.md)) writes a new layer on the
+  target property with `proposed_value`. Multiple Proposals
+  targeting the same property coexist; each passes or fails on its
+  own votes. Reverting a passed change requires a counter-Proposal —
+  consistent with §6.
 
 Whether the vote edge uses Shape A or Shape B (§3) is a separate,
 per-application choice about whether personal sentiment stays

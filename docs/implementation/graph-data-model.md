@@ -156,9 +156,12 @@ CREATE INDEX ON :Hashtag(id);
 | Property          | Type    | Notes |
 |---|---|---|
 | `id`              | String  | UUID v4. |
-| `target_node_id`  | String  | UUID of the node whose property is being proposed for change. **Pending redesign in PR A** — see proposal-target note below. |
 | `target_property` | String  | Name of the property on the target node. |
 | `proposed_value`  | Variant | The proposed new value (type matches the target property). |
+
+The target node itself is reached via a `:TARGETS` structural edge
+(`Proposal → Target`), not a foreign-key property — see
+[edges.md §2](../primitive/edges.md).
 
 ```cypher
 CREATE CONSTRAINT ON (p:Proposal) ASSERT p.id IS UNIQUE;
@@ -226,6 +229,7 @@ for picking the right one live in
 | `:APPROVAL`    | Parent → Junction (e.g. `Chat → ChatMember`)                             | System     |
 | `:CONTAINMENT` | Comment → Post / Comment / Chat / ChatMessage / Item; ChatMessage → Chat | System     |
 | `:TAGGING`     | Post → Hashtag, Item → Hashtag                                           | System     |
+| `:TARGETS`     | Proposal → Target Node                                                   | System     |
 | `:STRUCTURAL`  | Any structural edge not in a sub-category above                          | System     |
 
 ## Edge properties
@@ -259,16 +263,3 @@ unified two-axis dimension grammar.
   the viewer chooses to store it. See
   [data-model.md](data-model.md).
 
----
-
-## Pending redesigns (tracked for PR A)
-
-One item in the schema above is documented as currently committed but
-flagged for revision later in PR A:
-
-- **`Proposal.target_node_id` / `target_property` / `proposed_value`
-  as properties.** A foreign-key-in-a-graph-DB anti-pattern. A later
-  commit in PR A replaces with a `(:Proposal)-[:TARGETS]->(target)`
-  structural edge, keeping `target_property` and `proposed_value` as
-  Proposal-node properties (the change is intrinsic to the proposal,
-  not the relationship).

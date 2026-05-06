@@ -98,10 +98,11 @@ lives in Postgres. Specific cases:
   a fixed namespace); see
   [data-model.md "Node identity strategies"](../implementation/data-model.md)
   for the full mechanism and the federation implications.
-- **Proposal**: `target_node_id`, `target_property`,
-  `proposed_value`. A Proposal is fully specified by these three —
-  no display content in Postgres. See
-  [governance.md §2.1](governance.md) for the mechanism.
+- **Proposal**: `target_property` and `proposed_value` as node
+  properties; the **target node** is reached via a `:TARGETS`
+  structural edge (`Proposal → Target`). No display content in
+  Postgres. See [governance.md §2.1](governance.md) for the
+  mechanism and [edges.md §2](edges.md) for the `:TARGETS` label.
 
 Post bodies, Comment bodies, ChatMessage payloads, Item descriptions
 and media, Chat descriptions all live in Postgres — not on the graph.
