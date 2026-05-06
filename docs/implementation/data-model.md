@@ -196,17 +196,34 @@ CREATE TABLE hashtags (
 );
 ```
 
-### Per-viewer ranking-input state
+### Personal frontend-filter state
+
+A category of per-viewer tables whose role is to feed the viewer's
+**frontend** (or their delegated miner) — not the graph. They share
+three properties:
+
+- **Per-viewer.** Each row belongs to one user.
+- **Storage-location-flexible.** This Postgres table is the
+  backend-side default for the central frontend. Self-hosted
+  clients, on-device caches, and miners can keep the same data
+  locally and pass it to the calculator as a JSON array; the
+  math/filter is the same regardless of where the data came from.
+- **Operational, not graph history.** Exempt from the append-only
+  rule that governs edges, node properties, and Postgres-side
+  display content (see [layers.md](../primitive/layers.md)). These
+  tables can be compacted, pruned, or replaced without leaving a
+  visible trace.
+
+The pattern's first instance is the seen-list (`user_view_log`).
+Future instances — a hidden-actors list (frontend-side "don't show
+me Bob's content" — see
+[feed-ranking.md §3.5](../primitive/feed-ranking.md)), and similar
+viewer-tunable filters — will land here as they're designed.
 
 ```sql
 -- View log: per-viewer record of which content nodes have been seen.
 -- Used by the feed-ranking computation as an exclusion set
 -- (see feed-ranking.md §8).
---
--- Storage location is the viewer's choice — this table is the
--- backend-side default for the central frontend. Self-hosted
--- clients and miners can keep the same data locally and pass it
--- to the calculator as a JSON array; the math is the same.
 CREATE TABLE user_view_log (
     user_id        UUID        NOT NULL,
     content_id     UUID        NOT NULL,
@@ -217,12 +234,10 @@ CREATE INDEX user_view_log_recency_idx
     ON user_view_log (user_id, first_seen_at);
 ```
 
-Unlike display content (which follows the append-only versioning
-rule from [layers.md](../primitive/layers.md)), `user_view_log` is
-**operational filter state**, not graph history. The full
-compaction policy (1-year default, ~7 MB/active-user-year bound,
-trade-off, frontend tunability) lives with the seen-list mechanism
-in [feed-ranking.md §8.5](../primitive/feed-ranking.md).
+The seen-list's compaction policy (1-year default, ~7 MB/active-
+user-year bound, trade-off, frontend tunability) lives with the
+seen-list mechanism in
+[feed-ranking.md §8.5](../primitive/feed-ranking.md).
 
 ---
 
