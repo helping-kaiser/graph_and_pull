@@ -185,10 +185,34 @@ Collectives, Items) own the display content.
 
 ---
 
+## 4. System nodes
+
+A small fourth category for **singleton, instance-level
+configuration** that doesn't fit actor / content / junction:
+
+| Node type | Description |
+|-----------|-------------|
+| **Network** | Singleton per instance. Carries Network-level configuration parameters (moderation thresholds, role-change quorums, eligibility definitions). Targeted by Proposals when those parameters are changed. See [network.md](network.md). |
+
+System nodes carry no user-authored content of their own — every
+property they hold is governance-managed via Proposals. They are
+graph-resident because governance reads and writes them, and because
+the Proposal primitive needs a node to target.
+
+### Graph-side properties
+
+See [network.md](network.md) for the full property list and defaults.
+
+### Postgres-side content
+
+None — system nodes have no display content.
+
+---
+
 ## What this doc is not
 
-- **Not the conceptual model.** The three categories (actor,
-  content, junction) and why they matter are in
+- **Not the conceptual model.** The four categories (actor, content,
+  junction, system) and why they matter are in
   [graph-model.md §2](graph-model.md).
 - **Not the Memgraph schema.** Concrete property types,
   constraints, and per-label indexes live in

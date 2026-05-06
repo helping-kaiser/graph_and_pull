@@ -225,6 +225,38 @@ CREATE CONSTRAINT ON (o:ItemOwnership) ASSERT o.id IS UNIQUE;
 CREATE INDEX ON :ItemOwnership(id);
 ```
 
+### System nodes
+
+#### `:Network`
+
+A **singleton per instance** carrying Network-level configuration —
+moderation thresholds, role-change quorums, eligibility-definition
+parameters. Properties are layered per
+[layers.md](../primitive/layers.md); each is settable via a Proposal
+targeting that property name. See
+[network.md](../primitive/network.md).
+
+| Property                          | Type    | Notes |
+|---|---|---|
+| `id`                              | String  | UUID v4. Always set by the API at instance bootstrap. |
+| `mod_role_change_quorum`          | Float   | Minimum fraction of active members that must cast a vote on a `User.network_role` Proposal. Default `0.30`. |
+| `mod_role_change_threshold`       | Float   | Fraction of cast votes required in favor for a `User.network_role` Proposal to pass. Default `0.50`. Mod-gate applies (≥1 existing mod positive vote). |
+| `moderation_sensitive_quorum`     | Float   | Quorum for `'sensitive'` classification Proposals. Default `0.01` (1%). |
+| `moderation_sensitive_threshold`  | Float   | Pass-threshold for `'sensitive'`. Default `0.50`. Mod-gate applies. |
+| `moderation_illegal_quorum`       | Float   | Quorum for `'illegal'` classification Proposals. Default `0.02` (2%). |
+| `moderation_illegal_threshold`    | Float   | Pass-threshold for `'illegal'`. Default `0.667` (2/3). Mod-gate applies. |
+| `active_threshold_days`           | Integer | A User counts as an "active member" if they have at least one outgoing actor edge with timestamp within the last N days. Default `30`. |
+
+```cypher
+CREATE CONSTRAINT ON (n:Network) ASSERT n.id IS UNIQUE;
+CREATE INDEX ON :Network(id);
+```
+
+There is exactly **one** `:Network` node per CoGra instance.
+Singleton enforcement is application-level (the bootstrap path
+creates it; ordinary code paths never insert a second). The
+instance configuration knows the singleton's `id`.
+
 ---
 
 ## Edge labels

@@ -31,7 +31,7 @@ And the graph itself is:
 
 ## 2. Node Categories
 
-Nodes fall into three categories:
+Nodes fall into four categories:
 
 - **Actor nodes** — entities that take actions and create edges
   (User, Collective).
@@ -43,6 +43,10 @@ Nodes fall into three categories:
   eliminate parallel edges between the same two nodes: a user's
   *membership* in a chat and their *opinion* of that chat are
   edges to different nodes.
+- **System nodes** — singletons that carry instance-level
+  configuration governed via Proposals (Network). They aren't
+  actors, aren't content, and don't represent relationships;
+  they exist because governance needs a node to target.
 
 **Junction nodes carry typed properties** (role, `ownership_pct`,
 etc.) as properties on the junction node itself, not encoded in
