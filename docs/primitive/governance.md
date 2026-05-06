@@ -199,6 +199,17 @@ ChatMember_Jakob_ChatY -[dim1: -1, dim2: 0]-> ChatMessage_X
   the vote drops from the tally (edge stays in history).
 - Used by: chat message disavowal, chat member disavowal.
 
+#### Carrier relaxation for Network-level governance
+
+For governance instances scoped to the **whole Network** rather than
+to a chat or a collective, the carrier is the **voter's User node
+itself** rather than a junction. Network membership has no
+join-gesture — every User is a member by virtue of being on the
+graph (see [network.md](network.md)) — so there is no
+`ChatMember`-/`CollectiveMember`-style junction to issue the vote
+from. Vote edges run from the voter's User node to the subject.
+Used by: Network moderator role changes, content moderation.
+
 ### Choosing between A and B
 
 Use **Shape A** when voting for/against the subject is the same as
@@ -306,15 +317,16 @@ design discussion (§9).
   contract specifies; each is parameterized for its own
   decision-type. Eligibility, weights, and thresholds are all
   per-instance.
+- **Network moderator role changes** — [network.md §4](network.md).
+  Shape B from the User node directly. Multi-sig: ≥1 existing
+  moderator's positive vote plus a community-quorum threshold.
+- **Content moderation classifications** — [moderation.md](moderation.md).
+  Shape B from the User node directly. Mod-vote-required gate
+  on every classification change (`sensitive` / `illegal` and
+  un-classification back to `normal`); mod weight = member
+  weight = 1.
 
 Future cases get added here as they're designed.
-
-### Planned
-
-- **Redaction authorization** — [open-questions.md Q9](../open-questions.md).
-  When Q9 resolves, the takedown / redaction policy will land as
-  another governance instance: subject = the layer or display row
-  to redact, eligibility and threshold per the redaction policy.
 
 ---
 
