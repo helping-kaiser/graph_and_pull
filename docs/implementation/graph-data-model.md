@@ -99,10 +99,11 @@ CREATE INDEX ON :Comment(id);
 
 #### `:Chat`
 
-| Property | Type   | Notes |
+| Property      | Type   | Notes |
 |---|---|---|
-| `id`     | String | UUID v4. |
-| `name`   | String | Optional; layered. The graph carries it for routing/display hints. |
+| `id`          | String | UUID v4. |
+| `name`        | String | Optional; layered. The graph carries it for routing/display hints. |
+| `join_policy` | String | `'open'` / `'invite-only'` / `'request-entry'` / `'multi-sig'`. Layered. Read by the system when an actor's claim toward a `:ChatMember` arrives, to decide what approval is required. See [chats.md §2](../instances/chats.md). |
 
 The `content_privacy` setting (plaintext vs E2EE) lives in Postgres,
 not on the graph — message bodies are always Postgres-side per
