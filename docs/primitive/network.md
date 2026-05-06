@@ -20,7 +20,34 @@ Federation across instances is a forward question — see
 [open-questions.md Q15](../open-questions.md). Each instance has its
 own Network until then.
 
-## 2. Membership and roles
+## 2. The :Network singleton
+
+The Network is represented on the graph by a **singleton `:Network`
+node** that holds the instance's configuration parameters. There is
+exactly one per instance.
+
+It carries:
+
+- Mod role-change quorum and threshold (`mod_role_change_quorum`,
+  `mod_role_change_threshold`).
+- Per-classification moderation quorums and thresholds
+  (`moderation_sensitive_*`, `moderation_illegal_*`).
+- Eligibility-definition parameters (`active_threshold_days` — the
+  recency window that makes a User count as an "active member" for
+  governance tallies).
+
+All properties are layered, so every parameter change has a
+preserved history. Each is amendable via a standard Proposal
+targeting the property — same primitive as everything else (see
+[governance.md §2.1](governance.md)). The full property list and
+defaults live in
+[graph-data-model.md](../implementation/graph-data-model.md).
+
+The singleton exists so that platform-wide governance has a graph
+node to target. Without it, statements like "Network parameters are
+amendable via Proposal" are hand-waving — Proposals need a node.
+
+## 3. Membership and roles
 
 Every User has a `network_role` graph property:
 
@@ -36,19 +63,26 @@ history.
 Whether Collectives can be Network members or moderators is
 deferred. For now, only Users carry `network_role`.
 
-## 3. Genesis moderator
+## 4. Bootstrap
 
-Each instance starts with **one hardcoded genesis moderator** set at
-instance bootstrap. For the central instance run by the project that
-is the project owner; a federated fork sets its own genesis. This is
-the only step in the system that depends on out-of-graph authority —
-every subsequent mod change runs through the governance described
-below.
+Each instance bootstraps with two pieces of out-of-graph state:
+
+1. The **`:Network` singleton** is created with the default
+   parameter values listed in
+   [graph-data-model.md](../implementation/graph-data-model.md).
+2. **One hardcoded genesis moderator** is set —
+   `User.network_role = 'moderator'` for a configured user.
+
+For the central instance run by the project, the genesis moderator
+is the project owner. A federated fork sets its own genesis. These
+are the only steps in the system that depend on out-of-graph
+authority — every subsequent change to the singleton's parameters
+or to any user's role runs through governance.
 
 Bitcoin analogy: someone has to mine the genesis block. From there
 it is community-driven.
 
-## 4. Mod role changes via multi-sig Proposal
+## 5. Mod role changes via multi-sig Proposal
 
 Adding or removing a moderator uses the standard Proposal mechanism
 ([governance.md §2.1](governance.md)):
@@ -56,10 +90,10 @@ Adding or removing a moderator uses the standard Proposal mechanism
 - **Subject:** A Proposal targeting `User.network_role` of the user
   being promoted or demoted, with `proposed_value` set to the new
   role.
-- **Eligibility:** All active Network members.
-- **Threshold:** Multi-sig — **≥1 existing moderator's positive vote**
-  plus **N community-member votes** (N is a parameter — defaults to
-  refine, e.g. ≥30% of active members at >50% in favor).
+- **Eligibility:** all active Network members.
+- **Threshold:** multi-sig — **≥1 existing moderator's positive vote**
+  plus **`Network.mod_role_change_quorum`** of cast eligible-member
+  votes, with **`Network.mod_role_change_threshold`** in favor.
 
 The multi-sig is the bot defense:
 
@@ -69,15 +103,18 @@ The multi-sig is the bot defense:
   by community alone (which would let bots strip honest mods), nor
   by other mods alone (which would let mods purge each other).
 
-## 5. Network-wide governance
+## 6. Network-wide governance
 
 The Network is the eligibility-and-voting body for any platform-
 scoped governance instance:
 
-- Adding and removing moderators (§4 above).
+- Adding and removing moderators (§5 above).
 - Content moderation classifications — see
   [moderation.md](moderation.md).
-- Future platform-wide policy and parameter tuning.
+- Tuning the `:Network` singleton's parameters themselves
+  (governance of governance — change a moderation threshold by
+  authoring a Proposal targeting the corresponding `:Network`
+  property).
 
 Each is a Shape B governance instance per
 [governance.md §3](governance.md). Two consequences:
