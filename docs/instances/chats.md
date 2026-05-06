@@ -103,6 +103,39 @@ inside the chat:
 
 The ChatMessage is the atomic unit. The chat is its container.
 
+### Embedding other content
+
+A ChatMessage can carry a **reference** to any other node — Post,
+Item, User, Collective, Hashtag, Proposal, another ChatMessage, a
+junction node, anything with a graph identity. The graph encodes
+this as
+
+```
+ChatMessage --[:REFERENCES]--> X
+```
+
+See [edges.md §2 Reference](../primitive/edges.md) for the full
+catalog.
+
+The actor's gesture is **authoring a ChatMessage with a target**:
+one API call produces the ChatMessage (graph node + Postgres body
+row with optional caption text), the author's
+`User → ChatMessage` actor edge, the
+`ChatMessage → Chat :CONTAINMENT` edge, and the
+`ChatMessage → X :REFERENCES` edge. The actor does not directly set
+a stance on X by sharing — sharing is an authoring event for the
+ChatMessage, not an actor edge to X. The referenced node gains
+reach through the actor's network via traversal of
+`User → ChatMessage → :REFERENCES → X`.
+
+**Reference vs external sharing.** Sharing into a chat creates
+graph state (a ChatMessage with `:REFERENCES`), so the referenced
+node propagates through the actor's network via path traversal.
+External sharing (link copy, share-to-another-app, export) creates
+no graph state — see
+[graph-model.md §3](../primitive/graph-model.md) — and so does not
+amplify reach within CoGra.
+
 ### Message edits
 
 Message bodies are **display content**: they live in Postgres (or a

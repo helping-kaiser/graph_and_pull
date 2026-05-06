@@ -112,6 +112,28 @@ The property name and proposed value are properties on the Proposal
 node, not on this edge — the change is intrinsic to the Proposal,
 not to the relationship.
 
+### Reference
+
+System-created when a ChatMessage embeds another node — sharing a
+post into a chat, quoting a previous message, recommending a user,
+showcasing a band, announcing a new item ownership, pointing at a
+proposal to vote on, etc. The chat message is the carrier: it has
+its own author, timestamp, optional caption text in Postgres, and
+an optional `Comment → ChatMessage` thread. The referenced node is
+what the message points at. See
+[chats.md](../instances/chats.md) for worked-out usage patterns
+(including the personal-newsfeed shape that replaces the old
+container-chat hack).
+
+| Edge type | Meaning |
+|-----------|---------|
+| ChatMessage → any node | This message references this node |
+
+Targets span every node category: actor (User, Collective), content
+(Post, Comment, Chat, ChatMessage, Item, Hashtag, Proposal), and
+junction (ChatMember, CollectiveMember, ItemOwnership). A message
+can point at anything with a graph identity.
+
 ### Voting (Shape B)
 
 System-created when a voter casts a Shape B vote (see
@@ -157,6 +179,7 @@ enough that the endpoint-label-filter approach adds cost or noise.
 | `:CONTAINMENT` | Comment → Post, Comment → Comment, ChatMessage → Chat, Comment → Chat, Comment → ChatMessage, Comment → Item | Content containment and reply structure. Queried for feed assembly and thread rendering. |
 | `:TAGGING` | Post → Hashtag, Item → Hashtag | Tag associations. Queried by hashtag-centric browsing. |
 | `:TARGETS` | Proposal → Target Node | The proposal-to-subject relationship. Common query: "what proposals target this node?" needed by the governance cascade. |
+| `:REFERENCES` | ChatMessage → any node | The "this message embeds X" relationship. Common query: "what chat messages reference this node?" — feeds embed-rendering and inbound-attention surfaces. |
 
 All sub-category labels **replace** `:STRUCTURAL`, not add to it — a
 relationship has exactly one label in Memgraph.
