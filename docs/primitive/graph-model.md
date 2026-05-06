@@ -140,6 +140,9 @@ What does NOT create or update an actor edge:
 - Viewing a post or opening a chat without further action — even
   repeated opens.
 - Search queries.
+- Sharing content externally (link copy, share-to-another-app,
+  export). The act of sharing is a frontend event — not a stance
+  the actor took toward the content.
 - Tagging an own post with a hashtag. The `Post → Hashtag`
   structural edge already encodes the association; the actor
   reaches the hashtag via the `Actor → Post → Hashtag` path.
