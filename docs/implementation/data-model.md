@@ -269,6 +269,28 @@ CREATE TABLE chat_read_state (
 
 ---
 
+### Application registry
+
+```sql
+-- Versions: one row per release per client component. Lets the API
+-- answer "what's the current version of backend/iOS/Android/web?"
+-- and "where are the patch notes for version X?". Append-only —
+-- each release adds a row; previous rows stay so past patch-note
+-- links remain resolvable.
+CREATE TABLE versions (
+    component       TEXT        NOT NULL CHECK (component IN
+                                ('backend', 'ios', 'android', 'web')),
+    version         TEXT        NOT NULL,
+    patch_notes_url TEXT,
+    released_at     TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (component, version)
+);
+CREATE INDEX versions_current_idx
+    ON versions (component, released_at DESC);
+```
+
+---
+
 ## What is intentionally NOT in Postgres
 
 - **Edge data** (sentiment, interest, relevance, layers) — graph-only
