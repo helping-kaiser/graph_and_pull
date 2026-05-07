@@ -44,7 +44,7 @@ descriptions, item descriptions, hashtag names — carries an
 additional `moderation_status` graph property:
 `'normal'` / `'sensitive'` / `'illegal'`, default `'normal'`,
 layered. The Network-wide governance instance described in
-[moderation.md](moderation.md) is what sets it.
+[moderation.md](../instances/moderation.md) is what sets it.
 
 The property applies to: **User, Collective, Post, Comment,
 ChatMessage, Chat, Item, Hashtag**. Junction nodes (`ChatMember`,

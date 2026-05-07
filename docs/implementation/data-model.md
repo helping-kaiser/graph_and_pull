@@ -84,7 +84,7 @@ CREATE TABLE posts (
 -- of truth — Media is not a graph node, so there is no rebuild-from-graph
 -- path. Used by the API to enforce that only the uploader's own parents
 -- can reference an asset (anti-hijack), and to find an actor's media
--- when redacting their account.
+-- when redacting their account (see instances/account-deletion.md).
 CREATE TABLE media_attachments (
     id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     author_id   UUID         NOT NULL,
@@ -316,7 +316,7 @@ means the central backend has to be the source of truth.
 -- the sensitive-content filter to be. 0 = show everything,
 -- 10 = strictest. NULL = unset (frontend default applies).
 -- Sensitive-content classification itself is community-moderated;
--- the moderation mechanism lives in moderation.md (forthcoming PR).
+-- the moderation mechanism lives in instances/moderation.md.
 CREATE TABLE user_preferences (
     user_id                          UUID     PRIMARY KEY,
     content_filtering_severity_level SMALLINT CHECK (
@@ -449,7 +449,8 @@ Junctions cost more rows than an array column would, but each
 junction row is FK-enforced, supports per-relationship metadata
 without table churn, and makes "find all parents using
 attachment X" a normal indexed lookup (relevant for ownership
-tracing on account redaction).
+tracing on account redaction — see
+[account-deletion.md](../instances/account-deletion.md)).
 
 **Anti-hijack** is enforced at the API layer: when a parent
 references an attachment, the API checks

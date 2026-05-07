@@ -137,17 +137,19 @@ No node deletion, no edge deletion, no layer removal, ever. This is
 absolute. The graph's job is to be the transparent auditable record;
 erasing from it would defeat the whole point.
 
-### Layer contents on node properties — redactable for illegal content only
+### Layer contents on node properties — redactable
 
 The contents of a specific layer on a node property can be redacted
-**in place** when the content itself is illegal (an illegal username,
-an illegal chat name, etc.). Redaction replaces the stored value
-with a marker like `[redacted — illegal content, removed at T=X]`;
-the layer's timestamp, layer number, and position in the stack are
+**in place** when an authorized takedown applies (illegal-content
+classification or user-requested account deletion — see
+"Authorization paths" below). Redaction replaces the stored value
+with a marker like `[redacted — <reason>, removed at T=X]`; the
+layer's timestamp, layer number, and position in the stack are
 preserved. The fact that a layer existed at that time, and that
 something there was redacted, stays visible.
 
-Example — Alice's username history after Layer 2 is taken down:
+Example — Alice's username history after Layer 2 is taken down
+for illegal content:
 
 ```
 User_Alice.username:
@@ -159,15 +161,19 @@ User_Alice.username:
 The node itself is untouched. Other property layer stacks are
 untouched. Only the offending layer's content is replaced.
 
-### Postgres / media display content — deletable for illegal content only
+### Postgres / media display content — tombstonable
 
 Display content (message bodies, post text, profile text, images,
-videos) can be deleted from Postgres or media servers in the same
-narrow exception: illegal material, court-ordered takedowns, legally
-mandated removals. The deletion still leaves a visible trace — a
-tombstone version row or equivalent marker — so the history shows
-that content existed and was removed. Implementation specifics
-belong in [data-model.md](../implementation/data-model.md).
+videos) can be removed from public Postgres or media-server
+surfaces under the same two authorization paths (see "Authorization
+paths" below). The public surface shows a tombstone version row or
+equivalent marker in either case, so the history reflects that
+content existed and was removed. The original is moved to the
+[retention archive](retention-archive.md) with a per-row legal
+hold; archive content is hard-deleted at hold expiry (immediately
+in cases like content that is illegal to retain at all).
+Implementation specifics belong in
+[data-model.md](../implementation/data-model.md).
 
 ### The operating principle
 
@@ -182,20 +188,34 @@ most bad content without ever needing the deletion exception. The
 exception exists because append-only alone cannot solve "this layer
 4 content is still illegal and still findable."
 
-### Authorization
+### Authorization paths
 
 Layers.md defines the redaction *mechanism*; the *authorization* —
-who decides a piece of content is illegal, by what process — runs
-through the Network-level governance instance described in
-[moderation.md](moderation.md). Any User can author a Proposal
-classifying content as `'illegal'`; threshold-cross requires at
-least one moderator's positive vote, a community quorum, and a
-supermajority. The cascade then triggers the redaction defined
-above.
+who decides what gets redacted, by what process — runs through
+separate instance docs by scope. Two paths exist today:
 
-External pressure (court orders, legal demands) does not bypass
-the mechanism; it prompts a moderator to start the same Proposal,
-which the community resolves on the graph.
+- **Illegal content.** Network-level governance per
+  [moderation](../instances/moderation.md). Any User can author
+  a Proposal classifying content as `'illegal'`; threshold-cross
+  requires at least one moderator's positive vote, a community
+  quorum, and a supermajority. The cascade then triggers the
+  redaction defined above.
+- **Personal data on user request.** A User can request that
+  their own account's PII be redacted from public surfaces, per
+  [account-deletion](../instances/account-deletion.md). The
+  redaction is identity-level by default and content-level on
+  opt-in.
+
+External pressure (court orders, legal demands) for illegal
+content does not bypass the moderation mechanism; it prompts a
+moderator to start the same Proposal, which the community
+resolves on the graph. Court-ordered user-anonymization is a
+separate path planned in account-deletion.md.
+
+Disposition of the redacted original (preserve vs. destroy) is
+the same mechanism in both paths — the
+[retention archive](retention-archive.md) — with per-row hold
+values set per case.
 
 ### Side note on long-term storage
 

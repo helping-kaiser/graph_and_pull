@@ -53,7 +53,7 @@ Every User has a `network_role` graph property:
 
 - **`member`** — every registered user, automatically. The default.
 - **`moderator`** — a small set of users who gate platform-wide
-  governance actions (see [moderation.md](moderation.md) for the
+  governance actions (see [moderation.md](../instances/moderation.md) for the
   gating rule).
 
 `network_role` is a graph-side property on the User node, layered
@@ -110,7 +110,7 @@ scoped governance instance:
 
 - Adding and removing moderators (§5 above).
 - Content moderation classifications — see
-  [moderation.md](moderation.md).
+  [moderation.md](../instances/moderation.md).
 - Tuning the `:Network` singleton's parameters themselves
   (governance of governance — change a moderation threshold by
   authoring a Proposal targeting the corresponding `:Network`
@@ -128,13 +128,13 @@ Each is a Shape B governance instance per
 - **Mod weight = member weight = 1.** Mods do not outvote the
   community; the "≥1 mod positive vote" rule is a gate, not a
   weighting. (Same rule applied to content classifications in
-  [moderation.md](moderation.md).)
+  [moderation.md](../instances/moderation.md).)
 
 ## What this doc is not
 
-- **Not the moderation primitive.** Mechanics of moderation
-  Proposals, the cascade outcomes, and the platform-guidelines
-  reference all live in [moderation.md](moderation.md).
+- **Not moderation.** Mechanics of moderation Proposals, the
+  cascade outcomes, and the platform-guidelines reference all
+  live in [moderation.md](../instances/moderation.md).
 - **Not federation.** Cross-instance Network reconciliation is
   Q15-deferred ([open-questions.md](../open-questions.md)).
 - **Not the User node spec.** See [nodes.md](nodes.md).

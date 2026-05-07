@@ -53,6 +53,9 @@ If you find yourself defining a new mechanism inside an
   relationship-label scheme at the graph layer.
 - [layers](primitive/layers.md) — append-only across edges, node
   properties, and Postgres-side display content; deletion policy.
+- [retention-archive](primitive/retention-archive.md) — universal
+  disposition for redacted originals; per-row legal hold;
+  statutory hard-delete on expiry; legal-admin access path.
 - [feed-ranking](primitive/feed-ranking.md) — ranking algorithm.
 - [authorship](primitive/authorship.md) — how authorship is derived
   from the earliest incoming edge.
@@ -61,10 +64,6 @@ If you find yourself defining a new mechanism inside an
 - [network](primitive/network.md) — the global community of all
   users on an instance; `network_role` (member / moderator);
   genesis-mod bootstrap; multi-sig role changes.
-- [moderation](primitive/moderation.md) — content classifications
-  (`normal` / `sensitive` / `illegal`); reports as Proposals on
-  the graph; mod-vote-required-for-every-classification gate;
-  redaction cascade for illegal.
 
 ### `instances/`
 
@@ -76,6 +75,14 @@ If you find yourself defining a new mechanism inside an
   (corporate, household, co-op).
 - [items](instances/items.md) — items as content; ItemOwnership
   transfer flow; single-owner invariant.
+- [moderation](instances/moderation.md) — content classifications
+  (`normal` / `sensitive` / `illegal`); reports as Proposals on
+  the graph; mod-vote-required-for-every-classification gate;
+  redaction cascade for illegal.
+- [account-deletion](instances/account-deletion.md) — user-initiated
+  PII redaction; identity-default and content-opt-in scope;
+  7-day grace period; reuses redaction mechanism + archive
+  primitives.
 
 ### `implementation/`
 

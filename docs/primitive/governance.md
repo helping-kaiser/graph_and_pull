@@ -321,7 +321,7 @@ design discussion (§9).
 - **Network moderator role changes** — [network.md §4](network.md).
   Shape B from the User node directly. Multi-sig: ≥1 existing
   moderator's positive vote plus a community-quorum threshold.
-- **Content moderation classifications** — [moderation.md](moderation.md).
+- **Content moderation classifications** — [moderation.md](../instances/moderation.md).
   Shape B from the User node directly. Mod-vote-required gate
   on every classification change (`sensitive` / `illegal` and
   un-classification back to `normal`); mod weight = member

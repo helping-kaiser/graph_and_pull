@@ -56,10 +56,10 @@ Crates:
 Docs are layered:
 
 - **`docs/primitive/`** — what the graph IS and how it BEHAVES
-  (graph-model, nodes, edges, layers, governance, authorship,
-  feed-ranking, invitations, network, moderation).
+  (graph-model, nodes, edges, layers, retention-archive,
+  governance, authorship, feed-ranking, invitations, network).
 - **`docs/instances/`** — concrete applications of the primitive
-  (chats, collectives, items).
+  (chats, collectives, items, moderation, account-deletion).
 - **`docs/implementation/`** — system and code-level concerns
   (architecture, data-model, graph-data-model, development,
   api-spec, graph-db-options).
