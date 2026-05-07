@@ -1,37 +1,69 @@
 name: CI
 
+# Workflow runs on every PR and push to main, regardless of which paths
+# changed. The expensive lint/test steps inside each job are gated on
+# whether non-doc files changed, via the `changes` job below.
+#
+# Why not `paths-ignore` at the workflow level: GitHub's branch-protection
+# required-checks logic doesn't treat a path-skipped workflow as success —
+# it expects a posted commit status with the matching context name and
+# blocks the PR forever when none arrives. Keeping the workflow itself
+# always-on, with conditional steps, lets the `Lint` and `Test` jobs
+# always report success while still avoiding the costly Rust steps on
+# docs-only changes.
+
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  lint:
-    name: Lint
+  changes:
+    name: Detect code changes
     runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '**'
+              - '!docs/**'
+              - '!**/*.md'
+
+  lint:
+    name: Lint
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - if: needs.changes.outputs.code != 'true'
+        name: Skip — docs-only change
+        run: echo "No code files changed; skipping rustfmt and clippy."
+      - if: needs.changes.outputs.code == 'true'
+        uses: actions/checkout@v4
+      - if: needs.changes.outputs.code == 'true'
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-      - name: Check formatting
+      - if: needs.changes.outputs.code == 'true'
+        uses: Swatinem/rust-cache@v2
+      - if: needs.changes.outputs.code == 'true'
+        name: Check formatting
         run: cargo fmt --all -- --check
-      - name: Run clippy
+      - if: needs.changes.outputs.code == 'true'
+        name: Run clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
   test:
     name: Test
+    needs: changes
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -57,12 +89,21 @@ jobs:
       MEMGRAPH_PORT: 7687
       RUST_LOG: debug
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Install sqlx-cli
+      - if: needs.changes.outputs.code != 'true'
+        name: Skip — docs-only change
+        run: echo "No code files changed; skipping migrations and cargo test."
+      - if: needs.changes.outputs.code == 'true'
+        uses: actions/checkout@v4
+      - if: needs.changes.outputs.code == 'true'
+        uses: dtolnay/rust-toolchain@stable
+      - if: needs.changes.outputs.code == 'true'
+        uses: Swatinem/rust-cache@v2
+      - if: needs.changes.outputs.code == 'true'
+        name: Install sqlx-cli
         run: cargo install sqlx-cli --no-default-features --features rustls,postgres
-      - name: Run migrations
+      - if: needs.changes.outputs.code == 'true'
+        name: Run migrations
         run: sqlx migrate run --source migrations
-      - name: Run tests
+      - if: needs.changes.outputs.code == 'true'
+        name: Run tests
         run: cargo test --all
