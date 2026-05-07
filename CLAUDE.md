@@ -35,6 +35,11 @@ these — these are the rules most often violated:
 6. **One session per task.** After a PR is merged, suggest a fresh
    session before starting the next task. Long sessions
    accumulate context that doesn't help.
+7. **Never deviate silently.** If you have reason to break a rule
+   here, name the rule and the reason — let the human accept or
+   reject. The rule is not "never deviate," it's "never deviate
+   silently." Silent deviations look identical to violations from
+   the outside; announced ones can be evaluated.
 
 ---
 
