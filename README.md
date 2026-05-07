@@ -9,7 +9,11 @@ No AI algorithms. No push marketing. No black boxes. Every user's feed is
 computed from their own position in the graph and the weighted edges they
 create through explicit interactions.
 
-See [CLAUDE.md](CLAUDE.md) for the full set of project principles.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full set of project
+principles, hard rules, and the contribution workflow.
+[CLAUDE.md](CLAUDE.md) mirrors the same rules for AI-assistant
+sessions and adds session-hygiene guidance specific to that
+context.
 
 ## Architecture
 
