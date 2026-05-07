@@ -2,3 +2,4 @@
 .env
 *.local
 .vscode/
+/tmp_research_files/
