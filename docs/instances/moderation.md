@@ -19,20 +19,20 @@ moderators, not a protocol invariant; voting blind is a
 mod-conduct violation, addressable through the same primitive
 that handles any mod misconduct (see §5). Until the relevant
 chat key has been disclosed, chat-internal disavowal
-([chats.md §6](../instances/chats.md)) is the only meaningful
+([chats.md §6](chats.md)) is the only meaningful
 recourse.
 
 ## 1. The three classifications
 
 `moderation_status` is a graph-side property on every user-input-
 bearing node — User, Collective, Post, Comment, ChatMessage,
-Chat, Item, Hashtag (see [nodes.md](nodes.md)). Three values:
+Chat, Item, Hashtag (see [nodes.md](../primitive/nodes.md)). Three values:
 
 | Value | Meaning | Effect |
 |---|---|---|
 | `normal` | Default; community has not classified. | None. |
 | `sensitive` | Community-classified mature / disturbing / etc. | Soft flag. Frontend respects each viewer's `content_filtering_severity_level` (see [data-model.md](../implementation/data-model.md) "User preferences"). Content stays. |
-| `illegal` | Community-classified illegal under the platform guidelines. | Redaction cascade per [layers.md §5](layers.md) — graph-side in-place redaction, Postgres-side tombstone. |
+| `illegal` | Community-classified illegal under the platform guidelines. | Redaction cascade per [layers.md §5](../primitive/layers.md) — graph-side in-place redaction, Postgres-side tombstone. |
 
 The property is layered, so the full classification history is
 preserved.
@@ -41,14 +41,14 @@ preserved.
 
 A user reporting content **is** the act of creating a Proposal:
 
-- **Subject:** a Proposal node ([nodes.md](nodes.md)) with target =
+- **Subject:** a Proposal node ([nodes.md](../primitive/nodes.md)) with target =
   the content node (via `:TARGETS` edge), `target_property =
   'moderation_status'`, `proposed_value = 'sensitive'` or
   `'illegal'`.
 - **First reporter** authors the Proposal — the system reads the
   authoring as their +1 vote.
 - **Subsequent reporters** cast Shape B votes
-  ([governance.md §3](governance.md)) on the existing Proposal
+  ([governance.md §3](../primitive/governance.md)) on the existing Proposal
   rather than authoring duplicates.
 - **Threshold-cross** triggers the cascade: the proposed value is
   written to `moderation_status`, and on `'illegal'` the
@@ -82,7 +82,7 @@ weighted-voters.
 
 ## 4. Eligibility, weights, thresholds
 
-The Network ([network.md](network.md)) is the eligibility-and-
+The Network ([network.md](../primitive/network.md)) is the eligibility-and-
 voting body for moderation Proposals.
 
 - **Eligibility:** all active Network members (every User with at
@@ -90,7 +90,7 @@ voting body for moderation Proposals.
   `Network.active_threshold_days` window).
 - **Vote weight:** 1 per voter — mod or member.
 - **Vote shape:** Shape B from the voter's User node directly.
-  See [governance.md §3](governance.md) for the relaxation
+  See [governance.md §3](../primitive/governance.md) for the relaxation
   that permits a User node (rather than a junction) to carry
   the vote for Network-level governance.
 - **Thresholds (read from the `:Network` singleton — see
@@ -109,7 +109,7 @@ quorum just keeps a single mod from acting unilaterally.
 
 Every number above is a property of the `:Network` singleton,
 itself amendable via the same Proposal primitive
-([governance.md §2.4](governance.md)). Defaults exist to bootstrap;
+([governance.md §2.4](../primitive/governance.md)). Defaults exist to bootstrap;
 they are not fixed rules.
 
 ## 5. Scope
@@ -120,7 +120,7 @@ they are not fixed rules.
   bio, profile text, name).
 - **Post, Comment** — content bodies and media.
 - **ChatMessage** — both `plaintext` and `encrypted` per
-  [chats.md §5](../instances/chats.md). Encrypted messages are
+  [chats.md §5](chats.md). Encrypted messages are
   classifiable once readable (see "encrypted message classification"
   below).
 - **Chat** — name, description, image.
@@ -139,7 +139,7 @@ For a moderation Proposal targeting an encrypted ChatMessage to be
 useful, voters need to be able to read the body. The disclosure
 path is **independent of the moderation primitive** — any chat
 member can release the relevant epoch's chat key (per
-[chats.md §5](../instances/chats.md)) through any normal authoring
+[chats.md §5](chats.md)) through any normal authoring
 gesture: a Comment on the chat, a public Post, a plaintext
 ChatMessage in the same chat, an off-graph channel, anything. The
 system permits voluntary disclosure by participants by design.
@@ -167,7 +167,7 @@ prevents this is the role definition, not the code:
   mod-conduct violation. The remedy is the same Proposal
   primitive applied to that User's `network_role` — the Network
   votes the offender out of the moderator role
-  ([network.md](network.md)). No special mechanism, just the same
+  ([network.md](../primitive/network.md)). No special mechanism, just the same
   governance the rest of the platform uses.
 
 The integrity guarantee is therefore a **two-part claim**: the
@@ -186,7 +186,7 @@ Two distinct mechanisms can apply to a plaintext chat message:
 - **Platform moderation (this doc).** Network-level
   classification. Drives the redaction cascade for `illegal`.
   Eligibility = every User.
-- **Chat-internal disavowal** ([chats.md §6](../instances/chats.md)).
+- **Chat-internal disavowal** ([chats.md §6](chats.md)).
   The chat's stance toward a message or member. Eligibility =
   active ChatMembers of that chat.
 
@@ -218,7 +218,7 @@ Noise is handled out-of-graph by the same mechanisms used for the
 rest of the platform:
 
 - **Feed-ranking.** Moderator UIs surface Proposals through the
-  same per-viewer ranking ([feed-ranking.md](feed-ranking.md))
+  same per-viewer ranking ([feed-ranking.md](../primitive/feed-ranking.md))
   used for content. Bot-authored Proposals from severed clusters
   land at zero `h(t)` and never surface to honest mods. Real
   reports surface because they originate from non-severed users
@@ -248,9 +248,9 @@ for guideline-level changes).
 ## What this doc is not
 
 - **Not the Network primitive.** Membership, the moderator role,
-  and how mods come and go are in [network.md](network.md).
+  and how mods come and go are in [network.md](../primitive/network.md).
 - **Not the redaction mechanism.** The illegal-only redaction
-  cascade is defined in [layers.md §5](layers.md) — this primitive
+  cascade is defined in [layers.md §5](../primitive/layers.md) — this primitive
   provides the community-driven authorization that §5 was missing
   ([open-questions.md Q9](../open-questions.md) resolved here).
 - **Not the platform guidelines themselves** (forthcoming).
