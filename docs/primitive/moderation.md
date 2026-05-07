@@ -12,10 +12,15 @@ classification change requires **at least one moderator's positive
 vote** in the tally. Bots can flood the community side but cannot
 cross the gate without compromising a real moderator.
 
-Encrypted ChatMessages are moderable once the chat key has been
-disclosed (see §5); until then their bodies aren't readable by the
-community and chat-internal disavowal
-([chats.md §6](../instances/chats.md)) is the alternative recourse.
+Encrypted ChatMessages can technically be voted on at any time —
+the protocol does **not** block a Proposal against a ciphertext.
+"Moderate only after disclosure" is a normative requirement on
+moderators, not a protocol invariant; voting blind is a
+mod-conduct violation, addressable through the same primitive
+that handles any mod misconduct (see §5). Until the relevant
+chat key has been disclosed, chat-internal disavowal
+([chats.md §6](../instances/chats.md)) is the only meaningful
+recourse.
 
 ## 1. The three classifications
 
@@ -133,22 +138,46 @@ they are not fixed rules.
 For a moderation Proposal targeting an encrypted ChatMessage to be
 useful, voters need to be able to read the body. The disclosure
 path is **independent of the moderation primitive** — any chat
-member can release the chat's symmetric key (per
+member can release the relevant epoch's chat key (per
 [chats.md §5](../instances/chats.md)) through any normal authoring
 gesture: a Comment on the chat, a public Post, a plaintext
 ChatMessage in the same chat, an off-graph channel, anything. The
 system permits voluntary disclosure by participants by design.
-
-Once the key has been disclosed publicly, anyone holding it can
-decrypt the chat's encrypted bodies and read the evidence; the
-moderation Proposal proceeds like any other. Until disclosure,
-encrypted bodies cannot be classified by community moderation, and
-chat-internal disavowal ([chats.md §6](../instances/chats.md)) is
-the only platform-level recourse.
+Disclosure is scoped to the disclosed epoch only; leaking Kᵢ
+exposes E_i's messages and no others.
 
 This matters in practice for cases like contracts in private chats
 (forthcoming with the economics) where one party may need to
 surface the other's misbehavior.
+
+#### Why this is a norm, not a protocol gate
+
+The protocol does **not** block a Proposal from being authored
+against an opaque ciphertext, and does not block votes from being
+cast on it. The system is honest about this: technically, a bot
+swarm can vote `+1` on encrypted bodies all day, and a malicious
+moderator can cross the gate (§3) without reading anything. What
+prevents this is the role definition, not the code:
+
+- **Bot voting on ciphertext** is the same noise-vs-consistency
+  problem as any other bot voting (§7) — the mod gate is what
+  guarantees consistency, since no Proposal crosses without a
+  real moderator's positive vote.
+- **A moderator voting on undisclosed ciphertext** is a
+  mod-conduct violation. The remedy is the same Proposal
+  primitive applied to that User's `network_role` — the Network
+  votes the offender out of the moderator role
+  ([network.md](network.md)). No special mechanism, just the same
+  governance the rest of the platform uses.
+
+The integrity guarantee is therefore a **two-part claim**: the
+mod gate (§3) blocks the consistency attack; the de-mod-ing path
+addresses the moderator-misconduct attack. Together they make
+"moderate only after disclosure" a load-bearing norm rather than
+a protocol invariant — which is the most we can offer without
+graph-level guards that would be both too weak (off-graph
+disclosure exists, and the graph cannot detect it) and too strict
+(legitimate cases like contract disputes would be blocked).
 
 ## 6. Coexistence with chat-internal moderation
 

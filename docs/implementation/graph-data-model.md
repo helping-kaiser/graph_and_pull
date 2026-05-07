@@ -132,7 +132,7 @@ CREATE INDEX ON :Chat(id);
 |---|---|---|
 | `id`                | String | UUID v4. |
 | `author_id`         | String | Cached. |
-| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. Encrypted ChatMessages can be classified once the chat key has been disclosed — see [moderation.md](../primitive/moderation.md). |
+| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. The protocol does not gate classification on disclosure of the chat key; "moderate only after reading" is a normative requirement on moderators, not a protocol invariant — see [moderation.md §5](../primitive/moderation.md). |
 
 ```cypher
 CREATE CONSTRAINT ON (m:ChatMessage) ASSERT m.id IS UNIQUE;
