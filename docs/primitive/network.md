@@ -32,6 +32,10 @@ It carries:
   `mod_role_change_threshold`).
 - Per-classification moderation quorums and thresholds
   (`moderation_sensitive_*`, `moderation_illegal_*`).
+- Platform guidelines pointer and amendment thresholds
+  (`guidelines_version`, `guidelines_hash`,
+  `guidelines_change_quorum`, `guidelines_change_threshold`) —
+  see [platform-guidelines.md](../instances/platform-guidelines.md).
 - Eligibility-definition parameters (`active_threshold_days` — the
   recency window that makes a User count as an "active member" for
   governance tallies).

@@ -244,14 +244,20 @@ about the real attack shape.
 ## 8. Platform guidelines
 
 The Network publishes normative platform guidelines covering what
-counts as `illegal`, what counts as `sensitive`, and what is "not
-a problem" — voters reference these when deciding their position
+counts as `illegal`, what counts as `sensitive`, and what is
+`normal` — voters reference these when deciding their position
 on a moderation Proposal.
 
-The guidelines themselves are a **separate document, deferred to a
-follow-up PR**. They are amendable via the same Proposal
-primitive (eligibility = Network members; threshold tuned higher
-for guideline-level changes).
+The guidelines live in
+[platform-guidelines.md](platform-guidelines.md). They are
+amendable via the same Proposal primitive (eligibility = Network
+members; thresholds in `Network.guidelines_change_quorum` /
+`Network.guidelines_change_threshold`, tuned slightly higher than
+single-content classification because an amendment shifts the
+normative frame for *all future* moderation). The current version
+is pinned on the graph by
+`Network.guidelines_version` + `Network.guidelines_hash` (SHA-256
+of the canonical document bytes).
 
 ## What this doc is not
 
@@ -265,4 +271,6 @@ for guideline-level changes).
   illegal-content classification (resolving
   [open-questions.md Q9](../open-questions.md); account-deletion
   is a separate user-initiated authorization path).
-- **Not the platform guidelines themselves** (forthcoming).
+- **Not the platform guidelines themselves.** The bucket contents
+  and amendment procedure are in
+  [platform-guidelines.md](platform-guidelines.md).

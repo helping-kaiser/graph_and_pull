@@ -79,6 +79,10 @@ If you find yourself defining a new mechanism inside an
   (`normal` / `sensitive` / `illegal`); reports as Proposals on
   the graph; mod-vote-required-for-every-classification gate;
   redaction cascade for illegal.
+- [platform-guidelines](instances/platform-guidelines.md) — the
+  normative document the Network references when classifying
+  content; bucket contents; amendment procedure pinned by
+  `:Network` version + SHA-256 hash.
 - [account-deletion](instances/account-deletion.md) — user-initiated
   PII redaction; identity-default and content-opt-in scope;
   7-day grace period; reuses redaction mechanism + archive
