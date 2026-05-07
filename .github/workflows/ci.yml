@@ -1,23 +1,46 @@
 name: CI
 
+# Workflow runs on every PR and push to main, regardless of which paths
+# changed. The `changes` job detects whether any non-doc files were
+# touched; the `lint` and `test` jobs are gated at the job level on that
+# output and skip entirely on docs-only changes — services and all.
+#
+# GitHub treats a skipped job's check_run as a passing required status
+# check, so branch protection accepts the skipped state. Workflow-level
+# `paths-ignore` does NOT have this property: a path-skipped workflow
+# posts no commit status at all and leaves required checks hanging
+# forever, which is what blocked docs-only PRs before this structure.
+
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  changes:
+    name: Detect code changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '**'
+              - '!docs/**'
+              - '!**/*.md'
+
   lint:
     name: Lint
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +55,8 @@ jobs:
 
   test:
     name: Test
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
