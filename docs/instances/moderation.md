@@ -37,6 +37,14 @@ Chat, Item, Hashtag (see [nodes.md](../primitive/nodes.md)). Three values:
 The property is layered, so the full classification history is
 preserved.
 
+For `'illegal'` content, the redacted original is written to the
+[retention archive](../primitive/retention-archive.md) with a
+per-row legal hold set per case — prosecution-evidence content
+holds until the relevant statute expires; content illegal to
+retain at all (e.g., CSAM) is reported to authorities and
+immediately scheduled for hard-delete. The hold decision is made
+at redaction time by the moderator and legal admin together.
+
 ## 2. Reports = Proposals on the graph
 
 A user reporting content **is** the act of creating a Proposal:
@@ -249,8 +257,12 @@ for guideline-level changes).
 
 - **Not the Network primitive.** Membership, the moderator role,
   and how mods come and go are in [network.md](../primitive/network.md).
-- **Not the redaction mechanism.** The illegal-only redaction
-  cascade is defined in [layers.md §5](../primitive/layers.md) — this primitive
-  provides the community-driven authorization that §5 was missing
-  ([open-questions.md Q9](../open-questions.md) resolved here).
+- **Not the redaction mechanism.** The redaction cascade is
+  defined in [layers.md §5](../primitive/layers.md) and the
+  archive disposition in
+  [retention-archive.md](../primitive/retention-archive.md); this
+  doc provides the community-driven authorization for
+  illegal-content classification (resolving
+  [open-questions.md Q9](../open-questions.md); account-deletion
+  is a separate user-initiated authorization path).
 - **Not the platform guidelines themselves** (forthcoming).
