@@ -99,3 +99,49 @@ a real endorsement, not so strong that uncustomized edges dominate
 indefinitely. Frontends should make customization the primary path
 during the invitation flow; the defaults only kick in if the user
 explicitly skips the choice.
+
+## Open invite links
+
+Invitations are typically shared through messenger apps and other
+social channels rather than over email — the inviter generates a
+link and posts it where their community will see it. This means
+the inviter does **not know in advance who will accept**.
+
+The link is **time-gated and multi-use**, not single-use.
+Influencers and public communities need to onboard many people
+through the same shared link, so consuming it on first use would
+defeat the mechanism. Different invitees produce different User
+nodes; the link expires by time, not by use.
+
+### Pre-committed inviter values
+
+Because the invitee is unknown at link-generation time, the
+inviter's outgoing edge values are **pre-committed when the link
+is generated**, not chosen per invitee. Whoever accepts inherits
+the values the inviter set on the link. The invitee still chooses
+their own outgoing edge during registration, per "Default values
+and customization" above.
+
+### The bot-cluster trade-off
+
+Open invite links create an attack surface: a bot cluster can
+join through an influencer's public link and turn the influencer
+into a **bridge node into the cluster**. The same mechanic that
+gives the inviter reach also concentrates the cost of mis-vouching
+onto them.
+
+The system tolerates this deliberately. Open invite links are
+necessary for high-reach onboarding — public communities and
+influencers cannot effectively invite their audiences without them
+— and the abuse case is self-correcting: the inviter's network
+can sever the bridge through the cascading-severance mechanism
+described in
+[feed-ranking.md §3.5–§3.6](feed-ranking.md), at which point the
+entire cluster reachable through that bridge is zero-jailed from
+the network's perspective. Inviters who learn this lesson become
+more selective with where they post their links.
+
+The trade-off is intentional: restricting the mechanism would
+deprive legitimate high-reach actors of a critical onboarding
+tool; pushing the consequence onto the inviter aligns the
+incentive with the actor most able to manage it.

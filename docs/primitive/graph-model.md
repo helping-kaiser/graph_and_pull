@@ -21,11 +21,14 @@ Every edge in the graph is:
   content — see [layers.md](layers.md) for the general principle.
 
 And the graph itself is:
-- **Fully transparent** — every node and every edge in the graph is visible
-  to every actor on it. The only way to be invisible is to not be on the
-  graph (a disconnected, self-hosted instance is possible but unreachable
-  from anywhere else). Privacy of *content* is achieved through end-to-end
-  encryption; topology itself is always public.
+- **Fully transparent** — every node and every edge in the graph is visible,
+  and visibility is not gated on holding an account: a frontend can compute
+  any actor's view of the graph for any reader. Accounts gate
+  **participation** (creating actor edges, authoring nodes, voting in
+  governance, joining junctions), not viewing. The only way to be invisible
+  is to not be on the graph (a disconnected, self-hosted instance is
+  possible but unreachable from anywhere else). Privacy of *content* is
+  achieved through end-to-end encryption; topology itself is always public.
 
 ---
 
