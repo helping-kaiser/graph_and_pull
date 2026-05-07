@@ -1,64 +1,50 @@
 # CLAUDE.md
 
-This file is loaded at the start of every Claude Code conversation. It is the
-single source of truth for how to work on this project.
+This file is loaded into every Claude Code conversation on this
+repo. **The rules below are operative, not background reading.**
+Re-read this file at the start of every task.
+
+The project's mission, core principles, hard design rules, and
+contribution workflow are mirrored in
+[CONTRIBUTING.md](CONTRIBUTING.md) for human contributors. The
+content overlaps deliberately: both audiences (Claude here,
+humans there) need the same rules in their canonical doc, and
+relying on Claude to navigate to a separate file before acting is
+unreliable. **Updates to workflow rules must be made in both
+files.**
 
 ---
 
-## What This Project Is
+## Critical reminders
 
-**CoGra** (Content Graph) is the **graph-architecture exploration** for
-**Peer Network**'s next evolution (Peer Network PSE GmbH) — a social media
-platform that replaces AI-driven content algorithms with a transparent,
-graph-driven, user-controlled system. The current Peer Network platform works
-like Instagram. This repo branches off from main Peer Network development to
-design and prototype the graph network that will succeed it; it is a
-multi-year effort, not a short throwaway exploration.
+If you only remember a handful of things from this file, remember
+these — these are the rules most often violated:
 
-**Mission:** decentralize the power of social media. The goal is not to
-become the next Instagram/X/TikTok with a graph bolted on — it is to shift
-power from social-media companies to users, a massive network where the
-weight and ranking are owned by users themselves. Every design decision
-must resist re-centralization.
-
-### Core Principles
-
-These are non-negotiable. Every decision must be evaluated against them:
-
-1. **No AI content algorithms.** Feed ranking is driven entirely by the social
-   graph and direct edge weights. Every user gets a personalized view based on
-   their own connections and explicit preferences.
-2. **All edges are directional.** Nothing can push onto you. Inbound edges
-   from others never affect your feed. Only your outgoing edges shape what you
-   see.
-3. **Append-only on the graph.** Graph state (edges and node properties) is
-   immutable — you cannot delete or overwrite past interactions or values.
-   New layers are added on top. The principle extends to Postgres-side
-   display content, which uses versioned rows rather than overwrites.
-   Transparency and auditability over convenience. See
-   [docs/primitive/layers.md](docs/primitive/layers.md) for the full rule.
-4. **Fair economics.** Ad revenue distributes across the economic landscape of
-   the graph. Bot clusters earn nothing because real users never point toward
-   them. Pull marketing, not push marketing.
-5. **User comes first.** No amount of money changes this. Users choose what
-   they see, including ads. No one can force their way into another user's
-   feed.
-6. **Transparency over black boxes.** The system is a visible, auditable
-   graph. Follow the principles of BTC: transparency, immutability, fairness.
-7. **Fully open source.** The entire codebase is open source — a factual
-   commitment, not a spirit. Forking, self-hosting, and running
-   disconnected graphs are architecturally supported.
-8. **Freedom of the mind.** No rewards for outrage, no manipulation, no dark
-   patterns.
+1. **Never make design decisions autonomously.** Suggest options,
+   explain trade-offs, let the human decide.
+2. **Atomic commits.** One commit = one logical task. Never mix
+   unrelated changes.
+3. **Short commits, long PRs.** Commit body ≤ 2-3 lines. Full
+   rationale goes in the PR description, never the commit body.
+4. **Re-read the relevant docs before claiming.** The docs are the
+   source of truth and grow long; recall is a worse source than
+   the file itself.
+5. **Flag contradictions inline.** If a doc contradicts another or
+   the user's framing, raise it in the same response. Don't paper
+   over it.
+6. **One session per task.** After a PR is merged, suggest a fresh
+   session before starting the next task. Long sessions
+   accumulate context that doesn't help.
 
 ---
 
-## Architecture
+## Architecture (one-screen reference)
 
 Dual-database: **Memgraph** (graph topology, edges, traversal) +
-**PostgreSQL** (metadata, display content). See [docs/implementation/architecture.md](docs/implementation/architecture.md).
+**PostgreSQL** (metadata, display content). See
+[docs/implementation/architecture.md](docs/implementation/architecture.md).
 
-Crate structure:
+Crates:
 
 | Crate | Role |
 |---|---|
@@ -67,122 +53,157 @@ Crate structure:
 | `postgres-store` | SQLx queries, migrations, metadata CRUD |
 | `common` | Shared domain types, error types |
 
-### Key Design Documents
-
-Docs are organized in three layers under `docs/`:
+Docs are layered:
 
 - **`docs/primitive/`** — what the graph IS and how it BEHAVES
   (graph-model, nodes, edges, layers, governance, authorship,
-  feed-ranking, invitations).
+  feed-ranking, invitations, network, moderation).
 - **`docs/instances/`** — concrete applications of the primitive
   (chats, collectives, items).
 - **`docs/implementation/`** — system and code-level concerns
-  (architecture, data-model, development, api-spec, graph-db-options).
+  (architecture, data-model, graph-data-model, development,
+  api-spec, graph-db-options).
 
-See [docs/README.md](docs/README.md) for the full index by layer
-and the suggested reading order. Cross-cutting design questions
-live in [docs/open-questions.md](docs/open-questions.md).
-
----
-
-## Hard Rules
-
-### Never do these:
-
-- **Never introduce AI-based ranking or recommendations.** The graph and its
-  weights are the only ranking mechanism.
-- **Never delete graph structure.** Nodes, edges, and layer stacks are never
-  removed. State transitions are always layered, never destructive. The only
-  permitted "deletion" on the graph is **in-place redaction** of a specific
-  node-property layer's contents when the content itself is illegal — the
-  layer stays, its value is replaced with a visible `[redacted — ...]`
-  marker. Postgres-side display content follows the same spirit: deletion
-  is a narrow exception for illegal material, and the fact of deletion
-  always leaves a visible trace. See [docs/primitive/layers.md](docs/primitive/layers.md) §5
-  for the full policy.
-- **Never erase silently.** Any redaction or takedown — graph-side or
-  Postgres-side — must leave a visible mark. No silent removal of history.
-- **Never let inbound edges affect a user's feed.** Only outgoing edges from
-  the viewing user shape their feed.
-- **Never break edge tensor uniformity.** All edges (actor and structural)
-  have the same shape: 2 dimensions + system dimensions.
-- **Never store graph topology in Postgres or content in Memgraph.** Each
-  database does what it's built for.
-- **Never make design decisions autonomously.** Always ask. Suggest options,
-  explain trade-offs, but let the human decide. Design reasoning often exists
-  that isn't visible in the code.
-- **Never skip tests.** Linting, unit tests, and integration tests are created
-  alongside the code, not after.
-
-### Always do these:
-
-- **Explain why.** This is a learning project as much as a building project.
-  Explain the reasoning behind choices, not just the implementation.
-- **Move slowly and correctly.** Quality over speed. No rushing, no shortcuts.
-- **Follow atomic commits.** One commit = one logical task. A commit can touch
-  multiple files if all changes serve one purpose. Never mix unrelated changes.
-- **Short commit messages.** Subject + at most a few lines. Design rationale,
-  section-by-section change lists, and option comparisons belong in the
-  **PR description**, not the commit body. Reviewers read PRs; `git log` stays
-  readable. Restated lower in the Git Workflow section, restated here so it
-  is impossible to miss.
-- **Branch-per-task.** Create a branch from main, work in small commits, merge
-  via PR. Keep branch lifetime short.
-- **Test everything.** `cargo fmt`, `cargo clippy -D warnings`, unit tests,
-  integration tests.
-- **Document decisions in the repo.** Any rule, principle, or agreement
-  reached during discussion belongs in this file or a design doc — not in
-  private notes, assistant memory, or anyone's head. Other contributors,
-  other devices, and future sessions need to see the same truth.
+See [docs/README.md](docs/README.md) for the full index.
+Cross-cutting design questions live in
+[docs/open-questions.md](docs/open-questions.md).
 
 ---
 
-## Development
+## Hard rules — design
 
-### Quick Start
+### Never
+
+- **Never introduce AI-based ranking or recommendations.** The
+  graph and its weights are the only ranking mechanism.
+- **Never delete graph structure.** Nodes, edges, and layer stacks
+  are never removed. State transitions are always layered, never
+  destructive. The only permitted "deletion" on the graph is
+  in-place redaction per
+  [docs/primitive/layers.md §5](docs/primitive/layers.md). The
+  same spirit applies to Postgres-side display content.
+- **Never erase silently.** Any redaction or takedown — graph-side
+  or Postgres-side — must leave a visible mark.
+- **Never let inbound edges affect a user's feed.** Only outgoing
+  edges from the viewing user shape their feed.
+- **Never break edge tensor uniformity.** All edges (actor and
+  structural) have the same shape: 2 dimensions + system
+  dimensions.
+- **Never store graph topology in Postgres or content in
+  Memgraph.** Each database does what it's built for.
+- **Never make design decisions autonomously.** Always ask.
+  Suggest options, explain trade-offs, but let the human decide.
+  Design reasoning often exists that isn't visible in the code.
+- **Never skip tests.** Linting, unit tests, and integration tests
+  are created alongside the code, not after.
+
+### Always
+
+- **Explain why.** This is a learning project as much as a
+  building project. Explain the reasoning behind choices, not just
+  the implementation.
+- **Move slowly and correctly.** Quality over speed.
+- **Document decisions in the repo.** Any rule, principle, or
+  agreement reached during discussion belongs in this file,
+  [CONTRIBUTING.md](CONTRIBUTING.md), or a design doc — not in
+  memory or anyone's head.
+
+---
+
+## Hard rules — workflow
+
+### Branches
+
+`user/type/topic`. Examples: `jakob/primitive/network-node`,
+`jakob/docs/extract-graph-schema`. Common types: `primitive`,
+`instances`, `implementation`, `docs`, `cleanup`, `process`. Use
+a sensible new type segment when none of the existing ones fits.
+
+### Commits
+
+**Atomic** — one commit = one logical task; never mix unrelated
+changes. **Short** — subject + at most 2-3 body lines, imperative
+mood, describe the *why* not just the *what*. Section-by-section
+change lists, option comparisons, and full design rationale
+belong in the PR description, not the commit body.
+
+### PR body scaffold
+
+- `## Summary` — 1-3 sentences.
+- `## Reasoning` — the *why* behind major decisions.
+  **2-4 sentences per point.** Tradeoffs and what was rejected,
+  not a re-derivation of the doc.
+- `## Commits` — compact list, one line per commit.
+- `## Scope discipline` (optional) — only when there's a real
+  scope question to flag.
+
+No test-plan checklist. No filler subsections. No per-commit prose
+that duplicates the commit body.
+
+### Push + PR
+
+After the last planned commit, **push and open the PR directly**.
+Don't ask "want me to push?". File edits were reviewed one-by-one
+as they were proposed; the user doesn't need a re-confirm step.
+
+---
+
+## Hard rules — research and session hygiene
+
+### Re-read docs before claiming
+
+The docs are the source of truth and grow long. Before making a
+claim about how the system works, open the relevant section and
+re-read it. Recall is a worse source than the file. When making
+math-shaped claims (about ranking, weights, dimensions), trace
+them back to the math in the docs — if you can't, the claim is
+suspect.
+
+### Flag contradictions inline
+
+If a doc contradicts another, conflicts with the user's framing,
+or seems out of place — flag it in the same response. Don't paper
+over it; don't file it as a separate later task.
+
+### Don't re-read what's already in context
+
+If a file is already in conversation context and hasn't been
+edited, don't re-read it. Save the tokens.
+
+### Use the Explore subagent for multi-file research
+
+For broad investigations spanning more than a few files, spawn an
+`Explore` subagent. It does the heavy reading inside its own
+context, returns a summary, and keeps the main thread lean — this
+is the cheapest way to investigate without bloating the session.
+
+### One session per task
+
+Each PR merge is a natural session boundary. After a task closes,
+**suggest a fresh session before starting the next task.** Long
+sessions accumulate context that doesn't help: redundant doc
+re-reads, resolved discussions, stale hypotheses. Fresh sessions
+reload this file and start lean.
+
+---
+
+## Development commands
 
 ```bash
 make run    # first-time: init + start DBs + migrate + start API
 make dev    # returning: start DBs + migrate + start API
 make api    # just the API (if DBs already running)
+make ci     # lint + test (run before pushing)
 ```
 
-### Common Commands
-
-Full make-target list lives in
+Full make-target list, env vars, and other dev guidance:
 [docs/implementation/development.md](docs/implementation/development.md).
 
-### Environment
+### Code style
 
-All config in `.env` (copied from `.env.example`). Key vars:
-- `DATABASE_URL` — Postgres connection
-- `MEMGRAPH_HOST` / `MEMGRAPH_PORT` — Memgraph bolt connection
-- `API_HOST` / `API_PORT` — API bind address
-- `RUST_LOG` — log level (trace/debug/info/warn/error)
-
-### Code Style
-
-- `cargo fmt` enforced
-- `clippy -D warnings` enforced
-- No `unwrap()` in library code — use `thiserror` / `anyhow`
-- Cypher queries only in `graph-engine`, SQL only in `postgres-store`
+- `cargo fmt` enforced.
+- `clippy -D warnings` enforced.
+- No `unwrap()` in library code — use `thiserror` / `anyhow`.
+- Cypher queries only in `graph-engine`, SQL only in
+  `postgres-store`.
 - No comments on obvious code. Comments explain *why*, not *what*.
-
----
-
-## Git Workflow
-
-1. Create a branch from `main` for the task
-2. Work in atomic commits (one logical change per commit)
-3. Ensure `make ci` passes
-4. Merge via PR back to `main`
-5. Keep branches short-lived
-
-Commit messages: concise, imperative mood, describe the *why* not just the
-*what*. Example: "add ChatMember junction node to support role-based chat
-membership" not "update data model".
-
-**Short commits, long PRs.** Commit body is at most a few lines — subject
-plus the minimum why. Option comparisons, section-by-section change lists,
-and full design rationale belong in the **PR description**, not the
-commit. Reviewers read PRs; `git log` stays readable.
