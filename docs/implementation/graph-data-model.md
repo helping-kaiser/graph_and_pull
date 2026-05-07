@@ -257,6 +257,10 @@ targeting that property name. See
 | `guidelines_hash`                 | String  | SHA-256 hex digest of the canonical guidelines document at the current version. 64 lowercase hex chars. Set at bootstrap to the digest of the version-1 doc; updated together with `guidelines_version` on each amendment. |
 | `guidelines_change_quorum`        | Float   | Quorum for guidelines amendment Proposals. Default `0.05` (5%). |
 | `guidelines_change_threshold`     | Float   | Pass-threshold for guidelines amendments. Default `0.667` (2/3). Mod-gate applies. |
+| `property_change_quorum`          | Float   | Quorum for amending baseline-bucket `:Network` properties (`moderation_sensitive_*`, `active_threshold_days`, the baseline pair itself). Default `0.05` (5%). Mod-gate applies. See [network.md §7](../primitive/network.md). |
+| `property_change_threshold`       | Float   | Pass-threshold for the same. Default `0.667` (2/3). Mod-gate applies. |
+| `critical_property_change_quorum` | Float   | Quorum for amending critical-bucket `:Network` properties (`mod_role_change_*`, `moderation_illegal_*`, `guidelines_change_*`, the critical pair itself). Default `0.10` (10%). Mod-gate applies. See [network.md §7](../primitive/network.md). |
+| `critical_property_change_threshold` | Float | Pass-threshold for the same. Default `0.75` (3/4). Mod-gate applies. |
 | `active_threshold_days`           | Integer | A User counts as an "active member" if they have at least one outgoing actor edge with timestamp within the last N days. Default `30`. |
 
 ```cypher

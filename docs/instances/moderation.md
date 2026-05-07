@@ -116,9 +116,13 @@ decision is high. The mod gate carries the integrity guarantee;
 quorum just keeps a single mod from acting unilaterally.
 
 Every number above is a property of the `:Network` singleton,
-itself amendable via the same Proposal primitive
-([governance.md §2.4](../primitive/governance.md)). Defaults exist to bootstrap;
-they are not fixed rules.
+amendable via the rules in
+[network.md §7](../primitive/network.md) — the
+`moderation_illegal_*` thresholds fall in the critical bucket
+(higher quorum, supermajority threshold) because their abuse
+drives the redaction cascade; the `moderation_sensitive_*`
+thresholds fall in the baseline bucket. Defaults exist to
+bootstrap; they are not fixed rules.
 
 ## 5. Scope
 

@@ -39,12 +39,19 @@ It carries:
 - Eligibility-definition parameters (`active_threshold_days` — the
   recency window that makes a User count as an "active member" for
   governance tallies).
+- Amendment-rule pairs that govern changes to the singleton's own
+  parameters: a baseline pair (`property_change_quorum`,
+  `property_change_threshold`) for low-stakes parameters and a
+  critical pair (`critical_property_change_quorum`,
+  `critical_property_change_threshold`) for parameters whose abuse
+  has destructive or platform-wide reach. See §7.
 
 All properties are layered, so every parameter change has a
 preserved history. Each is amendable via a standard Proposal
 targeting the property — same primitive as everything else (see
-[governance.md §2.1](governance.md)). The full property list and
-defaults live in
+[governance.md §2.1](governance.md)); §7 below specifies which
+amendment-rule pair gates which property. The full property list
+and defaults live in
 [graph-data-model.md](../implementation/graph-data-model.md).
 
 The singleton exists so that platform-wide governance has a graph
@@ -116,9 +123,7 @@ scoped governance instance:
 - Content moderation classifications — see
   [moderation.md](../instances/moderation.md).
 - Tuning the `:Network` singleton's parameters themselves
-  (governance of governance — change a moderation threshold by
-  authoring a Proposal targeting the corresponding `:Network`
-  property).
+  (governance of governance) — see §7.
 
 Each is a Shape B governance instance per
 [governance.md §3](governance.md). Two consequences:
@@ -133,6 +138,43 @@ Each is a Shape B governance instance per
   community; the "≥1 mod positive vote" rule is a gate, not a
   weighting. (Same rule applied to content classifications in
   [moderation.md](../instances/moderation.md).)
+
+## 7. Amending `:Network` parameters
+
+Two amendment-rule pairs gate changes to the singleton's own
+properties, separated by stakes:
+
+| Bucket   | Pair                                  | Quorum (default) | Threshold (default) | Mod gate | Governs |
+|----------|---------------------------------------|------------------|---------------------|----------|---------|
+| Baseline | `property_change_quorum`, `property_change_threshold` | 5%  | ≥2/3 | required | `moderation_sensitive_*`, `active_threshold_days`, the baseline pair itself |
+| Critical | `critical_property_change_quorum`, `critical_property_change_threshold` | 10% | ≥3/4 | required | `mod_role_change_*`, `moderation_illegal_*`, `guidelines_change_*`, the critical pair itself |
+
+`guidelines_version` and `guidelines_hash` are not in either
+bucket — they are amended together by the guidelines-amendment
+instance (`guidelines_change_*`, see
+[platform-guidelines.md](../instances/platform-guidelines.md)).
+
+The critical bucket holds parameters whose abuse has destructive
+or platform-wide reach: stripping moderators, triggering the
+redaction cascade, or shifting the normative frame for *all
+future* moderation. Those amendments earn a supermajority. Soft
+flags and eligibility windows move under the lighter baseline
+pair so routine tuning isn't paralyzed.
+
+A single uniform pair would lose the stakes split; a per-property
+pair for each amendable property would double the singleton's
+property count without adding meaningful differentiation. Two
+buckets capture the gradient that matters in practice.
+
+The mod gate uses the same bot-defense reasoning as content
+moderation ([moderation.md §3](../instances/moderation.md)).
+Without it, a coordinated push could drag a baseline-pair
+threshold to trivially low values and weaponize the loosened
+parameter.
+
+Both pairs are **self-amending**: each bucket's own thresholds
+are governed by that bucket's rule. Defaults exist to bootstrap;
+they are not fixed rules.
 
 ## What this doc is not
 

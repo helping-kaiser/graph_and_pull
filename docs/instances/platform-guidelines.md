@@ -147,9 +147,11 @@ moderation Proposals
 
 The defaults are slightly higher than `illegal` classification
 (2% / ≥2/3) because guideline changes shift the normative frame
-for *all future* moderation, not a single piece of content. Like
-every other `:Network` parameter, both numbers are themselves
-amendable via the same primitive.
+for *all future* moderation, not a single piece of content. The
+`guidelines_change_*` thresholds themselves fall in the critical
+bucket of [network.md §7](../primitive/network.md) — amending
+them needs the supermajority that protects platform-wide
+governance.
 
 **Mod gate.** Same as moderation classifications — at least one
 moderator's positive vote is required. Same bot-defense
