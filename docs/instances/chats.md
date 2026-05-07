@@ -146,67 +146,129 @@ plaintext and encrypted messages freely.
 For an encrypted message, the body row in Postgres is a
 **ciphertext blob**; for a plaintext message it's readable text.
 
-### The chat-level decryption key
+### Chat keys, organized in epochs
 
-Each chat has one symmetric **chat key**. Every member derives it
-deterministically from their own private key and the chat's id —
-the standard messenger-crypto pattern (Signal, MLS). Joining a
-chat as a member therefore gives that User the ability to derive
-the chat key; leaving doesn't revoke this (cryptography can't
-forget). New members can derive the same key once added.
+A chat's key is not a single static secret. The lifetime of a
+chat is partitioned into a sequence of **epochs** E₁, E₂, …,
+each with its own symmetric chat key Kᵢ. The current epoch's key
+is the one the frontend uses to encrypt new messages; past
+epochs' keys live on, used for decrypting their respective
+messages. The chat carries an integer property `Chat.epoch`
+(default `1`) that advances by `1` on every rotation; it is
+the on-graph handle for "which key is current."
+
+Every membership-change event automatically closes the current
+epoch and opens a new one — the system advances `Chat.epoch`:
+
+- A new active member (`Chat → ChatMember` activates) — opens E_{i+1}.
+- A member leaves voluntarily — opens E_{i+1}.
+- A member-disavowal vote passes (§6 Level 2) — opens E_{i+1}.
+
+The new key itself is derived collaboratively by the post-change
+set of members using the underlying group-key protocol
+(Signal/MLS-style key update) — implementation detail of the
+messenger library, not a graph operation. **Rotation is automatic
+and not voted**; otherwise an evicted member could vote-block
+their own removal from future epochs, defeating the point.
+
+Each encrypted ChatMessage's body row in Postgres carries an
+`epoch` index pointing at the key it was encrypted under. The
+graph never reads it; the frontend uses it to pick the right key.
+
+### What members hold
+
+- **Current members** can derive Kᵢ for the current epoch and
+  hold (or can re-derive) the keys for every epoch they were
+  active in.
+- **A new joiner** receives only Kᵢ for the epoch they joined and
+  onward. They do **not** automatically gain access to pre-join
+  history; cryptography can't gift them a key they weren't
+  entitled to. Reading older history requires an existing member
+  to share the older key with them — a normal disclosure act.
+- **Ex-members** keep the keys for the epochs they were active
+  in. Cryptography can't forget those. They cannot derive keys
+  for any subsequent epoch — the rotation is the technical
+  enforcement of "you can leak what you saw, not what comes
+  after."
 
 An observer's view:
 
 - **Graph:** the ChatMessage exists, its author (see
   [authorship.md](../primitive/authorship.md)), its creation
   timestamp, its structural position (`ChatMessage → Chat`).
-- **Postgres:** the body row — ciphertext if `content_privacy =
-  'encrypted'`, plaintext otherwise.
-- **Members** of the chat additionally hold the chat key and can
-  decrypt encrypted bodies.
+- **Postgres:** the body row — ciphertext + `epoch` index if
+  `content_privacy = 'encrypted'`, plaintext otherwise.
 - **Non-members** see only what the graph and Postgres expose —
   plaintext bodies are readable to anyone with API access;
   encrypted bodies appear as ciphertext.
 
 ### Disclosure and irreversibility
 
-Any chat member can disclose the chat key publicly — through any
-normal authoring gesture: a Comment on the chat, a public Post, a
-plaintext ChatMessage in the same chat, an off-graph channel,
-anything. The system permits this by design. Encryption protects
-against people *outside* the chat reading content; a participant
-sharing what was said to them is a normal social and legal posture
-the graph doesn't restrict.
+Any chat member can disclose any chat key they hold publicly —
+through any normal authoring gesture: a Comment on the chat, a
+public Post, a plaintext ChatMessage in the same chat, an
+off-graph channel, anything. The system permits this by design.
+Encryption protects against people *outside* a given epoch
+reading content; a participant sharing what was said to them is a
+normal social and legal posture the graph doesn't restrict.
 
-Once disclosed, the key cannot be un-disclosed. Every encrypted
-message ever sent in that chat under that key becomes readable by
-anyone in possession of the leaked key — past, present, future.
+Once disclosed, a key cannot be un-disclosed. Every message
+encrypted under that epoch's key becomes readable to anyone in
+possession of the leaked key. **Disclosure is scoped to the
+disclosed epoch only** — leaking Kᵢ exposes E_i's messages but
+does not expose any earlier or later epoch.
 
-A future feature ("chat key rotation") may let members vote a new
-chat key into use via Proposal targeting some `Chat.key_*`
-property. Rotation would only encrypt **new** messages under the
-new key — past messages stay under the leaked old key, since
-append-only forbids re-encrypting historical content. This
-feature is a forward consideration; not committed yet.
+### Mid-epoch rotation via Proposal
+
+Members may also rotate the chat key **without a membership
+change** — for example, after a member's device has been
+compromised but before they have left the chat. The mechanism is
+the ordinary property-change Proposal flow (§6, [governance.md
+§2.1](../primitive/governance.md)): a Proposal targets
+`Chat.epoch` with `proposed_value = current + 1`. On
+threshold-cross, the property advances and current members re-run
+the group-key-update procedure off-graph. No new mechanism is
+introduced — `Chat.epoch` is just another node property like
+`Chat.name` or `Chat.join_policy`.
+
+Suggested defaults (starting points, not fixed rules):
+
+| Parameter   | Mid-epoch rotation                |
+|-------------|-----------------------------------|
+| Eligibility | Active `ChatMember`s              |
+| Quorum      | ≥ 50%                             |
+| Threshold   | ≥ 2/3 of cast weight in favor     |
+
+These percentages are themselves node properties on the chat
+(`Chat.rotate_key_quorum`, `Chat.rotate_key_threshold`) and can be
+changed via Proposals targeting them — governance of governance
+applies all the way down, same as everywhere else in §6.
+
+Mid-epoch rotation is forward protection only, not a privacy
+upgrade against prior leakage: messages already encrypted under
+the previous key stay readable to anyone who holds it.
+Append-only forbids re-encrypting historical content.
 
 ### Important properties
 
 - **No layer of the system is a trusted party for decryption.**
   The graph holds no body content at all. The Postgres operator
-  holds ciphertext for encrypted messages and never sees the key.
+  holds ciphertext for encrypted messages and never sees any key.
 - **Privacy is key management, not a graph or database feature.**
-  Once a member leaks the key, nothing in the system can prevent
-  others from reading — same as every E2EE system.
+  Once a member leaks an epoch's key, nothing in the system can
+  prevent others from reading messages from that epoch — same
+  as every E2EE system.
 - **Metadata is public by design.** The fact that users A and B
   share a chat is a public graph fact. CoGra deliberately doesn't
   hide who talks to whom.
 
 ### Key management library
 
-CoGra **does not reinvent crypto**. Key derivation, key exchange,
-forward secrecy use an established open-source protocol (e.g. the
-Signal protocol, MLS). No custom crypto. Picking the specific
-library is an implementation decision, not a design decision.
+CoGra **does not reinvent crypto**. Key derivation, group-key
+update on membership change, forward secrecy use an established
+open-source protocol (e.g. the Signal protocol, MLS). No custom
+crypto. Picking the specific library is an implementation
+decision, not a design decision.
 
 ### Searching and indexing
 
@@ -302,9 +364,9 @@ the primitive, not from a special rule.
 
 Beyond disavowal, the chat's other state changes use the Proposal
 mechanism (see [governance.md §2.1](../primitive/governance.md)). `ChatMember.role`
-(promote / demote), `Chat.name`, `Chat.content_privacy`, and
-`Chat.join_policy` are all node properties; each change is a
-Proposal voted on by chat members under chat-defined parameters.
+(promote / demote), `Chat.name`, `Chat.join_policy`, and `Chat.epoch`
+(mid-epoch key rotation, see §5) are all node properties; each change
+is a Proposal voted on by chat members under chat-defined parameters.
 
 Suggested defaults (starting points, not fixed rules):
 
@@ -312,8 +374,8 @@ Suggested defaults (starting points, not fixed rules):
 |------------------------------------|--------|-----------|------------------------------------------------|
 | `ChatMember.role`                  | ≥ 30%  | > 50%     | Active members, excluding the subject member   |
 | `Chat.name`                        | ≥ 10%  | > 50%     | Active members                                 |
-| `Chat.content_privacy`             | ≥ 50%  | ≥ 2/3     | Active members                                 |
 | `Chat.join_policy`                 | ≥ 30%  | ≥ 2/3     | Active members                                 |
+| `Chat.epoch` (mid-epoch rotation)  | ≥ 50%  | ≥ 2/3     | Active members                                 |
 | Disavowal thresholds (the table above) | ≥ 30% | ≥ 2/3 | Active members                                 |
 
 These percentages are themselves node properties on the chat and
@@ -365,6 +427,14 @@ the member-disavowal instance defined in §6 — a Shape B vote with
 the chat's configured quorum and threshold. There is no
 admin-unilateral kick path; admins participate in the disavowal
 vote with their role-weighted vote alongside everyone else.
+
+Every membership-change event — voluntary leave, member-disavowal
+pass, or new active member — also triggers the automatic chat-key
+rotation described in §5: `Chat.epoch` advances by 1 and the new
+member set re-runs the group-key-update procedure off-graph. The
+leaving member keeps the keys for past epochs they were active in
+but cannot derive the new one. This is the mechanism that limits
+ex-member leakage to the time they were actually in the chat.
 
 ---
 

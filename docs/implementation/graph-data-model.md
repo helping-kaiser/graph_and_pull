@@ -108,10 +108,13 @@ CREATE INDEX ON :Comment(id);
 
 | Property            | Type   | Notes |
 |---|---|---|
-| `id`                | String | UUID v4. |
-| `name`              | String | Optional; layered. The graph carries it for routing/display hints. |
-| `join_policy`       | String | `'open'` / `'invite-only'` / `'request-entry'` / `'multi-sig'`. Layered. Read by the system when an actor's claim toward a `:ChatMember` arrives, to decide what approval is required. See [chats.md §2](../instances/chats.md). |
-| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. See [moderation.md](../primitive/moderation.md). |
+| `id`                     | String  | UUID v4. |
+| `name`                   | String  | Optional; layered. The graph carries it for routing/display hints. |
+| `join_policy`            | String  | `'open'` / `'invite-only'` / `'request-entry'` / `'multi-sig'`. Layered. Read by the system when an actor's claim toward a `:ChatMember` arrives, to decide what approval is required. See [chats.md §2](../instances/chats.md). |
+| `moderation_status`      | String  | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. See [moderation.md](../primitive/moderation.md). |
+| `epoch`                  | Integer | Current chat-key epoch. Default `1`. Advanced by `+1` on every membership-change event (system-driven) and on every passing mid-epoch rotation Proposal (user-driven). See [chats.md §5](../instances/chats.md). |
+| `rotate_key_quorum`      | Float   | Quorum for mid-epoch rotation Proposals targeting `epoch`. Default `0.50`. Layered, amendable via Proposal. See [chats.md §5](../instances/chats.md). |
+| `rotate_key_threshold`   | Float   | Pass-threshold for mid-epoch rotation Proposals. Default `0.667` (2/3). Layered, amendable via Proposal. See [chats.md §5](../instances/chats.md). |
 
 The `content_privacy` setting (plaintext vs E2EE) lives in Postgres,
 not on the graph — message bodies are always Postgres-side per
@@ -135,6 +138,11 @@ CREATE INDEX ON :Chat(id);
 CREATE CONSTRAINT ON (m:ChatMessage) ASSERT m.id IS UNIQUE;
 CREATE INDEX ON :ChatMessage(id);
 ```
+
+The `epoch` index a ciphertext was encrypted under lives in
+Postgres alongside the body row, not on the graph — message bodies
+are always Postgres-side per [chats.md §5](../instances/chats.md),
+so the graph never reads it. See [data-model.md](data-model.md).
 
 #### `:Item`
 

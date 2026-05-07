@@ -167,7 +167,13 @@ CREATE TABLE chats (
 -- Chat messages: individual messages within a chat.
 -- content_privacy is per-message (see chats.md §5): 'plaintext' bodies are
 -- readable text; 'encrypted' bodies are ciphertext under the chat's
--- member-derived symmetric key. A chat can carry both freely.
+-- member-derived symmetric key for the epoch the message was authored in.
+-- A chat can carry both freely.
+--
+-- epoch records which key the ciphertext is under (see chats.md §5: chat
+-- keys are organized in epochs, advanced on membership change and on
+-- passing mid-epoch rotation Proposals). NULL for plaintext rows; NOT NULL
+-- for encrypted rows. The frontend uses it to pick the right key.
 CREATE TABLE chat_messages (
     id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     chat_id         UUID        NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
@@ -176,6 +182,10 @@ CREATE TABLE chat_messages (
     content         TEXT        NOT NULL,
     content_privacy TEXT        NOT NULL DEFAULT 'plaintext'
                                 CHECK (content_privacy IN ('plaintext', 'encrypted')),
+    epoch           INTEGER     CHECK (
+                                  (content_privacy = 'plaintext' AND epoch IS NULL) OR
+                                  (content_privacy = 'encrypted' AND epoch >= 1)
+                                ),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
