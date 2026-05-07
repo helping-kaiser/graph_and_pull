@@ -175,7 +175,7 @@ Graph-derived fields (`followerCount`, `likeCount`, `isLikedByMe`, etc.) are res
 
 ### Authentication
 
-Auth is stubbed for now. The `me` query and mutations requiring auth context will return an error until auth is implemented. Planned approach: JWT in `Authorization: Bearer` header, validated in Axum middleware before reaching resolvers.
+Auth is stubbed in this (outdated) schema. The `me` query and mutations requiring auth context will return an error until auth is implemented. The auth model — registration via invitation, email verification, JWT access + Postgres-backed refresh tokens, session listing, rate limiting — is specified in [auth.md](auth.md).
 
 ---
 

@@ -96,6 +96,9 @@ If you find yourself defining a new mechanism inside an
   tools, workflows.
 - [api-spec](implementation/api-spec.md) — GraphQL spec
   (outdated, pending redesign).
+- [auth](implementation/auth.md) — server-side credentials,
+  invitation-based registration, JWT access + Postgres refresh
+  tokens, sessions.
 - [graph-db-options](implementation/graph-db-options.md) — why
   Memgraph; alternatives considered.
 
