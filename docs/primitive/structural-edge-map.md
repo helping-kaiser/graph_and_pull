@@ -50,18 +50,29 @@ Sources and targets with no structural edges in either direction
 | **ItemOwnership**    | `:BEARER`  | `:BEARER`  | —          | —          | —          | —          | `:CLAIM`   | —          | —          | —          | —          | `:STRUCTURAL` | —       |
 | **Network**          | —          | —          | —          | —          | —          | —          | —          | —          | —          | —          | —          | —          | —          |
 
-**Notes on cells with two labels:**
+**Reading cells with two labels.** Cells that list both
+`:CONTAINMENT` and `:REFERENCES` show two valid edge types **at
+the class level** — a Comment can in general be in a containment
+relationship with some Post and in a reference relationship with
+a different Post. For any **specific instance** pair, only one of
+the two fires, per the rule in
+[edges.md §2 "Reference"](edges.md#reference): `:REFERENCES` is
+not written when another structural edge already encodes the same
+`(source, target)` pair, so `:CONTAINMENT` wins when both would
+otherwise apply.
+
+The two-label cells in the matrix are:
 
 - `Comment → (Post | Comment | Chat | ChatMessage | Item)` —
-  `:CONTAINMENT` is the parent-of-comment edge (every Comment
-  has exactly one, fixed at creation, per
-  [comment.md §4](../instances/comment.md#4-edges));
-  `:REFERENCES` is the embed/quote/mention edge. The same node
-  pair can in principle host both — see §3.
-- `ChatMessage → Chat` — `:CONTAINMENT` is the message's home
+  `:CONTAINMENT` for the Comment's parent (every Comment has
+  exactly one, fixed at creation per
+  [comment.md §4](../instances/comment.md#4-edges)); `:REFERENCES`
+  for embed/quote/mention of *any other* node of the same type.
+- `ChatMessage → Chat` — `:CONTAINMENT` for the message's home
   chat ([chats.md §5.2](../instances/chats.md#52-chatmessage));
-  `:REFERENCES` would be the message embedding its own home chat
-  ([edges.md §2 "Reference"](edges.md#reference)). See §3.
+  `:REFERENCES` for embedding any *other* chat (the
+  personal-newsfeed shape from
+  [chats.md §8](../instances/chats.md#8-chatmessages-as-first-class-content)).
 
 `Proposal → Proposal` is `—` because a Proposal never targets
 another Proposal — moderation can't target it and no governance
