@@ -50,6 +50,17 @@ target). The composition uses **parallel tracks**: `dim1` and `dim2`
 flow independently through the path product and only collapse to a
 scalar at sort time.
 
+**Invariant: simple paths.** Every path in the traversal is
+**vertex-simple** — no node appears more than once. Bidirectional
+topologies — mutual user edges (`A → B` and `B → A`), junction
+approval pairs (e.g. `ChatMember → Chat` and `Chat → ChatMember`),
+and `:BEARER` pairs between a junction and its bearer — would
+otherwise admit cyclic paths in which the same intermediate's
+mediating role multiplies into the product more than once: a
+structural artifact, not new information about `U`'s view of `t`.
+Cycles also blow up enumeration combinatorially under the R-cap.
+The walk maintains a per-path visited set to enforce the invariant.
+
 ### 3.1 Which edges contribute factors
 
 Only **actor edges** contribute factors to the path products.
@@ -863,6 +874,37 @@ contribution — balancing direct signal with friend-of-friend buzz.
 A separate **time-decay** factor `f(Δt)` is applied alongside `d(R)`
 on the reactor edge of each path — see §7. Both are
 frontend-tunable.
+
+**Considered and rejected: single-transit-cap.** A rule capping
+any single intermediate's contribution to a given target — or
+discounting paths that share an intermediate with a shorter path
+— was considered. The motivating intuition: 100 paths at
+`R = 3` through transit node `B` outweigh one `R = 2` path from
+`B` himself, even though all 100 share the same `B → t` reactor
+edge; shouldn't `B`'s mediation be capped?
+
+The multi-path sum already factors cleanly. For 100 paths
+`U → Aᵢ → B → t`, the per-track sentiment contribution is
+`d(3) · s(B → t) · Σᵢ s(U → Aᵢ) · s(Aᵢ → B)`. The trailing sum
+is structurally how strongly `U`'s network reaches `B`; `s(B → t)`
+is `B`'s single stance toward `t`. What looks like "`B` counted
+100 times" is the well-defined product of "network-aggregate
+endorsement of `B`" and "`B`'s view of `t`" — trust propagation
+working correctly.
+
+A cap also conflicts with the existing bot-bridge defense
+(§3.5–§3.7): the principled answer to "`B` is bridging a cluster"
+is severance and the hourglass auto-detection surface (§3.7.2),
+which differentiates legitimate hubs from bot bridges structurally.
+A blanket transit-cap would penalize both indiscriminately and
+erode the broad-network endorsement signal that multi-path
+summation is meant to capture. `d(R)` already calibrates direct-
+versus-indirect — the default is set so ~15 strong `R=3` paths
+match one strong `R=2` path — making the 100-paths case
+intentional, not pathological. The rule would also generalize
+from no other primitive in the spec; every other ranking input
+operates on edges (their dim values, their top-layer ages), not
+on transit-node identity.
 
 ### 4.2 The four metrics
 

@@ -25,8 +25,7 @@ within a phase, order is flexible.
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
 | 1. Sort fallback | 1 | **Q16** | Derivation of `S(t)`, the intrinsic per-node scalar that breaks ties at the bottom of the sort cascade. Q2 settled the rest of the math but left S's inputs open. Pure ranking math; no external dependency. |
-| 2. Path-set audit | 2 | **Q18** | Path-uniqueness (simple-paths) and path-subsumption rules for the feed-ranking traversal. With Q17 resolved (no content back-edges), the path-set's candidate topologies are knowable; question reduces to whether to add a simple-paths invariant and/or a single-transit-cap. |
-| 3. Federation phase | 3 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
+| 2. Federation phase | 2 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -49,6 +48,7 @@ questions are closed.
 - Q10 — reframed as a side note rather than an open design question. See [layers.md "Side note on long-term storage"](primitive/layers.md#side-note-on-long-term-storage). Typical actor behavior bounds layer accumulation tightly — people update an edge a handful of times over its lifetime, not hundreds, and node properties change even less frequently. The corner cases that *would* accumulate substantial history (e.g., a decades-old company restructuring through CollectiveMember edges) are precisely the ones where preserving history has value. If a real instance ever runs into storage pressure, compaction-friendly approaches that respect the no-silent-deletion principle exist — but it's an implementation-time decision contingent on real data, not a design-time one to settle preemptively.
 - Q9 — see [moderation.md](instances/moderation.md) and [network.md](primitive/network.md). Authorization for redaction runs through community-driven Network governance: any User authors a Proposal classifying content as `illegal`; threshold-cross requires at least one moderator's positive vote (the gate), ≥2/3 of cast votes in favor, and a low community quorum; threshold-cross triggers the [layers.md §5](primitive/layers.md#5-deletion-policy) redaction cascade. External pressure (court orders, etc.) doesn't bypass the mechanism — it prompts a moderator to start the same Proposal, which the community completes. Pathological corner cases (all moderators compromised) fall under the federation/forking exit per Q15.
 - Q17 — see [feed-ranking.md §3.1](primitive/feed-ranking.md#31-which-edges-contribute-factors). No `Content → Author` back-edge exists or is added; content actor edges terminate at the content node and contribute only to ranking that content. The "I liked Alice's last three posts, so show me more Alice" intuition is supported by an explicit follow gesture, not inferred from post-affinity — that inference would be exactly the behavior-to-edge translation [graph-model.md §3](primitive/graph-model.md#3-edge-categories) (stances-not-events) rules out. Back-edge variants (with-cap, with-weight-discount, gated-on-reciprocation, propagate-to-author-only) each failed against either bot-bridge amplification or the actor-only-factor symmetry of §3.1, or both. A frontend may surface a follow-prompt after observed repeated engagement, but this is a UX nudge, not a graph mechanism, and is not added prophylactically — revisit only if feed-quality data shows the gap matters.
+- Q18 — see [feed-ranking.md §3](primitive/feed-ranking.md#3-per-edge-composition-along-a-path) (simple-paths invariant — every path is vertex-simple, enforced via a per-path visited set; bidirectional topologies like mutual user edges, junction approval pairs, and `:BEARER` pairs would otherwise admit cyclic paths where the same intermediate's mediating role multiplies into the product without conveying new information) and [feed-ranking.md §4.1](primitive/feed-ranking.md#41-path-contribution-and-distance-decay) (single-transit-cap rejected — for 100 paths `U → Aᵢ → B → t` the sum factors as `d(3) · s(B → t) · Σᵢ s(U → Aᵢ) · s(Aᵢ → B)`, a clean product of "network-aggregate endorsement of `B`" times "`B`'s stance on `t`," which is trust propagation working correctly; bot-bridge amplification is already handled by severance + hourglass auto-detection in §3.5–§3.7, and `d(R)` already calibrates direct-vs-indirect, making 100 R=3 paths beating one R=2 path the intentional default). One-line entry added to [invariants.md "Ranking"](primitive/invariants.md#ranking) for discoverability.
 
 ---
 
@@ -98,64 +98,6 @@ None worked out yet.
 ### Related
 
 Q2 (resolved — sets up the cascade that `S` terminates).
-
----
-
-## Q18 — Path-uniqueness and path-subsumption rules for feed-ranking traversal
-
-**Where it shows up:** [feed-ranking.md §3](primitive/feed-ranking.md#3-per-edge-composition-along-a-path) (per-edge composition along a path), [feed-ranking.md §4](primitive/feed-ranking.md#4-per-target-metrics) (per-target metrics, sum across paths)
-**Status:** open
-
-### Context
-
-The feed-ranking traversal sums per-path contributions across
-all paths from the viewing user to each candidate target. Two
-things about that path-set are currently unstated:
-
-(a) Whether every path must be **simple** (no node visited
-    twice). The current edge catalog does not by itself prevent
-    loops; a path revisiting a node would multiply the same
-    node's mediating role into its own product.
-
-(b) Whether paths sharing an intermediate with a shorter path
-    to the same target should be **discounted or capped**. The
-    user raised the concern that 100 paths at `R = 3` through
-    transit node Bob can outweigh 1 path at `R = 2` from Bob
-    himself, even though all 100 share the same Bob — Bob's
-    mediation appears 100 times in the sum without each
-    occurrence being any more informative about the target.
-
-### The question
-
-(a) **Simple-paths invariant.** Should "every path features
-    every node at most once" be stated as an invariant in
-    [feed-ranking.md §3](primitive/feed-ranking.md#3-per-edge-composition-along-a-path)?
-
-(b) **Path-subsumption / single-transit-cap.** Should paths
-    sharing an intermediate node with a shorter path to the
-    same target be discounted? Or should any single transit
-    node's contribution to a given target be capped?
-    Trust-propagation literature has both approaches; neither
-    is currently in the math.
-
-### Constraints (from established principles)
-
-- **Per-viewer, outbound traversal**
-  ([graph-model.md §7](primitive/graph-model.md#7-directionality-inbound-edges-dont-affect-your-graph)).
-  Whatever rule is chosen applies during the viewer's outbound
-  walk.
-- **No AI ranking** ([CLAUDE.md](../CLAUDE.md)). The rule must
-  be a deterministic graph-traversal rule, not a learned
-  weighting.
-
-### Options considered
-
-None yet.
-
-### Related
-
-Q17 (resolved — established no content back-edges, fixing the
-path topology this question operates on).
 
 ---
 
