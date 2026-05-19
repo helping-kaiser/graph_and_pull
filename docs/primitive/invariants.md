@@ -80,6 +80,9 @@ listed under the most useful one.
 - [Kill rule: a `0` in either dim zeros the path product](feed-ranking.md#32-zero-handling--kill-rule)
   — zeros are real multiplicative factors, never skipped; once a
   dim is zeroed on a path it cannot be revived downstream.
+- [Hashtags do not participate in path products](../instances/hashtag.md#4-edges)
+  — `:TAGGING` is pure topology for discovery, never traversed by
+  feed ranking.
 
 ---
 
