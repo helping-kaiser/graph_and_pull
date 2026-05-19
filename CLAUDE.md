@@ -149,11 +149,26 @@ belong in the PR description, not the commit body.
 No test-plan checklist. No filler subsections. No per-commit prose
 that duplicates the commit body.
 
-### Push + PR
+### Commit + Push + PR
 
-After the last planned commit, **push and open the PR directly**.
-Don't ask "want me to push?". File edits were reviewed one-by-one
-as they were proposed; the user doesn't need a re-confirm step.
+When writing is done and no questions remain open in the
+conversation — every unresolved item either decided or parked in
+[docs/open-questions.md](docs/open-questions.md) — run the full
+**commit + push + PR cycle in one motion, uninterrupted**. Don't
+ask "want me to commit?", "should I push?", or propose a draft
+commit message and wait for sign-off. The file edits were
+reviewed one-by-one as they were proposed; that is the only
+sign-off the workflow needs.
+
+Task-completion framing — "resolve", "ship", "finalize", "let's
+do X then resolve", or any phrasing that says the writing phase
+is over — authorizes the whole cycle, commit step included. The
+only legitimate stop is a genuine surprise in the diff (sensitive
+files, an accidental edit), not a routine re-confirmation.
+
+Stop and ask only **before** writing — to align on approach, pick
+between options, or surface contradictions. Once the writing is
+done, the workflow runs straight through to the PR.
 
 ---
 
