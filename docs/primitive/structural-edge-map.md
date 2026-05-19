@@ -93,35 +93,29 @@ membership/ownership approver/removal vote edges.
 
 ---
 
-## 2. Diagram
+## 2. Diagrams
 
-Same information visualized. The diagram groups edges by label;
-the matrix above is the canonical reference.
+Same information as the matrix, split one diagram per edge-label
+family. A single combined diagram is dominated by `:REFERENCES`
+(~35 edges) and `:TARGETS` (12 edges) fan-outs and reads as a
+hairball; splitting by family makes each family's shape visible.
+The matrix above remains the canonical reference.
+
+### 2.1. `:CONTAINMENT`
+
+Parent-pointer edges: every Comment contains into its parent (any
+of the five content types); every ChatMessage contains into its
+home Chat
+([edges.md "Containment / belonging"](edges.md#containment--belonging)).
 
 ```mermaid
 flowchart LR
-    %% Actor nodes
-    User[User]:::actor
-    Collective[Collective]:::actor
-
-    %% Content nodes
-    Post[Post]:::content
     Comment[Comment]:::content
-    Chat[Chat]:::content
     ChatMessage[ChatMessage]:::content
+    Post[Post]:::content
+    Chat[Chat]:::content
     Item[Item]:::content
-    Hashtag[Hashtag]:::content
-    Proposal[Proposal]:::content
 
-    %% Junction nodes
-    ChatMember[ChatMember]:::junction
-    CollectiveMember[CollectiveMember]:::junction
-    ItemOwnership[ItemOwnership]:::junction
-
-    %% System nodes
-    Network[Network]:::system
-
-    %% :CONTAINMENT
     Comment -->|CONTAINMENT| Post
     Comment -->|CONTAINMENT| Comment
     Comment -->|CONTAINMENT| Chat
@@ -129,30 +123,95 @@ flowchart LR
     Comment -->|CONTAINMENT| Item
     ChatMessage -->|CONTAINMENT| Chat
 
-    %% :CLAIM (junction → parent)
+    classDef content fill:#fff3e0,stroke:#ef6c00,color:#e65100;
+```
+
+### 2.2. Junction triad: `:CLAIM`, `:APPROVAL`, `:BEARER`
+
+Every junction sits in the same three-legged shape: junction →
+parent (`:CLAIM`), parent → junction (`:APPROVAL`), junction →
+bearing actor (`:BEARER`). Three junction types instantiate the
+pattern (see
+[edges.md "Approval completion"](edges.md#approval-completion) and
+[edges.md "Bearer binding"](edges.md#bearer-binding)).
+Note `Collective` plays two roles — bearing actor for all three
+junctions, and parent of `CollectiveMember`.
+
+```mermaid
+flowchart LR
+    User[User]:::actor
+    Collective[Collective]:::actor
+
+    Chat[Chat]:::content
+    Item[Item]:::content
+
+    ChatMember[ChatMember]:::junction
+    CollectiveMember[CollectiveMember]:::junction
+    ItemOwnership[ItemOwnership]:::junction
+
     ChatMember -->|CLAIM| Chat
-    CollectiveMember -->|CLAIM| Collective
-    ItemOwnership -->|CLAIM| Item
-
-    %% :APPROVAL (parent → junction)
     Chat -->|APPROVAL| ChatMember
-    Collective -->|APPROVAL| CollectiveMember
-    Item -->|APPROVAL| ItemOwnership
-
-    %% :BEARER (junction → bearing actor)
     ChatMember -->|BEARER| User
     ChatMember -->|BEARER| Collective
+
+    CollectiveMember -->|CLAIM| Collective
+    Collective -->|APPROVAL| CollectiveMember
     CollectiveMember -->|BEARER| User
     CollectiveMember -->|BEARER| Collective
+
+    ItemOwnership -->|CLAIM| Item
+    Item -->|APPROVAL| ItemOwnership
     ItemOwnership -->|BEARER| User
     ItemOwnership -->|BEARER| Collective
 
-    %% :TAGGING
+    classDef actor    fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
+    classDef content  fill:#fff3e0,stroke:#ef6c00,color:#e65100;
+    classDef junction fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c;
+```
+
+### 2.3. `:TAGGING`
+
+Three content types tag Hashtags directly; Hashtags never tag
+back ([edges.md "Tagging"](edges.md#tagging)).
+
+```mermaid
+flowchart LR
+    Post[Post]:::content
+    Comment[Comment]:::content
+    Item[Item]:::content
+    Hashtag[Hashtag]:::content
+
     Post -->|TAGGING| Hashtag
     Comment -->|TAGGING| Hashtag
     Item -->|TAGGING| Hashtag
 
-    %% :TARGETS (one node, fan-out to every other category)
+    classDef content fill:#fff3e0,stroke:#ef6c00,color:#e65100;
+```
+
+### 2.4. `:TARGETS`
+
+Single-source fan-out: a Proposal points at the subject of its
+proposed change, which can be any node category — including the
+`Network` singleton and any junction — but never another Proposal
+([edges.md "Subject targeting"](edges.md#subject-targeting)).
+
+```mermaid
+flowchart LR
+    Proposal[Proposal]:::content
+
+    User[User]:::actor
+    Collective[Collective]:::actor
+    Post[Post]:::content
+    Comment[Comment]:::content
+    Chat[Chat]:::content
+    ChatMessage[ChatMessage]:::content
+    Item[Item]:::content
+    Hashtag[Hashtag]:::content
+    ChatMember[ChatMember]:::junction
+    CollectiveMember[CollectiveMember]:::junction
+    ItemOwnership[ItemOwnership]:::junction
+    Network[Network]:::system
+
     Proposal -->|TARGETS| User
     Proposal -->|TARGETS| Collective
     Proposal -->|TARGETS| Post
@@ -166,9 +225,40 @@ flowchart LR
     Proposal -->|TARGETS| ItemOwnership
     Proposal -->|TARGETS| Network
 
-    %% :REFERENCES — three carriers (ChatMessage, Post, Comment) to every node
-    %% with graph identity except Hashtag for Post and Comment (:TAGGING carve-out).
-    %% Edges drawn out per carrier for completeness.
+    classDef actor    fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
+    classDef content  fill:#fff3e0,stroke:#ef6c00,color:#e65100;
+    classDef junction fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c;
+    classDef system   fill:#eceff1,stroke:#455a64,color:#263238;
+```
+
+### 2.5. `:REFERENCES`
+
+Three carriers — `Post`, `Comment`, `ChatMessage` — can reference
+any node with graph identity (everything except `Network`).
+`Post` and `Comment` use `:TAGGING` for Hashtag instead, so
+Hashtag is excluded from their fan-out;
+`ChatMessage`'s fan-out includes Hashtag
+([edges.md "Reference"](edges.md#reference)). The no-duplicate
+rule means `:REFERENCES` is suppressed for `(source, target)`
+pairs that already carry another structural edge — see
+[§1](#1-matrix) for the cells where this applies.
+
+```mermaid
+flowchart LR
+    ChatMessage[ChatMessage]:::content
+    Post[Post]:::content
+    Comment[Comment]:::content
+
+    User[User]:::actor
+    Collective[Collective]:::actor
+    Chat[Chat]:::content
+    Item[Item]:::content
+    Hashtag[Hashtag]:::content
+    Proposal[Proposal]:::content
+    ChatMember[ChatMember]:::junction
+    CollectiveMember[CollectiveMember]:::junction
+    ItemOwnership[ItemOwnership]:::junction
+
     ChatMessage -->|REFERENCES| User
     ChatMessage -->|REFERENCES| Collective
     ChatMessage -->|REFERENCES| Post
@@ -206,7 +296,27 @@ flowchart LR
     Comment -->|REFERENCES| CollectiveMember
     Comment -->|REFERENCES| ItemOwnership
 
-    %% :STRUCTURAL — Shape B vote edges
+    classDef actor    fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
+    classDef content  fill:#fff3e0,stroke:#ef6c00,color:#e65100;
+    classDef junction fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c;
+```
+
+### 2.6. `:STRUCTURAL` (Shape B vote edges)
+
+Junctions cast Shape B votes: each junction type votes on itself
+(member removal / co-ownership approval), each votes on Proposals
+about its own subject, and `ChatMember` additionally votes on
+`ChatMessage` (message disavowal). See
+[edges.md "Voting (Shape B)"](edges.md#voting-shape-b).
+
+```mermaid
+flowchart LR
+    ChatMember[ChatMember]:::junction
+    CollectiveMember[CollectiveMember]:::junction
+    ItemOwnership[ItemOwnership]:::junction
+    ChatMessage[ChatMessage]:::content
+    Proposal[Proposal]:::content
+
     ChatMember -->|STRUCTURAL Shape B| ChatMember
     ChatMember -->|STRUCTURAL Shape B| ChatMessage
     ChatMember -->|STRUCTURAL Shape B| Proposal
@@ -214,10 +324,8 @@ flowchart LR
     CollectiveMember -->|STRUCTURAL Shape B| Proposal
     ItemOwnership -->|STRUCTURAL Shape B| ItemOwnership
 
-    classDef actor    fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
     classDef content  fill:#fff3e0,stroke:#ef6c00,color:#e65100;
     classDef junction fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c;
-    classDef system   fill:#eceff1,stroke:#455a64,color:#263238;
 ```
 
 ---
