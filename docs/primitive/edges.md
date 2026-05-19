@@ -236,24 +236,28 @@ oppose, intermediate values allowed), `dim2` is `0`.
 
 | Edge type | Meaning |
 |-----------|---------|
-| ChatMember → ChatMember | Approval (`dim1 > 0`) or removal (`dim1 < 0`) vote on another chat member's membership |
-| ChatMember → ChatMessage | Chat-internal message-disavowal vote |
-| ChatMember → Proposal | A chat-eligible vote on a proposed chat property or role change |
+| ChatMember → ChatMember | Admission (`dim1 > 0`) vote on another chat member's membership at join time. Stance flips on this edge happen only during the open admission period; disavowal of an active member routes through a Proposal — see [chats.md §10](../instances/chats.md#10-moderation) Level 2. |
+| ChatMember → Proposal | A chat-eligible vote on any Proposal targeting a chat-internal subject — chat property / role change, Level 1 message disavowal, or Level 2 member disavowal |
 | CollectiveMember → CollectiveMember | Approval (`dim1 > 0`) or removal (`dim1 < 0`) vote on another collective member's membership |
 | CollectiveMember → Proposal | A collective-eligible vote on a proposed property/role change |
 | ItemOwnership → ItemOwnership | Current owner's approval vote on a transfer to a new ItemOwnership for the same Item |
 
-**Same edge serves the membership lifecycle.** For approver
-votes on a junction (the `ChatMember → ChatMember`,
-`CollectiveMember → CollectiveMember`, and
-`ItemOwnership → ItemOwnership` rows above), the same edge
-that admits a junction holder can later be re-layered to
-remove them — `dim1 > 0` admits at layer-1, a later
-`dim1 < 0` layer is the removal vote. One edge, layered
-history of one voter's stance toward one membership /
-ownership. See
+**Same edge serves the membership lifecycle (CollectiveMember,
+ItemOwnership).** For `CollectiveMember → CollectiveMember`
+and `ItemOwnership → ItemOwnership`, the same edge that admits
+a junction holder can later be re-layered to remove them —
+`dim1 > 0` admits at layer-1, a later `dim1 < 0` layer is the
+removal vote. One edge, layered history of one voter's stance
+toward one membership / ownership. See
 [graph-model.md §5](graph-model.md#5-junction-node-flows)
 "Revocation and state transitions".
+
+**ChatMember → ChatMember is admission-only.** The chat
+case diverges: the edge supports stance flips during the open
+admission period only. Once a membership is active, disavowal
+flows through a Proposal targeting the member's ChatMember
+junction (see [chats.md §10](../instances/chats.md#10-moderation)
+Level 2), not through a re-layering of this edge.
 
 **Network-scope governance uses Shape A, not Shape B.** Votes
 on Network-wide Proposals (moderator role changes, content
