@@ -50,12 +50,26 @@ incoming vote edge from the authoring actor (§5).
 - **`target_property`** — the name of the graph property
   on the target node being proposed for change (e.g.
   `'moderation_status'`, `'name'`, `'role'`,
-  `'network_role'`, `'guidelines_version'`). For
-  illegal-content classification, may also be the literal
-  `'full'` shorthand per
-  [moderation.md §1](moderation.md#1-the-two-classification-paths).
+  `'network_role'`, `'guidelines_version'`). Two sentinel
+  values stand in for whole-node operations rather than a
+  single property:
+  - `'full'` — illegal-content classification across every
+    user-input field plus every attached media on the node
+    (see [moderation.md §1](moderation.md#1-the-two-classification-paths)).
+  - `'node'` — chat-internal disavowal targeting the whole
+    target node (Level 1 against a `ChatMessage`, Level 2
+    against a `ChatMember` — see
+    [chats.md §10](chats.md#10-moderation)). The cascade
+    interpreter dispatches on the target's node type: for
+    `ChatMember`, it writes a `dim1 < 0` layer on the
+    existing `Chat → ChatMember` approval edge; for
+    `ChatMessage`, no separate outcome edge is written and
+    the chat's stance is the existence of the passed
+    Proposal itself.
 - **`proposed_value`** — the value to set on
-  `target_property` if the Proposal passes.
+  `target_property` if the Proposal passes. For the `'node'`
+  sentinel, `'disavowed'` and `'normal'` are the two values
+  used by chat-internal disavowal and its counter-Proposals.
 
 Neither property layers — the Proposal's identity *is* the
 specific change it proposes; mutating either mid-lifecycle
@@ -215,6 +229,10 @@ is the node-level progression.
   [moderation.md §1](moderation.md#1-the-two-classification-paths),
   and
   [layers.md §5](../primitive/layers.md#5-deletion-policy).
+  The `'node'` sentinel (§2) dispatches on the target's node
+  type — re-layering `Chat → ChatMember` for a `ChatMember`
+  target, or writing nothing on a `ChatMessage` target since
+  the Proposal's pass-state is itself the chat's stance.
 - **Outcome stickiness** — after the cascade, the target
   stays in its new state until a future vote event pushes
   it back across a threshold

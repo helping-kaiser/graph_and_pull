@@ -253,9 +253,10 @@ one outgoing structural edge type:
 - **`Chat → ChatMember` (`:APPROVAL`)** — the approval side of
   the two-edge approval pattern. Created when the chat's
   `join_policy` is satisfied for an incoming `ChatMember` claim
-  (§11). State transitions on this edge — member disavowal per
-  §10 Level 2, voluntary leave — append additional `dim1 < 0`
-  layers per
+  (§11). State transitions on this edge — voluntary leave (§11
+  "Leaving and removal") and the system-written cascade from a
+  passing Level 2 disavowal Proposal (§10) — append additional
+  `dim1 < 0` layers per
   [graph-model.md §5](../primitive/graph-model.md#5-junction-node-flows).
   See
   [edges.md §2 "Approval completion"](../primitive/edges.md#approval-completion).
@@ -320,17 +321,16 @@ A ChatMessage receives:
   is the authorship edge (§6.2).
 - **`Comment → ChatMessage` (`:CONTAINMENT`)** when a Comment is
   written on the specific message.
-- **`ChatMember → ChatMessage` (Shape B vote)** —
-  message-disavowal votes (§10 Level 1). The vote carrier is the
-  junction so the chat stance stays decoupled from personal
-  sentiment on `User → ChatMessage`. See
-  [edges.md §2 "Voting (Shape B)"](../primitive/edges.md#voting-shape-b).
 - **`ChatMessage / Post / Comment → ChatMessage` (`:REFERENCES`)**
   when another content node embeds this message.
-- **`Proposal → ChatMessage` (`:TARGETS`)** when a moderation
-  Proposal targets a property on the ChatMessage —
-  `'sensitive'` against `moderation_status`, or `'illegal'`
-  against `content` or `attachments`.
+- **`Proposal → ChatMessage` (`:TARGETS`)** when a Proposal
+  targets the ChatMessage — `'sensitive'` against
+  `moderation_status`, `'illegal'` against `content` or
+  `attachments`, or the `'node'` sentinel for Level 1
+  chat-internal disavowal (§10). The disavowal vote carrier is
+  the voter's `ChatMember` junction (Shape B), so the chat
+  stance stays decoupled from personal sentiment on
+  `User → ChatMessage`.
 
 ### 5.3 ChatMember
 
@@ -350,15 +350,16 @@ bearer casts as a chat-eligible voter:
   self-claim that activates the membership must originate from
   this actor (§11).
 - **`ChatMember → Proposal` (Shape B vote)** — chat-eligible
-  vote on a Proposal targeting a chat property.
-- **`ChatMember → ChatMessage` (Shape B vote)** — direct
-  message-disavowal vote (§10 Level 1).
-- **`ChatMember → ChatMember` (Shape B vote)** — approval
-  (`dim1 > 0`) or disavowal (`dim1 < 0`) vote on another chat
-  member's membership. Used at join time (§11 Invite-only,
-  Request-entry, multi-sig) and later for member disavowal
-  (§10 Level 2) — the same edge layered with stance changes
-  over time.
+  vote on any Proposal targeting a chat-internal subject: a
+  chat property (§10 "Property and role changes"), a
+  ChatMessage for Level 1 disavowal (§10), or a ChatMember
+  junction for Level 2 disavowal (§10).
+- **`ChatMember → ChatMember` (Shape B vote)** — admission
+  vote on another chat member's membership at join time (§11
+  Invite-only, Request-entry, multi-sig). Stance flips on this
+  edge happen only during the open admission period — once a
+  membership is active, disavowal flows through a Proposal
+  (§10 Level 2), not through a re-layering of this edge.
 
 #### As target (incoming)
 
@@ -372,21 +373,24 @@ A ChatMember receives:
   about that membership — they do not drive the approval vote,
   which uses Shape B (above).
 - **`ChatMember → ChatMember` (Shape B vote)** — incoming
-  approval / disavowal votes from other ChatMembers of the
-  same chat (§11, §10 Level 2). Same edges, layered stance
-  over the membership's lifecycle.
+  admission votes from other ChatMembers of the same chat
+  during the open admission period (§11). Disavowal of an
+  active member (§10 Level 2) flows through a Proposal, not
+  through this edge.
 - **`Chat → ChatMember` (`:APPROVAL`)** — the approval side of
   the two-edge pattern, paired with the outgoing
-  `ChatMember → Chat` claim above. State transitions — member
-  disavowal per §10 Level 2, voluntary leave — append
+  `ChatMember → Chat` claim above. State transitions —
+  voluntary leave, and the system-written cascade from a
+  passing Level 2 disavowal Proposal (§10) — append
   `dim1 < 0` layers per
   [graph-model.md §5](../primitive/graph-model.md#5-junction-node-flows).
 - **`ChatMessage / Post / Comment → ChatMember`
   (`:REFERENCES`)** when a content node embeds the membership
   — e.g. a message highlighting a moderator.
 - **`Proposal → ChatMember` (`:TARGETS`)** when a Proposal
-  targets a property on the ChatMember — `role` changes
-  (promote / demote per §10), `voting_weight`, etc.
+  targets the ChatMember — `role` changes (promote / demote
+  per §10), `voting_weight`, or the `'node'` sentinel for Level
+  2 disavowal (§10).
 
 ---
 
@@ -660,54 +664,97 @@ moves the message or the member away.**
 
 Moderation happens at two levels, independently. Both are
 instances of the weighted-voting primitive in
-[governance.md](../primitive/governance.md), both use Shape B
-(the vote travels from the voter's `ChatMember` junction to the
-subject, so the chat stance stays decoupled from personal
-sentiment).
+[governance.md](../primitive/governance.md), and both route
+through a **Proposal** node — same mechanism every other
+property-level governance decision uses (chat name, role,
+mid-epoch key rotation, platform moderation in
+[moderation.md](moderation.md)). Votes travel from the voter's
+`ChatMember` junction to the Proposal (Shape B), so the chat
+stance stays decoupled from personal sentiment on
+`User → ChatMessage` or `User → ChatMember`. Both levels carry
+the same Proposal shape: `target_property = 'node'`,
+`proposed_value = 'disavowed'` — the `'node'` sentinel
+parallels moderation's `'full'` shorthand
+([moderation.md §1](moderation.md#1-the-two-classification-paths)),
+naming the whole target node rather than one of its graph
+properties. What differs between the two levels is the cascade
+behavior on threshold-cross, which dispatches on the target's
+node type.
+
+**Invariant:** Chat-internal disavowal routes through a Proposal
+node — both Level 1 (against a `ChatMessage`) and Level 2
+(against a `ChatMember`) carry the `target_property = 'node'`,
+`proposed_value = 'disavowed'` shape; no direct vote edge from a
+`ChatMember` drives a disavowal outcome. This keeps tally
+semantics uniform with every other chat governance act and makes
+counter-Proposal reversal clean.
 
 ### Level 1 — Message disavowal
 
-Members vote to disavow a specific `ChatMessage`. Each voter
-casts a `ChatMember → ChatMessage` Shape B structural edge with
-`dim1 < 0`. The chat's disavowal of the message is the
-**aggregate of those incoming edges** once the chat's threshold
-parameters are crossed; no separate outcome edge from the Chat
-to the ChatMessage is written (a ChatMessage has no
-pre-existing approval-style edge from the chat to layer over,
-unlike a ChatMember — see Level 2). Queries computing the
-chat's current stance toward the message tally those Shape B
-votes. The message is **not** removed — append-only applies. A
+A Level 1 Proposal targets the offending `ChatMessage`. The
+first reporter's authoring is their +1 vote per
+[proposal.md §5](proposal.md#5-authorship); subsequent voters
+cast `ChatMember → Proposal` Shape B votes on the existing
+Proposal rather than authoring duplicates.
+
+A ChatMessage carries no pre-existing approval-style edge from
+the chat to layer over (unlike a ChatMember — see Level 2), so
+**no separate outcome edge is written.** The chat's current
+stance toward the message is derived from the existence of a
+passed Level 1 Proposal targeting it: once the Proposal's tally
+has crossed threshold, that pass-state is sticky per
+[governance.md §6](../primitive/governance.md#6-when-outcomes-take-effect)
+— the Proposal itself is the on-graph record, the same way
+moderation reports are on-graph as the Proposal rather than as
+a separate reports table
+([moderation.md §2](moderation.md#2-reports--proposals-on-the-graph)).
+
+The message body is **not** removed — append-only applies. A
 reader who wants to see disavowed content still can; a reader
 who treats the chat's current stance as authoritative simply
-won't.
+won't. A counter-Proposal targeting the same ChatMessage with
+`proposed_value = 'normal'` reverses the disavowal —
+governance applies symmetrically in both directions, consistent
+with platform moderation's symmetric un-classification path
+([moderation.md §3](moderation.md#3-the-mod-gate-rule)).
 
-### Level 2 — Member disavowal (`Chat → ChatMember`)
+### Level 2 — Member disavowal
 
 A chat can also move away from a *member*, not just a message.
 This is the heavier decision and is a separate governance act —
 not an automatic cascade from N message disavowals. A chat may
 disavow a member after a pattern of incidents or after a single
-severe one; the community decides when to escalate. The count
-of incoming `disavow` edges on a `ChatMember` is a visible
-signal, but never a trigger.
+severe one; the community decides when to escalate. Past Level
+1 disavowals of a member's messages and any open Level 2
+Proposals targeting their `ChatMember` are visible signals,
+but never automatic triggers.
 
-If the vote passes, a new layer on the `Chat → ChatMember`
-structural edge reflects that the chat no longer accepts the
-member. The full membership history stays in the graph; only
-the current stance changes.
+A Level 2 Proposal targets the member's `ChatMember` junction.
+On threshold-cross, the cascade interpreter — seeing target =
+`ChatMember`, `target_property = 'node'`,
+`proposed_value = 'disavowed'` — writes a new `dim1 < 0` layer
+on the existing `Chat → ChatMember` approval edge for the
+target. The junction's full edge history stays in the graph;
+only the top layer of the approval edge changes. Membership
+state remains encoded in the topology per
+[graph-model.md §5](../primitive/graph-model.md#5-junction-node-flows)
+— no new property is introduced. A counter-Proposal with
+`proposed_value = 'normal'` reverses the disavowal, just like
+Level 1.
 
 ### Default parameters
 
 Starting points, not fixed rules:
 
-| Parameter       | Message disavowal                                                     | Member disavowal                                                      |
-|-----------------|-----------------------------------------------------------------------|-----------------------------------------------------------------------|
-| Eligibility     | Active `ChatMember`s                                                  | Active `ChatMember`s excluding the member under review                |
-| Role weights    | `admin = 5`, `mod = 3`, `member = 1`                                  | Same                                                                  |
-| Quorum          | ≥ 20% of total eligible weight has cast a vote                        | ≥ 40% of total eligible weight has cast a vote                        |
-| Threshold       | > 50% of cast weight disavowing                                       | ≥ 2/3 of cast weight disavowing                                       |
-| Outcome         | Threshold-cross on incoming `ChatMember → ChatMessage` Shape B votes (no separate outcome edge) | New layer on `Chat → ChatMember`                                     |
-| Takes effect at | New-vote threshold-crossing ([governance.md §6](../primitive/governance.md#6-when-outcomes-take-effect))       | Same                                                                  |
+| Parameter       | Message disavowal (Level 1)                                                                              | Member disavowal (Level 2)                                                                              |
+|-----------------|----------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| Eligibility     | Active `ChatMember`s                                                                                     | Active `ChatMember`s excluding the member under review                                                  |
+| Role weights    | `admin = 5`, `mod = 3`, `member = 1`                                                                     | Same                                                                                                    |
+| Quorum          | ≥ 20% of total eligible weight has cast a vote                                                           | ≥ 40% of total eligible weight has cast a vote                                                          |
+| Threshold       | > 50% of cast weight disavowing                                                                          | ≥ 2/3 of cast weight disavowing                                                                         |
+| Proposal target | `:Proposal → :ChatMessage`, `target_property = 'node'`, `proposed_value = 'disavowed'`                   | `:Proposal → :ChatMember`, `target_property = 'node'`, `proposed_value = 'disavowed'`                   |
+| Outcome         | No separate outcome edge; the chat's stance is the existence of the passed Proposal targeting the message | Cascade writes a new `dim1 < 0` layer on the `Chat → ChatMember` approval edge for the target          |
+| Takes effect at | New-vote threshold-crossing ([governance.md §6](../primitive/governance.md#6-when-outcomes-take-effect)) | Same                                                                                                    |
 
 **Every number above is a node property on the `Chat`** (§3.1).
 Role weights, quorum %, threshold % — none of them are
@@ -735,8 +782,8 @@ the threshold without the admin's participation.
 
 ### Property and role changes via Proposals
 
-Beyond disavowal, the chat's other state changes use the
-Proposal mechanism. `ChatMember.role` (promote / demote),
+The chat's other state changes use the same Proposal
+mechanism as disavowal. `ChatMember.role` (promote / demote),
 `Chat.name`, `Chat.join_policy`, and `Chat.epoch` (mid-epoch
 key rotation, see §9) are all node properties; each change is
 a Proposal voted on by chat members under chat-defined
@@ -833,16 +880,21 @@ non-founder members have approver Shape B edges from existing
 ChatMembers; the founder has none, because they were the only
 required vote.
 
-**Why approvers vote Shape B and not Shape A.** The same
-`ChatMember → ChatMember` edge that admits a member can later
-be re-layered to remove them — "I approved this membership,
-now I want it revoked" is one edge with a layered stance flip,
-not a different edge type (see "Leaving and removal" below).
-A Shape A approval (User/Collective → ChatMember) wouldn't
-compose this way and would persist meaninglessly if the
-approver later left the chat. Shape B from the approver's
-ChatMember junction ties the approval to their current
-membership state.
+**Why approvers vote Shape B and not Shape A.** A Shape A
+approval (User/Collective → ChatMember) would persist
+meaninglessly if the approver later left the chat — their
+personal endorsement of someone's membership shouldn't outlive
+their own membership. Shape B from the approver's `ChatMember`
+junction ties the admission vote to their current membership
+state: if the approver's own junction goes inactive, their
+admission vote drops from any future tally per
+[governance.md §2.2](../primitive/governance.md#22-eligibility).
+The same Shape B carrier supports stance flips during the open
+admission period — an approver can change their mind before
+the threshold is crossed by appending a new layer to their
+existing edge. Once a membership is active, disavowal flows
+through a Proposal (§10 Level 2), not through a re-layering of
+this admission edge.
 
 ### Open
 
@@ -912,14 +964,15 @@ layers on the existing structural edges.
   layer on their own `User/Collective → ChatMember` Shape A
   self-claim. The system appends a `dim1 < 0` layer on the
   **claim-side** structural edge.
-- **Member disavowal** — eligible voters per §10 Level 2 lay
-  `dim1 < 0` layers on their existing
-  `ChatMember_voter → ChatMember_target` Shape B edges (the
-  same edges they previously used to approve, if applicable —
-  or layer-1 of that edge if they hadn't voted before). When
-  the threshold is crossed the system appends a `dim1 < 0`
-  layer on the **approval-side** `Chat → ChatMember`
-  structural edge. There is no admin-unilateral kick; admins
+- **Member disavowal** — eligible voters per §10 Level 2 cast
+  `ChatMember → Proposal` Shape B votes on a Proposal targeting
+  the member's `ChatMember` junction (`target_property = 'node'`,
+  `proposed_value = 'disavowed'`). When the threshold is crossed,
+  the cascade appends a `dim1 < 0` layer on the **approval-side**
+  `Chat → ChatMember` structural edge for the target. The
+  admission-time `ChatMember → ChatMember` edges remain on the
+  graph in their original state — they are not re-layered by
+  disavowal. There is no admin-unilateral kick; admins
   participate in the disavowal vote with their role-weighted
   vote alongside everyone else.
 

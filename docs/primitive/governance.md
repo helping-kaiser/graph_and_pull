@@ -234,20 +234,30 @@ collective-internal governance:
 
 **Junction approval and removal.** Each required approver of a
 new junction casts a Shape B vote from their existing junction
-of the same type for the same parent. The same edge serves the
-full lifecycle: layer-1 with `dim1 > 0` admits, later layers
-shift stance, an eventual `dim1 < 0` layer is the removal
-vote. See
+of the same type for the same parent. For `CollectiveMember`
+and `ItemOwnership`, the same edge serves the full lifecycle:
+layer-1 with `dim1 > 0` admits, later layers shift stance, an
+eventual `dim1 < 0` layer is the removal vote. See
 [graph-model.md §5](graph-model.md#5-junction-node-flows).
 
 ```
-ChatMember_Alice_ChatY -[dim1: +1, dim2: 0]-> ChatMember_Bob_ChatY    (admit, layer 1)
-ChatMember_Alice_ChatY -[dim1: -1, dim2: 0]-> ChatMember_Bob_ChatY    (remove, layer 2)
+CollectiveMember_Alice_CollZ -[dim1: +1, dim2: 0]-> CollectiveMember_Bob_CollZ    (admit, layer 1)
+CollectiveMember_Alice_CollZ -[dim1: -1, dim2: 0]-> CollectiveMember_Bob_CollZ    (remove, layer 2)
 ```
 
-**Disavowal of content or members.** Chat-internal disavowal
-votes flow from `ChatMember` to `ChatMessage` (Level 1) or
-`ChatMember` to `ChatMember` (Level 2). See
+`ChatMember → ChatMember` covers admission only. Chats made the
+uniformity choice that all chat-internal disavowal routes
+through a Proposal node (see "Disavowal" below and
+[chats.md §10](../instances/chats.md#10-moderation)) — direct
+disavowal edges would reinvent tally semantics and make
+counter-Proposal reversal awkward. Collectives keep both shapes
+available per the collective's social contract.
+
+**Disavowal of content or members.** Chat-internal disavowal —
+both Level 1 against a `ChatMessage` and Level 2 against a
+`ChatMember` — routes through a Proposal. Votes flow from each
+voter's `ChatMember` to the Proposal node as `ChatMember →
+Proposal` Shape B edges. See
 [chats.md §10](../instances/chats.md#10-moderation).
 
 **Votes on Proposals targeting chat / collective properties.**
@@ -363,10 +373,17 @@ design discussion (§9).
   (open = 0, single approver = 1, multi-sig = N). Same Shape B
   edges later carry removal votes (stance flipped).
 - **Chat message disavowal** — [chats.md §10](../instances/chats.md#10-moderation).
-  Shape B. Quorum + weighted-majority threshold.
+  Shape B `ChatMember → Proposal` vote on a Proposal targeting
+  the `ChatMessage` with `target_property = 'node'`,
+  `proposed_value = 'disavowed'` (the `'node'` sentinel parallels
+  moderation's `'full'`). Quorum + weighted-majority threshold.
+  No separate outcome edge — the chat's stance is the existence
+  of the passed Proposal.
 - **Chat member disavowal** — [chats.md §10](../instances/chats.md#10-moderation).
-  Shape B layered on the same `ChatMember → ChatMember` edges
-  that previously approved the membership.
+  Shape B `ChatMember → Proposal` vote on a Proposal targeting
+  the member's `ChatMember` junction with the same `'node'` /
+  `'disavowed'` shape. Cascade writes a `dim1 < 0` layer on the
+  existing `Chat → ChatMember` approval edge for the target.
 - **Chat property and role changes** — [chats.md §10](../instances/chats.md#10-moderation).
   Shape B `ChatMember → Proposal` votes on `Chat.name`,
   `Chat.join_policy`, `Chat.epoch` (mid-epoch chat-key rotation,
