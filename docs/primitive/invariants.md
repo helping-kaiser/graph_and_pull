@@ -84,6 +84,10 @@ listed under the most useful one.
 - [Kill rule: a `0` in either dim zeros the path product](feed-ranking.md#32-zero-handling--kill-rule)
   — zeros are real multiplicative factors, never skipped; once a
   dim is zeroed on a path it cannot be revived downstream.
+- [Feed-ranking traversal is vertex-simple](feed-ranking.md#3-per-edge-composition-along-a-path)
+  — no node appears more than once on a path; the walk maintains
+  a per-path visited set to block cycles through bidirectional
+  topologies.
 - [Hashtags do not participate in path products](../instances/hashtag.md#4-edges)
   — `:TAGGING` is pure topology for discovery, never traversed by
   feed ranking.
