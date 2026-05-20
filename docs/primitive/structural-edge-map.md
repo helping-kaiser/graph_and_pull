@@ -341,6 +341,34 @@ flowchart LR
 
 ---
 
+## 3. Feed-ranking traversability
+
+Per label, whether feed-ranking paths cross it and which rule
+governs. The matrix above shows *which* structural label sits at
+each `(source, target)` pair; the table below summarizes *whether
+and how* the ranking walk crosses them.
+
+| Label | Crossable for feed ranking? | Where the rule lives |
+|---|---|---|
+| `:ACTOR` / `:AUTHOR` | Yes — carry opinion content, contribute factors | [feed-ranking.md §3.1](feed-ranking.md#31-which-edges-contribute-factors) |
+| `:CONTAINMENT` | Yes — counts toward `R`, no factor contribution | [feed-ranking.md §3.1](feed-ranking.md#31-which-edges-contribute-factors) |
+| `:CLAIM` | Yes — gated by own top-layer `dim1 > 0` (state-bearing) | [feed-ranking.md §3.1](feed-ranking.md#31-which-edges-contribute-factors) |
+| `:APPROVAL` | **No outbound** — state-bearing identity, not transit | [feed-ranking.md §3.5 rule 1](feed-ranking.md#35-traversal-restrictions) |
+| `:BEARER` | **No** — identity binding, not transit | [feed-ranking.md §3.5 rule 2](feed-ranking.md#35-traversal-restrictions) |
+| `:TARGETS` | **No outbound** — governance reference, not relevance | [feed-ranking.md §3.5 rule 3](feed-ranking.md#35-traversal-restrictions) |
+| `:TAGGING` | **No** — cosmetic discovery only | [hashtag.md §4](../instances/hashtag.md#4-edges) |
+| `:REFERENCES` | Yes — endpoint-restricted (User/Collective ⇒ terminate after one `:AUTHOR` hop) + fanout-budget composition | [feed-ranking.md §3.5 rules 4 & 5](feed-ranking.md#35-traversal-restrictions) |
+| `:STRUCTURAL` (Shape B) | Yes — sibling-case note in feed-ranking §3.5 | [feed-ranking.md §3.5](feed-ranking.md#35-traversal-restrictions) |
+
+Forward-only traversal is the foundation
+([feed-ranking.md §3 invariant](feed-ranking.md#3-per-edge-composition-along-a-path));
+the per-label restrictions above close the bot-amplification gaps
+forward-only alone doesn't cover. See the rule bodies in
+[feed-ranking.md §3.5](feed-ranking.md#35-traversal-restrictions)
+for the specific attack each rule closes.
+
+---
+
 ## What this doc is not
 
 - **Not the catalog.** Row-level meanings, label assignments,
