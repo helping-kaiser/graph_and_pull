@@ -505,21 +505,22 @@ delegated miner) computes the analysis from the same
 subgraph it pulls for ranking; the path-set the analysis
 reads is the same path-set used to compute `h(t)` (§4).
 
-**The hourglass signal.** For viewer `U` and any node `B` in
-`U`'s outbound subgraph, examine the paths from `U` to
+**The delta-funnel signal.** For viewer `U` and any node `B`
+in `U`'s outbound subgraph, examine the paths from `U` to
 content and accounts behind `B`. Two patterns characterize:
 
-- **Fan pattern.** Content `t` behind `B` is reachable from
-  `U` via diverse paths through multiple intermediates — many
-  distinct chains, no common bottleneck. `B` is one of
-  several routes to that part of the graph. Normal
-  connectedness.
-- **Hourglass pattern.** Content `t` behind `B` is reachable
-  from `U` *only through `B`* (or with `B` on the
+- **Funnel pattern.** Content `t` behind `B` is reachable
+  from `U` via diverse paths through multiple intermediates —
+  many distinct chains converging at `t`, no common
+  bottleneck. `B` is one of several routes to that part of
+  the graph. Normal connectedness.
+- **Delta-funnel pattern.** Content `t` behind `B` is
+  reachable from `U` *only through `B`* (or with `B` on the
   overwhelming majority of paths). `B` is the sole bridge
-  into that subgraph from `U`'s perspective.
+  into that subgraph from `U`'s perspective — paths funnel
+  into `B`, then spread (delta) into the cluster.
 
-A pure hourglass is the bot-bridge signature. The cluster
+A pure delta-funnel is the bot-bridge signature. The cluster
 behind that node has no other entry into `U`'s graph — exactly
 the topology of a bot cluster a real user has bridged into.
 Bots cannot manufacture outgoing edges from real users
@@ -530,12 +531,12 @@ cascading severance has reduced the cluster's open bridges to
 one), the path pattern is unambiguous.
 
 **Differentiating from legit hubs.** Influencers, popular
-accounts, and big bridging nodes also generate hourglass-shaped
-paths — many users reach a lot of content through them. The
-differentiator is whether the content behind the suspect bridge
-has alternative paths into the broader graph. Real content
-circulates through multiple channels; bot content typically
-does not.
+accounts, and big bridging nodes also generate
+delta-funnel-shaped paths — many users reach a lot of content
+through them. The differentiator is whether the content behind
+the suspect bridge has alternative paths into the broader
+graph. Real content circulates through multiple channels; bot
+content typically does not.
 
 For each suspect bridge `B`, the analysis samples some
 downstream content and checks: is this content reachable from
@@ -553,10 +554,10 @@ first-cut detection.
 
 **Detection sharpens with severance.** In a fresh, fully
 connected graph a bot cluster may have multiple live entries
-and the hourglass pattern is weak. As soon as any user severs
-one of the entries, the cluster's reach contracts and the
-hourglass forms more clearly for everyone else. The first
-detection often comes from a manually-identified bot
+and the delta-funnel pattern is weak. As soon as any user
+severs one of the entries, the cluster's reach contracts and
+the delta-funnel forms more clearly for everyone else. The
+first detection often comes from a manually-identified bot
 (triggering a §3.7.3 post); auto-detection then takes over for
 the rest of the network as the cluster's bridges narrow. The
 two mechanisms reinforce each other.
@@ -565,8 +566,9 @@ two mechanisms reinforce each other.
 page from this analysis: a list of suspect bridge nodes
 detected in the viewer's subgraph, each with a frontend-computed
 **score** representing the likelihood of being a bot bridge.
-Inputs to the score include (at minimum) hourglass-purity of
-the path pattern and the result of the alternative-paths check.
+Inputs to the score include (at minimum) delta-funnel-purity
+of the path pattern and the result of the alternative-paths
+check.
 Frontends may add additional inputs; the doc does not specify a
 formula. The page also surfaces the viewer's path to each
 suspect — the actual chain of intermediates — so users who
@@ -599,8 +601,9 @@ conservative (1-hop only). The doc does not enforce a number.
 
 **No automatic action.** Detection populates the page; the user
 always decides whether and how to act. The math does not
-auto-banish on hourglass detection. Severance still requires
-the user's `(0, 0)` gesture, exactly as specified in §3.5–§3.6.
+auto-banish on delta-funnel detection. Severance still
+requires the user's `(0, 0)` gesture, exactly as specified in
+§3.5–§3.6.
 
 #### 3.7.3 Community bot-defense posts — supplementary evidence
 
@@ -641,19 +644,20 @@ The post inherits the graph's existing trust mechanisms:
   on the bot-defense page also accounts for where the post's
   reach concentrates. A post reaching the viewer with high
   `h(t)` only because a bot cluster is amplifying it from
-  inside — even when there is also fan-pattern reach from
+  inside — even when there is also funnel-pattern reach from
   trusted users alongside — has its score adjusted down. The
-  signature is the same hourglass-plus-fan combination as in
-  §3.7.2: a sudden burst of cluster-internal engagement on a
-  post that otherwise has organic reach is a manipulation
-  pattern, and the score down-weights it accordingly.
+  signature is the same delta-funnel signature alongside
+  funnel-pattern reach as in §3.7.2: a sudden burst of
+  cluster-internal engagement on a post that otherwise has
+  organic reach is a manipulation pattern, and the score
+  down-weights it accordingly.
 
 **Surfacing on the bot-defense page.** Community posts appear
 alongside auto-detected suspects from §3.7.2. The page shows
 both signal sources together — they answer the same question
 from different angles:
 
-- Auto-detection says "this node has hourglass-shaped reach
+- Auto-detection says "this node has delta-funnel-shaped reach
   into your subgraph."
 - A community post says "this node is doing X, and here is
   the evidence."
@@ -663,11 +667,11 @@ high-confidence. A node flagged by only one is worth
 investigating but less conclusive.
 
 **The natural workflow.** A viewer notices an auto-detection
-ping — "hourglass shape detected at node `B`." They check,
+ping — "delta-funnel shape detected at node `B`." They check,
 agree, and sever (`B` becomes `(0, 0)` from their outbound).
 The frontend can then offer to **scaffold a bot-defense
 post** about `B` — pre-filling the body with structural facts
-(the path the viewer just severed, hourglass score, layer-
+(the path the viewer just severed, delta-funnel score, layer-
 stack snapshot of `B`'s outbound at time of severance) and
 leaving the viewer to add free-text observations. The post
 then propagates to others' bot-defense pages, accelerating
@@ -705,17 +709,17 @@ The math allows this; the surface for the severer makes the
 redemption signal visible.
 
 **What signals redemption.** The clean answer comes from
-applying §3.7.2's hourglass detection to `T`'s outbound
+applying §3.7.2's delta-funnel detection to `T`'s outbound
 edges. `T` is in the redeemed state when they have **no
 remaining positive outbound edges to nodes exhibiting
-hourglass-bridge patterns** — `T` no longer holds open any
+delta-funnel-bridge patterns** — `T` no longer holds open any
 isolated cluster reachable through a narrow bridge.
 
 This is graph-derivable; the severer does not need to
 remember why they severed `T`. Severance edges do not carry
 reasons (graph state does not represent intent), and the
 severer's app cannot reliably reconstruct intent from
-inbound edges weeks or months later. The hourglass check
+inbound edges weeks or months later. The delta-funnel check
 sidesteps the question by asking "does `T` *currently* bridge
 into any suspect cluster?" — a property of the graph state
 right now, not of past history.
@@ -739,7 +743,7 @@ explicit self-query for `T`'s outbound state — analogous to
 the inbound self-query in §3.7.1, since `T` is severed and
 not in the severer's normal feed pull. For each of `T`'s
 positive-valued outbound edges to target `V`, the client runs
-the §3.7.2 hourglass-and-alternative-paths analysis on `V`
+the §3.7.2 delta-funnel-and-alternative-paths analysis on `V`
 from `T`'s subgraph perspective. If any `V` classifies as a
 suspect bridge, `T` still has open bridges. If none do, `T`'s
 bridges are clean.
@@ -808,7 +812,7 @@ highlighted separately within that view.
 **Cross-checking against graph state.** The severer can
 compare the post's claims to the §3.7.4 structural signal.
 Post says "I severed my edge to V," graph confirms the
-hourglass check passes → consistent. Post claims redemption
+delta-funnel check passes → consistent. Post claims redemption
 but graph still shows positive outbound to suspect bridges →
 inconsistent (likely a false claim, or `T` misunderstands what
 they need to fix). The severer trusts the math first, then
@@ -894,8 +898,9 @@ working correctly.
 
 A cap also conflicts with the existing bot-bridge defense
 (§3.5–§3.7): the principled answer to "`B` is bridging a cluster"
-is severance and the hourglass auto-detection surface (§3.7.2),
-which differentiates legitimate hubs from bot bridges structurally.
+is severance and the delta-funnel auto-detection surface
+(§3.7.2), which differentiates legitimate hubs from bot bridges
+structurally.
 A blanket transit-cap would penalize both indiscriminately and
 erode the broad-network endorsement signal that multi-path
 summation is meant to capture. `d(R)` already calibrates direct-
