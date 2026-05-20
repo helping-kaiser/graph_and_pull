@@ -596,10 +596,27 @@ This is a critical design decision for anti-spam and anti-manipulation:
 **Edges created toward you by others do not change your feed.**
 
 **Invariant:** Only outgoing edges from the viewing user shape that
-user's feed. Inbound edges — sentiment, follows, likes from others
-toward the viewer — do not contribute to the viewer's ranking. This
-is the anti-bot foundation: a swarm pointing at you cannot drag your
-own graph anywhere.
+user's feed, walked in their stored direction. Feed-ranking
+traversal is forward-only and obeys per-edge traversal
+restrictions (see
+[feed-ranking.md §3 "Invariant: forward-only traversal"](feed-ranking.md#3-per-edge-composition-along-a-path)
+and [feed-ranking.md §3.5 "Traversal restrictions"](feed-ranking.md#35-traversal-restrictions)).
+Inbound edges — sentiment, follows, likes from others toward the
+viewer — do not contribute to the viewer's ranking. This is the
+anti-bot foundation: a swarm pointing at you cannot drag your own
+graph anywhere.
+
+**"Inbound edges don't affect your feed" is one consequence, not
+the full story.** Some bot-amplification gaps work without any
+direct inbound edge at the viewer: a bot self-claims into an
+open-membership chat, gets `:APPROVAL` (system-written from the
+chat to the bot's `ChatMember`), and rides a viewer's existing
+edge to a chat member into a delta-funnel reaching the bot.
+Closing those gaps requires the per-edge restrictions in
+[feed-ranking.md §3.5](feed-ranking.md#35-traversal-restrictions)
+(`:APPROVAL`, `:BEARER`, `:TARGETS` not transit-able for ranking;
+`:REFERENCES` restricted endpoints and fanout-budget), of which
+inbound-blockage is the simplest case.
 
 If a cluster of bots likes Jakob's posts 10,000 times:
 - The bots now have strong edges toward Jakob — so Jakob appears high in
