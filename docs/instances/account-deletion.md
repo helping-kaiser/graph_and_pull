@@ -96,10 +96,10 @@ Account deletion never affects:
 - **Graph nodes.** User, Post, Comment, ChatMessage, all authored
   content nodes stay.
 - **Edges.** Actor edges (`:LIKES`, `:FOLLOWS`, `:CONTAINMENT`,
-  `:REFERENCES`, etc.) stay. Outgoing edges from the redacted
-  user keep their author cache pointed at the User node by UUID;
-  the UUID does not change. Incoming edges from others are
-  untouched.
+  `:REFERENCES`, `:AUTHOR`, etc.) stay. Outgoing edges from the
+  redacted user — including their `:AUTHOR` edges — continue to
+  point at the User node by UUID; the UUID does not change.
+  Incoming edges from others are untouched.
 - **Layer stacks.** Timestamps, layer numbers, and positions are
   preserved everywhere. Only specific layer *values* are replaced
   with markers.
@@ -108,9 +108,11 @@ Account deletion never affects:
   contributions. Removing them would alter other users' record
   retroactively.
 - **Authorship derivation.** Author = earliest incoming edge by
-  timestamp ([authorship.md](../primitive/authorship.md)). Cached `author_id`
-  on Posts / Comments / ChatMessages is the User's UUID, which
-  does not change on redaction; no cache rebuild needed.
+  timestamp ([authorship.md](../primitive/authorship.md)). The
+  `:AUTHOR` edge from the redacted user still points to the
+  same User UUID, and `posts.author_id` / `comments.author_id` /
+  `chat_messages.author_id` in Postgres still hold that UUID;
+  redaction touches neither.
 
 Mentions inside *other* users' posts are not edited — those posts
 belong to their authors. The `@username` token in such posts now

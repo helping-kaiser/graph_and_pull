@@ -62,11 +62,8 @@ filter, and rank. Substance lives in Postgres (§3).
   and §6 below.
 
 The Post body, attachments, and any other display content do
-**not** live on the graph. The cached `author_id` on the node is
-a derived value rebuilt from the earliest incoming actor edge
-(§5) — it is not an authored property and does not layer.
-Concrete property types and indexes for the graph-side property
-live in
+**not** live on the graph. Concrete property types and indexes
+for the graph-side node live in
 [graph-data-model.md](../implementation/graph-data-model.md).
 
 ---
@@ -164,13 +161,14 @@ normal opinion edge — not a special "author" tag — typically
 carrying high positive sentiment and relevance toward the
 content the author just created.
 
-The cached `author_id` lives both on the graph node (for
-traversal queries) and in `posts.author_id` (for display
-queries that don't need the graph). Both are rebuildable from
-the graph; the graph wins in any disagreement. The cache is
-used by the §5.2 friend-authored fresh-post detection in
+On the graph, the authoring edge carries the `:AUTHOR`
+sub-label — that is the only representation of authorship on the
+graph side, and it is what the §5.2 friend-authored fresh-post
+detection in
 [feed-ranking.md](../primitive/feed-ranking.md#52-frontend-reordering-friend-authored-fresh-posts)
-without re-scanning incoming edges at view time.
+traverses. For Postgres-side display queries, `posts.author_id`
+is cached on the row. Both are rebuildable from the graph; the
+graph wins in any disagreement.
 
 ---
 

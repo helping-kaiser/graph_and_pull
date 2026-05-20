@@ -52,18 +52,12 @@ semantics as any actor edge — only the label differs.
 
 ## Caching
 
-Looking up "who authored this?" by scanning all incoming layer 1
-timestamps on every view would be expensive. The author ID should be
-cached:
+Display queries that don't touch the graph need a fast author
+lookup, so `author_id` is cached on the Postgres `posts`,
+`comments`, and `chat_messages` rows — see
+[data-model.md](../implementation/data-model.md).
 
-- **On the node itself** as a property (`author_id`) — keeps the info
-  in the graph for traversal queries.
-- **In Postgres metadata** (e.g. `posts.author_id`) — for display
-  queries that don't need the graph.
-
-Both are derived caches. The graph (earliest incoming layer 1) is the
-source of truth; if the caches ever disagree with the graph, the graph
-wins and the caches should be rebuilt. The `:AUTHOR` label is itself
-derivable — the earliest incoming actor edge is the canonical
-authoring edge — so a label-only mismatch is also a cache-rebuild
-case.
+The graph (earliest incoming layer-1 edge) is the source of truth.
+The `:AUTHOR` label is itself derivable from that rule; the
+Postgres `author_id` is in turn derivable from the graph. If
+either disagrees with the source of truth, rebuild from the graph.

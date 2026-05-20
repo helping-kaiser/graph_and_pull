@@ -137,8 +137,7 @@ quorum/threshold — all layered and addressable as targets of
 property-change Proposals. The full list with defaults lives in
 the §10 tables.
 
-The Chat node deliberately does **not** cache an `author_id`
-(§6.1). Concrete property types and indexes live in
+Concrete property types and indexes live in
 [graph-data-model.md](../implementation/graph-data-model.md).
 
 ### 3.2 ChatMessage
@@ -147,9 +146,7 @@ A ChatMessage node carries:
 
 - **`moderation_status`** — same shape as the Chat property.
 
-The cached `author_id` on the node is derived from the earliest
-incoming actor edge (§6.2) — not an authored property, not
-layered. Concrete types and indexes live in
+Concrete types and indexes live in
 [graph-data-model.md](../implementation/graph-data-model.md).
 
 ### 3.3 ChatMember
@@ -403,21 +400,21 @@ A Chat is authored under the standard rule
 the actor whose incoming actor edge has the earliest layer-1
 timestamp. The founder's `User/Collective → Chat` actor edge is
 written in the same compound gesture as the Chat node (§2.1);
-by construction it is the earliest. **Unlike other authored nodes,
-the Chat does not cache its author** — no `author_id` is
-materialized on the node or on the `chats` Postgres row. This is
-a deliberate deviation from
-[authorship.md "Caching"](../primitive/authorship.md#caching):
+by construction it is the earliest, and it carries the
+`:AUTHOR` sub-label. **Unlike other authored nodes, the Chat
+does not cache its author Postgres-side** — no `author_id` is
+materialized on the `chats` row. This is a deliberate deviation
+from [authorship.md "Caching"](../primitive/authorship.md#caching):
 a chat's meaningful identity is its membership set, not its
-founder, and the rare "who founded this?" query can run the
-earliest-incoming-edge lookup on demand.
+founder, and the rare "who founded this?" query can scan the
+`:AUTHOR` edge on demand.
 
 ### 6.2 ChatMessage
 
-Standard rule, with the cache. The author's
-`User → ChatMessage` actor edge is written in the same authoring
-gesture as the ChatMessage node (§2.2); `author_id` is cached on
-the node and on the `chat_messages` Postgres row.
+Standard rule. The author's `User → ChatMessage` actor edge is
+written in the same authoring gesture as the ChatMessage node
+(§2.2) and carries the `:AUTHOR` sub-label; `author_id` is
+cached on the `chat_messages` Postgres row for display.
 
 ### 6.3 ChatMember
 

@@ -88,13 +88,11 @@ filter, and rank. Substance lives in Postgres (§3).
   [nodes.md "Universal: moderation_status"](../primitive/nodes.md#universal-moderation_status)
   and §8 below.
 
-The cached `author_id` on the node is a derived value rebuilt
-from the earliest incoming actor edge (§5) — it is not an
-authored property and does not layer. The current owner is **not**
-stored as a property on the Item; it is derived from the single
-ItemOwnership whose `Item → ItemOwnership` approval edge has a
-positive top layer (§7). Concrete property types and indexes live
-in [graph-data-model.md](../implementation/graph-data-model.md).
+The current owner is **not** stored as a property on the Item;
+it is derived from the single ItemOwnership whose
+`Item → ItemOwnership` approval edge has a positive top layer
+(§7). Concrete property types and indexes live in
+[graph-data-model.md](../implementation/graph-data-model.md).
 
 ### ItemOwnership
 

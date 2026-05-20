@@ -80,7 +80,7 @@ Memgraph. If it is needed to **display** something, it goes in Postgres.
 | Post content, media URLs | Postgres | Display only |
 | Actor edges (dim1, dim2 — see [edges.md](../primitive/edges.md) for per-edge-type labels) | Memgraph | Graph topology + ranking |
 | Structural edges (containment, tagging) | Memgraph | Graph topology |
-| Cached author_id on nodes | Both | Derived from earliest incoming edge, cached for fast lookup |
+| Authorship | Memgraph (`:AUTHOR` sub-label on the authoring actor edge); Postgres (`author_id` column on `posts` / `comments` / `chat_messages` for display) | Derived from the earliest incoming layer-1 edge; see [authorship.md](../primitive/authorship.md) |
 
 See [Graph Model](../primitive/graph-model.md) for the full node/edge
 specification.

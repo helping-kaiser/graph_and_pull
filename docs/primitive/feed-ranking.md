@@ -1285,16 +1285,17 @@ just-from-friends content even if its `h` is modest."
 
 #### Detection
 
-A post is "friend-authored" from U's perspective if:
+A post is "friend-authored" from U's perspective if there is a
+forward path `U → A → P` where:
 
-1. There exists a direct R=2 actor edge `U → A` with non-zero
-   top-layer `dim2` (A is in U's network), **and**
-2. `post.author_id == A` — one cached-property read per
-   candidate post (see
-   [authorship.md "Caching"](authorship.md#caching)).
+1. `U → A` is a direct R=2 actor edge with non-zero top-layer
+   `dim2` (A is in U's network), **and**
+2. `A → P` is an outgoing `:AUTHOR` edge (A is the author of P,
+   per [authorship.md](authorship.md)).
 
-Authorship-edge freshness comes from the same top-layer
-timestamp used for `f(Δt)` in §7.
+This is a forward-only traversal (§3 invariant). Authorship-edge
+freshness comes from the same top-layer timestamp on `A → P` that
+`f(Δt)` uses in §7.
 
 #### Scope: R=2 only
 

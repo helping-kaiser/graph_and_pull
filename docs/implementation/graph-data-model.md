@@ -84,7 +84,6 @@ CREATE INDEX ON :Collective(id);
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUID v4. |
-| `author_id`         | String | Cached derivation; rebuilt from earliest incoming layer-1 edge. See [authorship.md](../primitive/authorship.md). |
 | `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. `'sensitive'` is set by a passing classification Proposal; `'illegal'` is auto-flipped by the system when any field on the node receives a redaction marker — see [moderation.md](../instances/moderation.md). |
 
 ```cypher
@@ -94,10 +93,10 @@ CREATE INDEX ON :Post(id);
 
 #### `:Comment`
 
-Same shape as `:Post`: `id`, cached `author_id`, and
-`moderation_status` (`'normal'` / `'sensitive'` / `'illegal'`,
-layered, default `'normal'`, auto-flipped to `'illegal'` on
-field redaction — see [moderation.md](../instances/moderation.md)).
+Same shape as `:Post`: `id` and `moderation_status` (`'normal'` /
+`'sensitive'` / `'illegal'`, layered, default `'normal'`,
+auto-flipped to `'illegal'` on field redaction — see
+[moderation.md](../instances/moderation.md)).
 
 ```cypher
 CREATE CONSTRAINT ON (c:Comment) ASSERT c.id IS UNIQUE;
@@ -131,7 +130,6 @@ CREATE INDEX ON :Chat(id);
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUID v4. |
-| `author_id`         | String | Cached. |
 | `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. `'sensitive'` is set by a passing classification Proposal; `'illegal'` is auto-flipped by the system when any field on the node receives a redaction marker — see [moderation.md](../instances/moderation.md). The protocol does not gate classification on disclosure of the chat key; "moderate only after reading" is a normative requirement on moderators, not a protocol invariant — see [moderation.md §5](../instances/moderation.md#5-scope). |
 
 ```cypher

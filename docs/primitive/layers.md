@@ -86,15 +86,10 @@ rows (see §4).
 ### Derived caches do not layer
 
 Values derived from graph state are rebuilt from the source of
-truth, never layered. Examples:
-
-- `author_id` cached on a Post — derived from the earliest incoming
-  edge (see [authorship.md](authorship.md)).
-- `member_count` on a Chat — derived from counting active
-  ChatMembers.
-
-If the underlying graph changes, rebuild the cache. Layering them
-would duplicate history that already lives in the source data.
+truth, never layered. For example, `member_count` on a Chat is
+derived from counting active ChatMembers — if the underlying
+graph changes, rebuild the cache. Layering it would duplicate
+history that already lives in the source data.
 
 ### Operational filter state — explicit exception
 
