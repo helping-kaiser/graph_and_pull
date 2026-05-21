@@ -56,14 +56,31 @@ them:
 5. **User comes first.** No amount of money changes this. Users
    choose what they see, including ads. No one can force their way
    into another user's feed.
-6. **Transparency over black boxes.** The system is a visible,
+6. **Governance, not admin escape hatches.** Takedowns,
+   redactions, and policy changes run through community votes on
+   the graph. There is no admin override — even court orders
+   prompt a moderator to file the same Proposal anyone else
+   would, leaving an auditable trail rather than a silent edit.
+7. **Community choices stay local.** What a community decides —
+   including severing ties — affects only the severing
+   community's own outbound paths. It does not propagate to the
+   severed party's other neighbours, and the rest of the graph
+   is unaffected by another community's stance.
+8. **Transparency over black boxes.** The system is a visible,
    auditable graph. Follow the principles of BTC: transparency,
    immutability, fairness.
-7. **Fully open source.** The entire codebase is open source — a
-   factual commitment, not a spirit. Forking, self-hosting, and
-   running disconnected graphs are architecturally supported.
-8. **Freedom of the mind.** No rewards for outrage, no
-   manipulation, no dark patterns.
+9. **Fully public graph; no account needed to read.** Everything
+   in the graph is visible without signing in. Accounts gate
+   participation, not visibility.
+10. **Privacy is per-content, not per-topology.** Chats and
+    messages can be end-to-end encrypted; the social fabric —
+    who is connected to whom — is intentionally public. CoGra
+    protects what travels along the graph, not the graph itself.
+11. **Fully open source.** The entire codebase is open source — a
+    factual commitment, not a spirit. Forking, self-hosting, and
+    running disconnected graphs are architecturally supported.
+12. **Freedom of the mind.** No rewards for outrage, no
+    manipulation, no dark patterns.
 
 ---
 
