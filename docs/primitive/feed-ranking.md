@@ -1311,6 +1311,17 @@ etc.), see §9.
 
 ### 5.2 Frontend reordering: friend-authored fresh posts
 
+**Primitive vs frontend convention.** The primitive principle
+in this section is narrow: *the ranking math's output is not
+the final viewing order; frontends have latitude to reorder it
+for viewer-side intent that the math doesn't capture, and that
+latitude is not forced into postgres/graph/mediaserver.* The
+specific reorder rule below — boost direct-friend authored
+posts whose authorship edge is fresh — is the reference
+frontend's default convention. A different frontend can pick
+different defaults (different ring scope, different freshness
+threshold, opt out entirely) without violating the primitive.
+
 The ranking math in §1–§5 produces a clean graph-signal-driven
 order. It does, however, have one practical consequence worth
 softening as a viewer-side overlay: a single fresh path from a
@@ -1643,6 +1654,18 @@ the seen-list mechanism (§8), not by reactor-edge decay.
 
 ## 8. The "already-seen" filter
 
+**Primitive vs frontend convention.** The primitive principle:
+*per-viewer "have I seen this?" state is a ranking input the
+viewing user owns — it is not forced into postgres, the graph,
+or any one storage tier. The calculator takes the list as a
+parameter; where the list lives is the viewing user's choice
+(backend table, local device, miner, nowhere at all).* The
+concrete defaults below — the reference frontend's
+"passes-through-viewport" rule, the 1-year compaction horizon,
+the storage choices for the central frontend — are frontend
+convention; another frontend can replace them. The boundary
+between the two is called out per subsection.
+
 Once a viewing user has seen a content node, that **specific node**
 should not surface in their feed again. New activity on it (a
 fresh comment, a new reaction) is **separate, independently-
@@ -1694,7 +1717,7 @@ storage location is independent of the math:
 The calculator doesn't care where the data came from — it gets
 a JSON list as a parameter and applies it.
 
-### 8.3 What counts as "seen" — frontend's call
+### 8.3 What counts as "seen" — frontend convention
 
 The reference frontend's default rule:
 
@@ -1733,7 +1756,7 @@ reported.
   a YouTube or browser history view works. No new mechanism,
   just a different read over the same data.
 
-### 8.5 Compaction — drop entries older than 1 year
+### 8.5 Compaction — drop entries older than 1 year (frontend convention)
 
 By default, view-log entries older than **1 year** are dropped
 (by a periodic backend job for backend-stored lists; by the

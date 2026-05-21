@@ -270,7 +270,7 @@ CREATE INDEX user_view_log_recency_idx
 The seen-list's compaction policy (1-year default, ~7 MB/active-
 user-year bound, trade-off, frontend tunability) lives with the
 seen-list mechanism in
-[feed-ranking.md §8.5](../primitive/feed-ranking.md#85-compaction--drop-entries-older-than-1-year).
+[feed-ranking.md §8.5](../primitive/feed-ranking.md#85-compaction--drop-entries-older-than-1-year-frontend-convention).
 
 ```sql
 -- Hidden actors: per-viewer list of users/collectives the viewing user

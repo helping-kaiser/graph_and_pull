@@ -124,7 +124,7 @@ history that already lives in the source data.
 [feed-ranking.md §8](feed-ranking.md#8-the-already-seen-filter)) is **operational filter
 state**, not graph history. It is exempt from append-only and
 runs a periodic compaction (1-year default — see
-[feed-ranking.md §8.5](feed-ranking.md#85-compaction--drop-entries-older-than-1-year)). The trace it leaves is
+[feed-ranking.md §8.5](feed-ranking.md#85-compaction--drop-entries-older-than-1-year-frontend-convention)). The trace it leaves is
 the visible "history" UI surface fed by the same data, not a
 preserved layer stack.
 
