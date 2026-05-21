@@ -80,8 +80,12 @@ Cross-cutting design questions live in
 
 ### Never
 
-- **Never introduce AI-based ranking or recommendations.** The
-  graph and its weights are the only ranking mechanism.
+- **Never introduce AI into ranking, recommendations, or
+  economics.** Feed ranking and ad-revenue distribution are
+  driven only by the graph and its weights. AI as a
+  frontend/UI helper is open — that boundary is intentionally
+  permissive — but it must not touch the graph's signal or the
+  economics computation.
 - **Never delete graph structure.** Nodes, edges, and layer stacks
   are never removed. State transitions are always layered, never
   destructive. The only permitted "deletion" on the graph is
