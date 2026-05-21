@@ -57,9 +57,8 @@ them:
 5. **User comes first.** No amount of money changes this. Users
    choose what they see, including ads. No one can force their way
    into another user's feed.
-6. **Governance, not admin escape hatches.** Takedowns,
-   redactions, and policy changes run through community votes on
-   the graph. There is no admin override — even court orders
+6. **Governance, not admin escape hatches.** Redactions and
+   policy changes run through community votes on the graph. There is no admin override — even court orders
    prompt a moderator to file
    [the same Proposal](docs/instances/moderation.md#2-reports--proposals-on-the-graph)
    anyone else would, leaving an auditable trail rather than a
@@ -105,8 +104,8 @@ them:
   in-place redaction per
   [docs/primitive/layers.md §5](docs/primitive/layers.md#5-deletion-policy). The
   same spirit applies to Postgres-side display content.
-- **Never erase silently.** Any redaction or takedown — graph-side
-  or Postgres-side — must leave a visible mark.
+- **Never erase silently.** Any redaction — graph-side or
+  Postgres-side — must leave a visible mark.
 - **Never let inbound edges affect a user's feed.** Only outgoing
   edges from the viewing user shape their feed.
 - **Never break edge tensor uniformity.** All edges (actor and

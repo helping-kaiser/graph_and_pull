@@ -139,7 +139,26 @@ here: Postgres display content is append-only too.
 ## 5. Deletion policy
 
 Append-only is the norm, but not absolute everywhere. Three tiers,
-each with its own rule:
+each with its own rule.
+
+### Redaction vs severance — two different vocabularies
+
+**Invariant:** Redaction and severance describe two different
+mechanisms with two different scopes; they are not interchangeable.
+
+- **Redaction** — a content-level mark on a graph layer or a
+  Postgres row, applied in place under the authorization paths
+  below. Layered, leaves the topology intact, leaves a visible
+  marker. The three tiers below describe how it works per surface.
+- **Severance** — a `(0, 0)` actor-edge layer one actor writes
+  toward another node. Affects path traversal *for that viewing
+  user* per
+  [feed-ranking.md §3.6](feed-ranking.md#36-bot-resistance-via-the-0-0-severance-edge),
+  touches no content, and is per-viewer rather than global.
+
+This section covers redaction only. "Takedown" is not a CoGra
+term — older drafts used it as a synonym for redaction; sweep it
+in favor of "redaction" wherever encountered.
 
 ### Graph structure is never deleted
 
@@ -159,7 +178,7 @@ erasing from it would defeat the whole point.
 ### Layer contents on node properties — redactable
 
 The contents of a specific layer on a node property can be redacted
-**in place** when an authorized takedown applies (illegal-content
+**in place** when an authorized redaction applies (illegal-content
 classification or user-requested account deletion — see
 "Authorization paths" below). Redaction replaces the stored value
 with a marker like `[redacted — <reason>, removed at T=X]`; the
@@ -202,8 +221,8 @@ record that the change happened. A reader scanning the graph or the
 content tables can always tell that something was there and was
 removed, even when they cannot see the original content.
 
-**No silent deletion, ever.** Whether a takedown happens via
-in-place layer redaction or via Postgres version tombstones, the
+**No silent deletion, ever.** Whether a redaction happens via
+in-place layer markers or via Postgres version tombstones, the
 fact of the deletion is recorded. You can always see that a change
 happened, even when the illegal content itself is gone.
 

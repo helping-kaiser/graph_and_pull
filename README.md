@@ -38,8 +38,8 @@ overwritten. The only carve-out is in-place redaction of illegal
 content, and even that leaves a visible trace. Transparency and
 auditability over convenience.
 
-**Governance, not admin escape hatches.** Takedowns, redactions,
-and policy changes run through community votes on the graph, with
+**Governance, not admin escape hatches.** Redactions and policy
+changes run through community votes on the graph, with
 weights and thresholds visible. There is no admin override — even
 court orders prompt a moderator to file
 [the same Proposal](docs/instances/moderation.md#2-reports--proposals-on-the-graph)

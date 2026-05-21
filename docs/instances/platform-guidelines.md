@@ -55,7 +55,7 @@ procedure in §3:
   scope for `illegal` and may or may not be `sensitive`
   depending on context.)
 - **Copyright infringement at scale** — wholesale republication
-  of copyrighted works against an explicit takedown.
+  of copyrighted works against an explicit removal request.
 
 ### `sensitive`
 

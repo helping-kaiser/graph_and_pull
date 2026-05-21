@@ -92,8 +92,8 @@ Cross-cutting design questions live in
   in-place redaction per
   [docs/primitive/layers.md §5](docs/primitive/layers.md#5-deletion-policy). The
   same spirit applies to Postgres-side display content.
-- **Never erase silently.** Any redaction or takedown — graph-side
-  or Postgres-side — must leave a visible mark.
+- **Never erase silently.** Any redaction — graph-side or
+  Postgres-side — must leave a visible mark.
 - **Never let inbound edges affect a user's feed.** Only outgoing
   edges from the viewing user shape their feed.
 - **Never break edge tensor uniformity.** All edges (actor and

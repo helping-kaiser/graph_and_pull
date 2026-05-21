@@ -47,6 +47,9 @@ listed under the most useful one.
   — no node, edge, or layer is ever removed; absolute.
 - [No silent deletion](layers.md#5-deletion-policy) — every
   redaction (graph-side or Postgres-side) leaves a visible mark.
+- [Redaction ≠ severance](layers.md#redaction-vs-severance--two-different-vocabularies)
+  — redaction is content-level and global; severance is
+  traversal-level and per-viewer; the two are not interchangeable.
 - [Junction state is encoded in topology](graph-model.md#5-junction-node-flows)
   — claim only = pending; claim + approval = active; negative top
   layer on either = inactive. No status flag.

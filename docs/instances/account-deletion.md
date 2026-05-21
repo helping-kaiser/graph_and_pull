@@ -213,7 +213,7 @@ authorization, scope, and archive treatment:
 
 The two paths run independently. A user under active moderation
 can still request account deletion. Conversely, illegal-content
-takedowns of a redacted user's content proceed normally — the
+redactions on a redacted user's content proceed normally — the
 content body is in the retention archive, and a moderator acting
 on a court order can request removal of the archive copy as
 well, satisfying the destruction obligation that overrides
