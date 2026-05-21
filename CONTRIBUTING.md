@@ -63,9 +63,11 @@ them:
    would, leaving an auditable trail rather than a silent edit.
 7. **Community choices stay local.** What a community decides —
    including severing ties — affects only the severing
-   community's own outbound paths. It does not propagate to the
-   severed party's other neighbours, and the rest of the graph
-   is unaffected by another community's stance.
+   community's own outbound paths. The severance does not
+   propagate forward to the severed party's other neighbours;
+   viewers whose own paths pass through the severing community
+   see their feeds reshaped, but each of them chooses whether
+   to cascade the severance further.
 8. **Transparency over black boxes.** The system is a visible,
    auditable graph. Follow the principles of BTC: transparency,
    immutability, fairness.

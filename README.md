@@ -52,10 +52,13 @@ No amount of money changes that. No one forces their way into
 another user's feed.
 
 **Community choices stay local.** What a community decides —
-including cutting ties with another — affects only the
-perspectives of its own members. Severance does not cascade
-outward; the rest of the network is unaffected by another
-community's stance.
+including severing ties — affects only the severing community's
+own outbound paths. The severed party's other neighbours are
+unaffected: the severance does not propagate forward to them.
+It does reshape the feeds of viewers whose own outbound paths
+pass through the severing community — each of them can in turn
+decide whether to sever or not. The cascade spreads by choice,
+not by propagation.
 
 **Fully public graph; no account needed to read.** Everything in
 the graph is visible without signing in. Accounts gate
