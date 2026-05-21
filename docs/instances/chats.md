@@ -566,6 +566,14 @@ is the only path that runs through governance; rotation
 triggered by joins, leaves, or member-disavowal passes never
 does.
 
+This principle — *epoch advances automatically the moment the
+membership transition takes effect; only mid-epoch rotation
+runs through governance* — could conceivably generalize to any
+junction-state-bearing node that wants topology-implied
+advancement of a sibling counter. Chat is the only consumer
+today, so it stays here as **instance-specific**: not promoted
+to primitive until a second consumer surfaces.
+
 Each encrypted ChatMessage's body row in Postgres carries an
 `epoch` index pointing at the key it was encrypted under
 (§4.2). The graph never reads it; the frontend uses it to pick
