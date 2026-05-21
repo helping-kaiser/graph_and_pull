@@ -255,6 +255,39 @@ the archive rows; per the code-style rules in CLAUDE.md, the
 cascade module sequences the calls but holds no DB-specific code
 itself.
 
+### User registration (invitation acceptance)
+
+Email verification creates the User node, its invitation edges,
+and the first session in one service-layer transaction. The
+trigger is the invitee clicking the verification link with the
+single-use token written to the `auth_pending_registrations`
+row at registration submit (see
+[auth.md "Invitation acceptance"](auth.md#invitation-acceptance-the-default-path)).
+
+Inside the transaction:
+
+1. Validate the verification token (Postgres read).
+2. Read the inviter's pre-committed `(dim1, dim2)` from the
+   linked `auth_invitations` row (Postgres read).
+3. Create the User node in Memgraph with `network_role =
+   'member'` and layered properties initialized.
+4. Write the two invitation actor edges per
+   [invitations.md](../primitive/invitations.md) — inviter
+   value outward, invitee value back.
+5. Insert the first `auth_refresh_tokens` row (Postgres).
+6. Delete the `auth_pending_registrations` row (Postgres).
+
+The order makes each step rollback-safe. If any step fails the
+service layer rolls back both pools' transactions; the pending
+registration row survives so the invitee can retry.
+
+There is **no observable window** in which the User node exists
+without its invitation edges or in which a session token is
+issued before the User. The
+[no-User-node-before-verification invariant in
+user.md §2](../primitive/user.md#2-creation) holds at the
+implementation level because of this ordering.
+
 ---
 
 ## Request Lifecycle: Feed Query
