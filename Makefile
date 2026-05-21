@@ -68,9 +68,9 @@ fmt: ## Format all code
 test: ## Run all tests
 	$(CARGO) test --all
 
-docs-link-check: ## Check markdown link targets exist (needs lychee)
+docs-link-check: ## Check markdown link targets + anchors (mirrors docs-ci.yml; needs lychee)
 	@command -v lychee >/dev/null 2>&1 || { echo "Error: lychee not found (cargo install lychee)"; exit 1; }
-	lychee --no-progress '**/*.md'
+	lychee --no-progress 'docs/**/*.md' '*.md'
 
 build: ## Build all crates
 	$(CARGO) build --all

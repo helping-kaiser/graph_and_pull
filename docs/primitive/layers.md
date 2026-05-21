@@ -8,6 +8,22 @@ is always available.
 
 ---
 
+## Append-only vocabulary
+
+"Append-only" in CoGra covers three distinct mechanisms, all
+sharing the principle that history is preserved rather than
+overwritten:
+
+1. **Append-only edges** — see [§2](#2-layers-on-edges).
+2. **Append-only node properties** — see [§3](#3-layers-on-nodes).
+3. **Versioned-row Postgres display content** — see
+   [§4](#4-layers-on-postgres-side-display-content).
+
+Other docs link the word "append-only" to this section as a
+shared alias.
+
+---
+
 ## 1. Why layers everywhere
 
 The append-only principle isn't about edges specifically — it's
