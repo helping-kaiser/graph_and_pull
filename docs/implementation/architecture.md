@@ -199,6 +199,41 @@ Shared types with no external dependencies. Responsibilities:
 
 ---
 
+## Service-layer transactions
+
+Every write that touches more than one store, or more than one
+node in Memgraph that must succeed or fail together, runs inside
+a **single service-layer transaction** wrapped by the API. The
+service layer is the only place with handles on both pools, so it
+is the only place that can hold a Memgraph transaction and a
+Postgres transaction open simultaneously and commit them as one
+logical unit.
+
+### Genesis bootstrap
+
+The instance bootstrap migration is the system's clearest example
+of the pattern. It writes three nodes — the `:Network` singleton,
+the genesis User, and the `bot-defense` Hashtag — and all three
+go in one transaction. See
+[network.md §2](../primitive/network.md#2-creation) for the
+primitive-side framing of what the migration produces.
+
+Because no graph exists until the transaction commits, no hostile
+Proposal can race the bootstrap: there is no target to file
+against, no Network singleton to scope to, no eligibility set to
+vote from. The pre-graph window is fully closed. After commit, the
+graph is in a complete state — singleton + bootstrap moderator +
+bot-defense Hashtag — and ordinary governance applies from there.
+
+The migration is the **only** writer of these three nodes; no
+runtime path produces a second `:Network` or a second genesis
+User. It is also the only step in the system that escapes the
+actor-gesture-or-governance rule (per
+[graph-model.md §1](../primitive/graph-model.md#1-core-principles)),
+and that escape is confined to the migration.
+
+---
+
 ## Request Lifecycle: Feed Query
 
 A personalized feed splits across two locations: the central backend
