@@ -208,7 +208,7 @@ and edge-labels table below.
 | Property        | Type   | Notes |
 |---|---|---|
 | `id`            | String | UUID v4. |
-| `role`          | String | `'admin'` / `'mod'` / `'member'`. Layered. |
+| `role`          | String | `'admin'` / `'chat_mod'` / `'member'`. Layered. Distinct from the Network-scope `User.network_role = 'moderator'`. |
 | `voting_weight` | Float  | Optional; used when the chat sets per-member weight directly rather than deriving it from `role` at tally time. Layered when present. |
 
 ```cypher

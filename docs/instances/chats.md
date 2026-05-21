@@ -153,8 +153,13 @@ Concrete types and indexes live in
 
 A ChatMember junction carries:
 
-- **`role`** — `'admin'`, `'mod'`, `'member'` (or any
+- **`role`** — `'admin'`, `'chat_mod'`, `'member'` (or any
   chat-defined role string the chat's parameters recognize).
+  The `'chat_mod'` label is deliberately distinct from the
+  Network-scope `User.network_role = 'moderator'`: chat
+  moderators and Network moderators are different roles, with
+  different scopes and different weights — see
+  [moderation.md §3](moderation.md#3-the-mod-gate-rule).
   Layered. The default role weights are properties on the
   **Chat** (§3.1), not on the ChatMember — change the role to
   reassign the bearer; change the Chat's weight properties to
@@ -746,7 +751,7 @@ Starting points, not fixed rules:
 | Parameter       | Message disavowal (Level 1)                                                                              | Member disavowal (Level 2)                                                                              |
 |-----------------|----------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
 | Eligibility     | Active `ChatMember`s                                                                                     | Active `ChatMember`s excluding the member under review                                                  |
-| Role weights    | `admin = 5`, `mod = 3`, `member = 1`                                                                     | Same                                                                                                    |
+| Role weights    | `admin = 5`, `chat_mod = 3`, `member = 1`                                                                | Same                                                                                                    |
 | Quorum          | ≥ 20% of total eligible weight has cast a vote                                                           | ≥ 40% of total eligible weight has cast a vote                                                          |
 | Threshold       | > 50% of cast weight disavowing                                                                          | ≥ 2/3 of cast weight disavowing                                                                         |
 | Proposal target | `:Proposal → :ChatMessage`, `target_property = 'node'`, `proposed_value = 'disavowed'`                   | `:Proposal → :ChatMember`, `target_property = 'node'`, `proposed_value = 'disavowed'`                   |
@@ -762,8 +767,8 @@ rules (see
 
 ### How roles fit in
 
-Roles (admin, mod, member) are carried as the `role` property
-on the `ChatMember` junction node (§3.3). The role-weights
+Roles (`admin`, `chat_mod`, `member`) are carried as the `role`
+property on the `ChatMember` junction node (§3.3). The role-weights
 table above is the default derivation; a `ChatMember` may also
 carry an optional `voting_weight` property that sets per-member
 weight directly, overriding the role-based derivation at tally

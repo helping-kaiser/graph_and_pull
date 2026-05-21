@@ -120,9 +120,11 @@ member) counts once their status flips.
 How each vote's contribution is scaled. Derived from properties on
 the voter's eligibility junction:
 
-- ChatMember: `role` (admin / mod / member). Optionally a direct
-  `voting_weight` property when the chat sets per-member weight
-  explicitly instead of deriving it from `role`.
+- ChatMember: `role` (`admin` / `chat_mod` / `member`). Optionally
+  a direct `voting_weight` property when the chat sets per-member
+  weight explicitly instead of deriving it from `role`. The
+  `chat_mod` label is chat-scope; do not confuse with the
+  Network-scope moderator role (`User.network_role = 'moderator'`).
 - CollectiveMember: `role` + `ownership_pct` combine into a
   composite. Optionally a direct `voting_weight` for collectives
   whose weight is not tied to equity (e.g. one-member-one-vote
