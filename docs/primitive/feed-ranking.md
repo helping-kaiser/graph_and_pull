@@ -396,6 +396,44 @@ The same mechanism applies to any cluster the broader community
 wants to disengage from. The math operates on path-set properties,
 not on cluster type — see §3.7.
 
+#### Vocabulary used in §3.6–§3.8
+
+The bot-defense subsections share a small set of nouns. None of
+them are graph entities — every one is a viewer-side framing on
+top of nodes and edges that already exist. They live here, in
+the section that first leans on them, rather than scattered
+through the rest of the doc.
+
+- **Bot** — synonym for **malicious actor node** (typically a
+  `:User`, sometimes a `:Collective`). Not a classifier the math
+  applies; it's how a viewer (or an auto-detect routine per
+  §3.8.2) labels an actor whose role in path patterns is to
+  amplify reach for content the labelling community considers
+  illegitimate.
+- **Cluster** — a *viewing convention* for "a set of related
+  nodes," usually bots and the actors that bridge to them. There
+  is no graph-side cluster object, no cluster property; the math
+  never reads "cluster type." A cluster is the shape a viewer
+  recognises when staring at a delta-funnel and its inbound
+  neighbours.
+- **Delta-funnel** — a composite shape used by bot clusters to
+  amplify `h(t)` for a boost target: paths enter through one (or
+  a few) bridge edges into the cluster, **delta** (fan out)
+  across many internal cluster nodes, then **funnel** (converge)
+  back to a single target node whose `h(t)` is being driven up.
+  The two narrow ends are the entry bridges and the boost
+  target; the wide middle is the cluster. The detection
+  signature for *one* of these halves — the entry-side bridge
+  bottleneck — is §3.8.2's "delta-funnel pattern" check.
+- **Low-signal cluster** — a cluster with few internal edges
+  (low edge density). Distinct from a delta-funnel: a cluster
+  can be low-signal and *not* a delta-funnel, or vice versa.
+  §3.8.2's auto-detect heuristics pick up both shapes.
+- **Bot bridge** — an edge from a real actor into a bot cluster,
+  typically the entry edge feeding the delta-funnel. Cascading
+  severance (§3.7) targets bot bridges: severing one closes
+  every downstream cluster path that depended on it.
+
 #### Why bots can dial any non-zero score
 
 A cluster with unbounded internal nodes and edges can amplify a
@@ -524,16 +562,18 @@ one severance edge — at which point `h(t) = 0` exactly for every
 target inside (§3.6), and §5's zero-jail banishes those targets
 from view.
 
-#### The math has no cluster-type category
+#### Cluster is a viewing convention, not a math entity
 
 The cascade applies uniformly to any cluster the broader community
 wants to disengage from — bot networks, coordinated harassment
 groups, ideological cliques, content the broader graph judges as
-low-signal. The math operates on path-set properties; it does not
-inspect cluster composition. The community decides cluster-by-
-cluster via their severance edges, and the math executes
-identically. There is no special category for "humans" vs. "bots";
-there is only *reachable from your graph* vs. *not*.
+low-signal. "Cluster" is the viewer's label for the shape of
+nodes and edges they're disengaging from; the math reads only
+path-set properties and never inspects cluster composition. The
+community decides cluster-by-cluster via their severance edges,
+and the math executes identically. There is no special category
+for "humans" vs. "bots"; there is only *reachable from your
+graph* vs. *not*.
 
 #### Severance is local — the severing community moves away
 
