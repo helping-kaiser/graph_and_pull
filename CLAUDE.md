@@ -192,12 +192,12 @@ If a doc contradicts another, conflicts with the user's framing,
 or seems out of place — flag it in the same response. Don't paper
 over it; don't file it as a separate later task.
 
-### Use the Explore subagent for multi-file research
+### Use a subagent for broad investigation
 
-For broad investigations spanning more than a few files, spawn an
-`Explore` subagent. It does the heavy reading inside its own
-context, returns a summary, and keeps the main thread lean — this
-is the cheapest way to investigate without bloating the session.
+For investigations spanning more than a few files, spawn a
+subagent. It does the heavy reading inside its own context,
+returns a summary, and keeps the main thread lean — the cheapest
+way to investigate without bloating the session.
 
 ### One session per task
 
