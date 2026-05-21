@@ -388,12 +388,12 @@ revoked" is a single edge with a layered stance flip, not a
 different edge type — see "Revocation and state transitions"
 below.
 
-#### Bootstrap: founder / creator self-collapse
+#### Bootstrap: author / founder self-collapse
 
 When a junction is created with no other approver required —
 the founder of a Collective
 ([collectives.md §1](../instances/collectives.md#1-creation)),
-the creator of an Item
+the author of an Item
 ([items.md §1](../instances/items.md#1-creation)), the founder
 of a Chat ([chats.md §2.1](../instances/chats.md#21-chat)) —
 the bearer's Shape A self-claim is the only required vote.

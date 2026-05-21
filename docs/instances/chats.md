@@ -82,7 +82,7 @@ collapses to its 1-of-1 special case: the founder's gesture acts
 as both the claim and the approval. This is the same bootstrap
 pattern used by Collective founders
 ([collectives.md "Creation"](collectives.md#1-creation)) and Item
-creators ([items.md §1](items.md#1-creation)). Every subsequent
+authors ([items.md §1](items.md#1-creation)). Every subsequent
 ChatMember addition follows §11, not this bootstrap.
 
 The chat opens at epoch `E₁` (`Chat.epoch = 1`); as soon as a

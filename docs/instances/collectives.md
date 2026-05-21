@@ -54,7 +54,7 @@ collapses to its 1-of-1 special case: the founder's `User → CollectiveMember`
 system writes both structural edges (claim and approval) plus
 the `CollectiveMember → User` `:BEARER` identity edge atomically
 alongside it. This is the same bootstrap pattern used for the
-creator's `ItemOwnership` in
+author's `ItemOwnership` in
 [items.md §1](items.md#1-creation) and for the founder of a
 Chat in [chats.md §2.1](chats.md#21-chat). See §7 for the
 regular case where existing CollectiveMembers cast Shape B
@@ -62,12 +62,12 @@ approver votes.
 
 The founder's role on their CollectiveMember junction is
 whatever the social contract names for the inaugural role
-(`founder`, `owner`, `partner`, …). There is no special
-"creator" role and no uniqueness constraint on the inaugural
+(`founder`, `owner`, `partner`, …). There is no separate
+"author" role and no uniqueness constraint on the inaugural
 role: **additional founders are added afterward through the
 regular CollectiveMember addition flow**, and their `founder`
 (or equivalent) role carries the same weight as the bootstrap
-founder's. The creator-User is identifiable on the graph as the
+founder's. The author-User is identifiable on the graph as the
 earliest layer-1 timestamp among the Collective's incoming
 CollectiveMember-claim edges — the same earliest-incoming-edge
 rule that derives authorship for any other node (see
@@ -423,13 +423,13 @@ node. This matches the framing in
 and is the same omission described in §2 as a deliberate
 non-feature.
 
-A Collective is itself authored — its **creator** is the User
+A Collective is itself authored — its **author** is the User
 identifiable as the earliest layer-1 timestamp among the
 Collective's incoming CollectiveMember-claim edges (§1). The
-creator-User is a graph-derivable identity, not a stored
+author-User is a graph-derivable identity, not a stored
 authorship pointer; the role they hold on their CollectiveMember
 junction is whatever the social contract named for the inaugural
-role.
+role (commonly `founder`).
 
 ### CollectiveMember
 
@@ -437,10 +437,9 @@ CollectiveMember is a junction node and has no authorship in the
 [authorship.md](../primitive/authorship.md) sense — it
 represents a membership relationship, not an authored piece of
 content. Its bearer (the actor the `:BEARER` edge points at) is
-the identity it represents; its creator (the actor whose
-gesture produced it) is whichever party initiated the two-edge
-approval, but neither is an "author" in the graph's authorship
-rule.
+the identity it represents; the actor whose gesture produced it
+is whichever party initiated the two-edge approval, but neither
+is an "author" in the graph's authorship rule.
 
 ---
 

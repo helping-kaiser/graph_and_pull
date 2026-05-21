@@ -5,6 +5,17 @@ author of a node is the actor whose incoming edge has the earliest
 layer 1 timestamp. A node cannot exist without someone creating it, so
 the very first edge ever created toward a node identifies the author.
 
+**"Creator" is a synonym for "author"; "author" is canonical.**
+Wherever older drafts say a User or Collective "creates" or is
+the "creator" of a node — Item, Chat, Collective, Post, Comment,
+Proposal — the on-graph fact is the same: they hold the
+earliest-layer-1 incoming edge, the `:AUTHOR` label, and the
+rights/obligations that authorship carries. "Founder" is *not* a
+synonym for author — it is the CollectiveMember **role string**
+used inside a Collective (see
+[graph-model.md §5 "Bootstrap"](graph-model.md#5-junction-node-flows)
+and [collectives.md §1](../instances/collectives.md#1-creation)).
+
 The dimension values on the author's edge are just normal opinion
 values — the author's initial feelings about their own content
 (typically high positive sentiment and relevance).

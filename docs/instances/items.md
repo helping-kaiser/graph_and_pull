@@ -22,8 +22,8 @@ rather than duplicates.
 
 An Item is created by a single compound gesture from one actor —
 either a User or a Collective. Unlike a Post, Item creation is
-**compound**: it brings the Item AND the creator's first
-ItemOwnership into existence in one atomic step, with the creator
+**compound**: it brings the Item AND the author's first
+ItemOwnership into existence in one atomic step, with the author
 as the initial owner. There is no separate "list" then "claim
 ownership" flow.
 
@@ -34,14 +34,14 @@ The gesture writes the following records atomically:
   (see [data-model.md](../implementation/data-model.md)).
 - `item_attachments` rows for each piece of attached media (zero
   or more).
-- An actor edge from the creator toward the Item — the
+- An actor edge from the author toward the Item — the
   **authorship edge** (§5). Its `(dim1, dim2)` values are the
-  creator's initial opinion of their own item, typically high
+  author's initial opinion of their own item, typically high
   positive sentiment and relevance.
-- A new `:ItemOwnership` junction node for the creator.
+- A new `:ItemOwnership` junction node for the author.
 - The `ItemOwnership → User/Collective` `:BEARER` structural
-  edge, binding the junction to the creator.
-- The creator's `User/Collective → ItemOwnership` actor edge —
+  edge, binding the junction to the author.
+- The author's `User/Collective → ItemOwnership` actor edge —
   their **Shape A self-claim** to the ownership.
 - The `ItemOwnership → Item` claim edge.
 - The `Item → ItemOwnership` approval edge with positive top
@@ -50,7 +50,7 @@ The gesture writes the following records atomically:
 Because there is no prior owner to cast a Shape B approval vote
 — the Item did not exist a moment ago — the
 [two-edge approval pattern](../primitive/graph-model.md#5-junction-node-flows)
-collapses to its 1-of-1 special case: the creator's Shape A
+collapses to its 1-of-1 special case: the author's Shape A
 self-claim is the only required vote, and the system writes
 both structural edges atomically alongside it. This is the same
 bootstrap pattern used for the founder's `CollectiveMember` in
@@ -263,7 +263,7 @@ Item node and the bootstrap ItemOwnership (§1); the author's edge
 is the earliest incoming actor edge by construction.
 
 **Authorship and ownership are distinct.** The author is the
-**creator** — the actor who minted, listed, or registered the
+**author** — the actor who minted, listed, or registered the
 Item; this is immutable and derived from the earliest actor edge.
 The **current owner** is whoever holds the active ItemOwnership
 (§7) and changes with each transfer. An Item authored by one User
@@ -303,7 +303,7 @@ ItemOwnership uses the **two-edge approval pattern** described in
 No one can take ownership without the current owner's explicit
 Shape B vote — there is no "take" operation in the graph. The
 bootstrap at Item creation (§1) is the one exception: the
-creator's Shape A self-claim is the only required vote because
+author's Shape A self-claim is the only required vote because
 no prior ItemOwnership exists, and the two-edge approval pattern
 collapses to its 1-of-1 special case.
 
