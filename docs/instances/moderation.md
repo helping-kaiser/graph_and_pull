@@ -137,6 +137,19 @@ include **at least one positive vote from a User with
 `network_role = 'moderator'`**. This is not a weight — mods count
 as 1, same as everyone else — it is a gate.
 
+**A moderator's positive vote counts in BOTH the mod-gate check
+AND the member-tally arithmetic; it is not double-spent in any
+other sense.** Mod cast `+1` once; the same vote opens the gate
+*and* contributes its weight of `1` to the count tallied against
+quorum and threshold. The "mod weight = 1" rule means the
+moderator's contribution to the member arithmetic is exactly one
+member's worth — nothing more — even though that same vote also
+opened the gate. The substantive arithmetic / threshold mechanics
+that this rule shapes belong to
+[network.md §9](../primitive/network.md#9-mod-role-changes-via-multi-sig-proposal)
+and the broader governance pass — this entry is the vocabulary
+pin so the rule can be cited without ambiguity.
+
 The rule applies uniformly across both `sensitive` and `illegal`,
 and symmetrically to un-classification (returning content to
 `'normal'`):
