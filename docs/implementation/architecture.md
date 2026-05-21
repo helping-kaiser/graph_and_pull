@@ -234,7 +234,7 @@ has not. The pattern that closes the window is:
 A two-phase commit primitive across the two engines is **not**
 in scope: implementation cost outweighs the gain at our scale.
 Idempotent retry + the cache-rebuild path
-([data-model.md](data-model.md#author_id-is-a-cached-derivation-except-for-media_attachments))
+([data-model.md](data-model.md#author_id-is-a-cached-derivation--except-for-media_attachments))
 together cover the residual inconsistency surface.
 
 Every dual-store write follows this shape: User registration
