@@ -92,8 +92,8 @@ type Comment {
 # Feed item enriched with graph context
 type FeedPost {
   post:               Post!
-  degreeOfSeparation: Int!     # hops from viewer to post author
-  mutualFollowers:    [User!]! # viewer's followers who also follow the author
+  degreeOfSeparation: Int!     # hops from viewing user to post author
+  mutualFollowers:    [User!]! # viewing user's followers who also follow the author
 }
 
 # Graph path between users

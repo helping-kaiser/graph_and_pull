@@ -189,7 +189,7 @@ Shared types with no external dependencies. Responsibilities:
 ## Request Lifecycle: Feed Query
 
 A personalized feed splits across two locations: the central backend
-serves the **data**; the viewer's device computes the **ranking**.
+serves the **data**; the viewing user's device computes the **ranking**.
 This split is structural, not an optimization — per-actor ranking
 cannot run on the central hot path at any real user count. See
 [feed-ranking.md §9](../primitive/feed-ranking.md#9-where-ranking-and-filtering-live) for the full
@@ -198,13 +198,13 @@ reasoning and the math/deployment separation.
 ```
 Phase 1 — central backend serves subgraph + seen-list
 
-1. Client → POST /graphql to fetch the viewer's relevant graph
+1. Client → POST /graphql to fetch the viewing user's relevant graph
    slice.
 2. API calls graph-engine: traverse N hops outward from the
    viewing user; return the relevant subgraph (nodes + their
    incident actor and structural edges, with top-layer tensor
    values intact).
-3. API calls postgres-store: fetch the viewer's seen-list from
+3. API calls postgres-store: fetch the viewing user's seen-list from
    user_view_log — a per-viewer set of already-shown content
    UUIDs. See feed-ranking.md §8.
 4. API returns subgraph + seen-list to the client.
@@ -234,7 +234,7 @@ Phase 3 — display-content fetch and render
 
 The central backend serves graph slices, seen-lists, and display
 content; it does **not** rank. Ranking and filtering live on the
-viewer's side — client by default, an optional delegate "miner" in
+viewing user's side — client by default, an optional delegate "miner" in
 the future, both running the same algorithm (feed-ranking.md §9).
 That is what keeps per-actor compute off the central hot path.
 

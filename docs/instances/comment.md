@@ -159,7 +159,7 @@ A Comment receives:
   [edges.md §1](../primitive/edges.md#1-actor-edges) — the
   like/dislike surface plus per-viewer relevance, used by
   [feed-ranking](../primitive/feed-ranking.md) to weight the
-  Comment for each viewer. The earliest of these is the
+  Comment for each viewing user. The earliest of these is the
   authorship edge (§5).
 - **`Comment → Comment` `:CONTAINMENT`** when another Comment
   replies to this one. A reply is itself a Comment whose
@@ -219,7 +219,7 @@ Two redaction triggers apply to a Comment today:
 - **Moderation: `'sensitive'` classification.** A passing
   `'sensitive'` Proposal flips the top layer of
   `moderation_status` to `'sensitive'`. No redaction; display
-  content stays. Each viewer's
+  content stays. Each viewing user's
   `content_filtering_severity_level` (see
   [data-model.md](../implementation/data-model.md) "User
   preferences") decides how aggressively the frontend filters
@@ -265,7 +265,7 @@ still-graph-resident content node, not a removed one.
 ## What this doc is not
 
 - **Not the feed-ranking spec.** Where a Comment surfaces in
-  any given viewer's feed — including how reply chains
+  any given viewing user's feed — including how reply chains
   accumulate `R`, how reactor-edge time decay attenuates stale
   threads, and the seen-list behavior for threads that gain
   fresh activity — lives in

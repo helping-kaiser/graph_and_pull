@@ -61,8 +61,8 @@ not part of the feed-ranking algorithm. This is what makes the
 "outbound edges from the viewing user shape that user's feed"
 guarantee from
 [graph-model.md §7](graph-model.md#7-directionality-inbound-edges-dont-affect-your-graph)
-hold: propagation flows along the directionality the viewer
-established. The inbound-edges-don't-affect-feeds rule is one
+hold: propagation flows along the directionality the viewing
+user established. The inbound-edges-don't-affect-feeds rule is one
 consequence of forward-only traversal; the per-edge
 restrictions in §3.5 are the rest.
 
@@ -230,8 +230,8 @@ state-bearing gates. The rules below restrict which edges
 **feed-ranking paths may traverse at all** — five edge-class
 restrictions on top of the gate-on-affirmation rule, closing
 specific bot-amplification gaps where structural topology
-would otherwise propagate a viewer's interest weight onto a
-target the viewer's network never expressed interest in.
+would otherwise propagate a viewing user's interest weight onto a
+target the viewing user's network never expressed interest in.
 
 Each rule closes a concrete attack on the forward-only-traversal
 foundation (§3, "Invariant: forward-only traversal"). The
@@ -254,7 +254,7 @@ transiting through it on a feed-ranking path is not. The edge
 carries no opinion content to compose with the rest of the
 path's signal.
 
-Closes the open-chat bot-gate: a viewer who reaches a chat /
+Closes the open-chat bot-gate: a viewing user who reaches a chat /
 collective / item parent through their network would otherwise
 traverse `:APPROVAL` to every active membership — including bot
 self-claims — and onward via `:BEARER` to the bot actor.
@@ -277,13 +277,13 @@ depth.
 #### Rule 3 — `:TARGETS` is not outbound-traversable for feed ranking
 
 Proposal-to-target is a governance reference, not a relevance
-signal. A viewer voting on a proposal expresses a stance on the
+signal. A viewing user voting on a proposal expresses a stance on the
 proposal itself, not on its target. The `:TARGETS` edge is
 `(0, 0)` — no opinion content to compose.
 
 Closes the proposal-targets-actor bot-gate: voting on a
 moderation proposal targeting a bot would otherwise propagate
-the viewer's interest weight along
+the viewing user's interest weight along
 `Voter → Proposal → bot User → [bot's content]`. Chat-internal
 disavowal proposals (Level 1 against ChatMessages, Level 2
 against ChatMembers — see
@@ -406,14 +406,14 @@ through the rest of the doc.
 
 - **Bot** — synonym for **malicious actor node** (typically a
   `:User`, sometimes a `:Collective`). Not a classifier the math
-  applies; it's how a viewer (or an auto-detect routine per
+  applies; it's how a viewing user (or an auto-detect routine per
   §3.8.2) labels an actor whose role in path patterns is to
   amplify reach for content the labelling community considers
   illegitimate.
 - **Cluster** — a *viewing convention* for "a set of related
   nodes," usually bots and the actors that bridge to them. There
   is no graph-side cluster object, no cluster property; the math
-  never reads "cluster type." A cluster is the shape a viewer
+  never reads "cluster type." A cluster is the shape a viewing user
   recognises when staring at a delta-funnel and its inbound
   neighbours.
 - **Delta-funnel** — a composite shape used by bot clusters to
@@ -540,24 +540,24 @@ cluster is only complete when **every** such entry path is dead.
 A single real user — whether knowingly malicious, unknowingly
 captured by a sophisticated impersonation, or simply slow to update
 their edges — can therefore keep the cluster reachable from a
-viewer's neighborhood. The math doesn't distinguish "real user
+viewing user's neighborhood. The math doesn't distinguish "real user
 innocently still connected" from "real user actively bridging the
 cluster"; both are live transit nodes.
 
 #### Cascading severance
 
 The defense extends naturally to transit nodes. Traversal
-transparency lets a viewer audit *how* a piece of content arrived
+transparency lets a viewing user audit *how* a piece of content arrived
 in their feed (see [graph-model.md](graph-model.md) for the
-transparency principle). When the viewer sees cluster content
+transparency principle). When the viewing user sees cluster content
 reaching them through a specific real user, they can sever the
 transit node itself with `(0, 0)`. Every path that reached the
 cluster through that transit node is now killed at the transit hop
 in the kill rule (§3.2).
 
-As more viewers cascade severance outward through the graph, the
+As more viewing users cascade severance outward through the graph, the
 cluster's reach contracts. Full severance is achieved when, for
-every viewer, every path into the cluster passes through at least
+every viewing user, every path into the cluster passes through at least
 one severance edge — at which point `h(t) = 0` exactly for every
 target inside (§3.6), and §5's zero-jail banishes those targets
 from view.
@@ -567,7 +567,7 @@ from view.
 The cascade applies uniformly to any cluster the broader community
 wants to disengage from — bot networks, coordinated harassment
 groups, ideological cliques, content the broader graph judges as
-low-signal. "Cluster" is the viewer's label for the shape of
+low-signal. "Cluster" is the viewing user's label for the shape of
 nodes and edges they're disengaging from; the math reads only
 path-set properties and never inspects cluster composition. The
 community decides cluster-by-cluster via their severance edges,
@@ -669,7 +669,7 @@ Three properties hold throughout:
 
 #### 3.8.1 Severance discovery — the inbound side
 
-Inbound edges do not affect the viewer's feed
+Inbound edges do not affect the viewing user's feed
 ([graph-model.md §7](graph-model.md#7-directionality-inbound-edges-dont-affect-your-graph)), so the feed-pull
 traversal does not include them. Discovering one's own
 severance state therefore requires an **explicit
@@ -726,7 +726,7 @@ supplementary evidence).
 #### 3.8.2 Bot-cluster identification — auto-detection from path patterns
 
 The cause-pointing gap closes via direct analysis of the
-viewer's subgraph for path patterns characteristic of bot
+viewing user's subgraph for path patterns characteristic of bot
 bridges. This is graph math on existing state — no AI
 classification, no central allow/blocklist, no per-account
 verdict beyond what the path structure says. The client (or a
@@ -734,7 +734,7 @@ delegated miner) computes the analysis from the same
 subgraph it pulls for ranking; the path-set the analysis
 reads is the same path-set used to compute `h(t)` (§4).
 
-**The delta-funnel signal.** For viewer `U` and any node `B`
+**The delta-funnel signal.** For viewing user `U` and any node `B`
 in `U`'s outbound subgraph, examine the paths from `U` to
 content and accounts behind `B`. Two patterns characterize:
 
@@ -793,13 +793,13 @@ two mechanisms reinforce each other.
 
 **Bot-defense page.** The frontend assembles a bot-defense
 page from this analysis: a list of suspect bridge nodes
-detected in the viewer's subgraph, each with a frontend-computed
+detected in the viewing user's subgraph, each with a frontend-computed
 **score** representing the likelihood of being a bot bridge.
 Inputs to the score include (at minimum) delta-funnel-purity
 of the path pattern and the result of the alternative-paths
 check.
 Frontends may add additional inputs; the doc does not specify a
-formula. The page also surfaces the viewer's path to each
+formula. The page also surfaces the viewing user's path to each
 suspect — the actual chain of intermediates — so users who
 want to verify the score's basis can drill in.
 
@@ -807,22 +807,22 @@ want to verify the score's basis can drill in.
 for each suspect depends on hop count. Frontends present these
 as tooltips, not enforcement:
 
-- **1 hop** (direct edge `viewer → suspect`): clean fix by
+- **1 hop** (direct edge `U → suspect`): clean fix by
   updating the edge to `(0, 0)`. No collateral.
-- **2 hops** (`viewer → C → suspect`): updating `viewer → C`
-  to `(0, 0)` kills the path but with collateral — the viewer
+- **2 hops** (`U → C → suspect`): updating `U → C`
+  to `(0, 0)` kills the path but with collateral — the viewing user
   loses everything else flowing through `C`, not just the bot
   content. Frontend can surface "this also disconnects you
   from N other accounts you reach via `C`." Alternative:
   signal `C` to act (out-of-band, or via the post mechanism in
   §3.8.3).
 - **3+ hops**: graph-level severance is high-collateral and
-  rarely worth the cost — the viewer is far from the bridge,
+  rarely worth the cost — the viewing user is far from the bridge,
   and closer-to-bridge users are the natural fixers.
   Recommended approach: use the frontend filter (per §5.1) to
   block content from the suspect directly, or signal a closer
   user (the path itself names them — `D` in
-  `viewer → C → D → suspect` is the cheapest fixer).
+  `U → C → D → suspect` is the cheapest fixer).
 
 The cutoffs are frontend-tunable defaults. Some users may
 prefer aggressive (2-hop maximum direct action); others
@@ -861,7 +861,7 @@ The post inherits the graph's existing trust mechanisms:
 - **Bot-authored posts don't reach trusted feeds.** Per the
   inbound-edges-don't-affect-feeds rule
   ([graph-model.md §7](graph-model.md#7-directionality-inbound-edges-dont-affect-your-graph)), a bot's post reaches
-  viewer `V` only if `V` (or a transitive contact) has an
+  viewing user `V` only if `V` (or a transitive contact) has an
   outgoing edge into the bot's neighborhood. False accusations
   by bot accounts about innocent targets mostly stay in the
   bots' own cluster.
@@ -871,7 +871,7 @@ The post inherits the graph's existing trust mechanisms:
   a protected category for accusers.
 - **Source-distribution check.** The score for community posts
   on the bot-defense page also accounts for where the post's
-  reach concentrates. A post reaching the viewer with high
+  reach concentrates. A post reaching the viewing user with high
   `h(t)` only because a bot cluster is amplifying it from
   inside — even when there is also funnel-pattern reach from
   trusted users alongside — has its score adjusted down. The
@@ -895,26 +895,26 @@ The two reinforce each other. A node flagged by both is
 high-confidence. A node flagged by only one is worth
 investigating but less conclusive.
 
-**The natural workflow.** A viewer notices an auto-detection
+**The natural workflow.** A viewing user notices an auto-detection
 ping — "delta-funnel shape detected at node `B`." They check,
 agree, and sever (`B` becomes `(0, 0)` from their outbound).
 The frontend can then offer to **scaffold a bot-defense
 post** about `B` — pre-filling the body with structural facts
-(the path the viewer just severed, delta-funnel score, layer-
+(the path the viewing user just severed, delta-funnel score, layer-
 stack snapshot of `B`'s outbound at time of severance) and
-leaving the viewer to add free-text observations. The post
+leaving the viewing user to add free-text observations. The post
 then propagates to others' bot-defense pages, accelerating
-community detection. None of this is required — the viewer
+community detection. None of this is required — the viewing user
 can sever silently — but the option lowers friction for
 spreading the signal.
 
 **Path-matching for community posts.** The same path-matching
 and hop-count action guidance from §3.8.2 apply: for each
-community post, the client computes whether the viewer has
+community post, the client computes whether the viewing user has
 paths to the accused account, and presents action options
-based on hop count. Posts about accounts the viewer has no
+based on hop count. Posts about accounts the viewing user has no
 path to are interesting context but not actionable for that
-viewer.
+viewing user.
 
 **Generalizes beyond bots.** Per §3.7, the math operates on
 path-set properties and applies uniformly to any cluster the
@@ -1175,10 +1175,10 @@ Reading:
   *regardless* of what they thought of the target.
 - `j` — absolute opinion: target's net valence in the graph at
   large — what reactors collectively think of `t`. Same value
-  for every viewer.
+  for every viewing user.
 - `k` — absolute reach: target's total interaction reach — how
   much reaction volume `t` has accumulated, signs absorbed. Same
-  for every viewer.
+  for every viewing user.
 
 Each metric uses **both `dim1` and `dim2`** through the parallel
 tracks. No metric drops a dimension; no dimension drops a metric.
@@ -1247,7 +1247,7 @@ through `d(R)`'s steep decay.
 Targets with `h(t) > 0` appear at the top of the feed; `h(t) < 0`
 at the bottom. Negatives are **visible**, not banished — a friend
 strongly disliking something is meaningful information for the
-viewer to be aware of, and the graph's transparency principle
+viewing user to be aware of, and the graph's transparency principle
 favors showing them over hiding. They sort below positives because
 the score itself is negative; that's it.
 
@@ -1630,14 +1630,14 @@ the seen-list mechanism (§8), not by reactor-edge decay.
 
 ## 8. The "already-seen" filter
 
-Once a viewer has seen a content node, that **specific node**
+Once a viewing user has seen a content node, that **specific node**
 should not surface in their feed again. New activity on it (a
 fresh comment, a new reaction) is **separate, independently-
 rankable content** — the comment is its own node with its own
 `h(t)` and its own surfacing decision. The post itself stays
 seen; the comment competes on its own merits.
 
-This is a per-(viewer, content) state question, distinct from
+This is a per-(viewing user, content) state question, distinct from
 ranking math (§3–§5) and time decay (§7). Decay attenuates
 old-and-quiet content; the seen-filter suppresses
 old-and-already-shown content even when it's currently active.
@@ -1657,9 +1657,9 @@ candidates under a wide-`R` pull are already seen. Excluding
 before computing `h(t)` for each candidate avoids ranking work
 that would just be thrown away.
 
-### 8.2 Storage — wherever the viewer prefers
+### 8.2 Storage — wherever the viewing user prefers
 
-The seen-list belongs to the viewer, not to the backend. Its
+The seen-list belongs to the viewing user, not to the backend. Its
 storage location is independent of the math:
 
 - **Backend (default for the central frontend).** Per-user
@@ -1729,7 +1729,7 @@ client/miner for self-stored lists). This bounds storage at
 
 **Trade-off acknowledged:** an old post that resurges (a "late
 hype wave" — community sentiment somehow lands on year-old
-content) will reappear in the viewer's feed if its view-log
+content) will reappear in the viewing user's feed if its view-log
 entry has been compacted. Per §7's `f(Δt)`, this is rare in
 practice — decay attenuates such content heavily — but it
 does happen, and arguably is a positive: occasional
@@ -1762,11 +1762,11 @@ every user's feed on demand, it would blow up with any real user
 count — per-actor compute multiplied by a live user base is not a
 manageable backend workload.
 
-### Resolution: compute closer to the viewer
+### Resolution: compute closer to the viewing user
 
 Sorting, ordering, and filtering happen **off the hot path of the
 central backend**. The backend serves each actor their relevant
-subgraph (e.g. N hops deep); ranking runs on the viewer's own device
+subgraph (e.g. N hops deep); ranking runs on the viewing user's own device
 or on a chosen delegate.
 
 - **Client-side (default).** The actor's device downloads its
@@ -1779,7 +1779,7 @@ or on a chosen delegate.
   is required. The miner returns the ordered list; the user's device
   still holds authority over filter preferences.
 
-### Filtering sits alongside ranking, on the viewer's side
+### Filtering sits alongside ranking, on the viewing user's side
 
 Every node type — Post, Comment, Chat, ChatMessage, Item, future
 additions — is independently filterable. A user who wants only posts

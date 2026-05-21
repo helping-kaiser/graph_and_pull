@@ -223,7 +223,7 @@ CREATE TABLE item_attachments (
 
 ### Personal frontend state
 
-A category of per-viewer tables whose role is to feed the viewer's
+A category of per-viewer tables whose role is to feed the viewing user's
 **frontend** (or their delegated miner) — not the graph. They share
 three properties:
 
@@ -266,9 +266,9 @@ seen-list mechanism in
 [feed-ranking.md §8.5](../primitive/feed-ranking.md#85-compaction--drop-entries-older-than-1-year).
 
 ```sql
--- Hidden actors: per-viewer list of users/collectives the viewer
+-- Hidden actors: per-viewer list of users/collectives the viewing user
 -- doesn't want in their feed. Applied as a post-rank exclusion
--- filter on the viewer's side (see feed-ranking.md §3.6).
+-- filter on the viewing user's side (see feed-ranking.md §3.6).
 -- hidden_type disambiguates which table the hidden_id refers to,
 -- same shape as author_type / target_type elsewhere.
 CREATE TABLE user_hidden_actors (
@@ -323,7 +323,7 @@ means the central backend has to be the source of truth.
 -- so they cross devices (see section intro for the App Store
 -- rationale).
 --
--- content_filtering_severity_level: how aggressive the viewer wants
+-- content_filtering_severity_level: how aggressive the viewing user wants
 -- the sensitive-content filter to be. 0 = show everything,
 -- 10 = strictest. NULL = unset (frontend default applies).
 -- Sensitive-content classification itself is community-moderated;

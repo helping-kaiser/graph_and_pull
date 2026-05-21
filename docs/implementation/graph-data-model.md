@@ -333,6 +333,6 @@ unified two-axis dimension grammar.
   [architecture.md §3](architecture.md#3-all-ranking-comes-from-the-graph).
 - **Per-viewer operational state** — `user_view_log` (seen-list)
   and similar per-viewer filter data. Lives in Postgres, or wherever
-  the viewer chooses to store it. See
+  the viewing user chooses to store it. See
   [data-model.md](data-model.md).
 

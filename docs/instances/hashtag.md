@@ -207,7 +207,7 @@ moderation:
 - **Moderation: `'sensitive'` classification.** A passing
   `'sensitive'` Proposal flips the top layer of
   `moderation_status` to `'sensitive'`. No redaction on
-  `name`. Each viewer's
+  `name`. Each viewing user's
   `content_filtering_severity_level` (see
   [data-model.md](../implementation/data-model.md) "User
   preferences") decides how aggressively the frontend

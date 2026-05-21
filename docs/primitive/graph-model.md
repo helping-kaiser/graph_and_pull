@@ -226,7 +226,7 @@ gesture in response.
   influence others' graphs have to take explicit, layer-creating
   gestures rather than feed engagement through invisible
   implicit-signal channels — every interaction is visible on the
-  graph. Combined with §7 (inbound edges don't affect a viewer's
+  graph. Combined with §7 (inbound edges don't affect a viewing user's
   feed), this leaves bot farms little leverage.
 - **Freedom of the mind** ([CLAUDE.md](../../CLAUDE.md) principle
   #8). The system doesn't reward outrage or measure involuntary
@@ -559,7 +559,7 @@ The decoupling is real and important. A valid edge shape:
 This composes correctly under the existing math: the sentiment chain
 (`s_path`) carries the affection through traversal via signed
 multiplication, while the interest chain (`c_path`) is tainted negative
-so the path does not amplify the target's content into the viewer's
+so the path does not amplify the target's content into the viewing user's
 feed. Loving someone and not following their posts are independent
 positions on the graph; the dim grammar respects that.
 
@@ -634,15 +634,15 @@ restrictions (see
 [feed-ranking.md §3 "Invariant: forward-only traversal"](feed-ranking.md#3-per-edge-composition-along-a-path)
 and [feed-ranking.md §3.5 "Traversal restrictions"](feed-ranking.md#35-traversal-restrictions)).
 Inbound edges — sentiment, follows, likes from others toward the
-viewer — do not contribute to the viewer's ranking. This is the
+viewing user — do not contribute to the viewing user's ranking. This is the
 anti-bot foundation: a swarm pointing at you cannot drag your own
 graph anywhere.
 
 **"Inbound edges don't affect your feed" is one consequence, not
 the full story.** Some bot-amplification gaps work without any
-direct inbound edge at the viewer: a bot self-claims into an
+direct inbound edge at the viewing user: a bot self-claims into an
 open-membership chat, gets `:APPROVAL` (system-written from the
-chat to the bot's `ChatMember`), and rides a viewer's existing
+chat to the bot's `ChatMember`), and rides a viewing user's existing
 edge to a chat member into a delta-funnel reaching the bot.
 Closing those gaps requires the per-edge restrictions in
 [feed-ranking.md §3.5](feed-ranking.md#35-traversal-restrictions)
@@ -722,7 +722,7 @@ operates on in CoGra:
 - Node categories (actor, content, junction) — §2.
 - Edge categories (actor, structural) — §3.
 - The uniform 2-dimensional `[-1.0, +1.0]` tensor shape — §4.
-- Directional semantics — §7 (inbound edges don't affect the viewer's
+- Directional semantics — §7 (inbound edges don't affect the viewing user's
   feed).
 - Append-only layer stacks — §8 (the current state is the top layer).
 

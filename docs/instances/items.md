@@ -180,7 +180,7 @@ An Item receives:
   [edges.md §1](../primitive/edges.md#1-actor-edges) — the
   like/dislike surface plus per-viewer relevance, used by
   [feed-ranking](../primitive/feed-ranking.md) to weight the
-  Item for each viewer. The earliest of these is the
+  Item for each viewing user. The earliest of these is the
   authorship edge (§5).
 - **`Comment → Item` (`:CONTAINMENT`)** when a Comment is
   written on the Item. See
@@ -359,7 +359,7 @@ Two redaction triggers apply to an Item today:
 - **Moderation: `'sensitive'` classification.** A passing
   `'sensitive'` Proposal flips the top layer of `moderation_status`
   to `'sensitive'`. No redaction; display content stays. Each
-  viewer's `content_filtering_severity_level` (see
+  viewing user's `content_filtering_severity_level` (see
   [data-model.md](../implementation/data-model.md) "User
   preferences") decides how aggressively the frontend filters
   the Item. Reversible by a counter-Proposal back to `'normal'`.

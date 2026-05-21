@@ -125,7 +125,7 @@ A Post receives:
   [edges.md §1](../primitive/edges.md#1-actor-edges) — the
   like/dislike surface plus per-viewer relevance, used by
   [feed-ranking](../primitive/feed-ranking.md) to weight the
-  Post for each viewer. The earliest of these is the authorship
+  Post for each viewing user. The earliest of these is the authorship
   edge (§5).
 - **`Comment → Post` (`:CONTAINMENT`)** when a Comment is
   written on the Post. See
@@ -186,7 +186,7 @@ Two redaction triggers apply to a Post today:
 - **Moderation: `'sensitive'` classification.** A passing
   `'sensitive'` Proposal flips the top layer of `moderation_status`
   to `'sensitive'`. No redaction; display content stays. Each
-  viewer's `content_filtering_severity_level` (see
+  viewing user's `content_filtering_severity_level` (see
   [data-model.md](../implementation/data-model.md) "User
   preferences") decides how aggressively the frontend filters
   the Post. Reversible by a counter-Proposal back to `'normal'`.
@@ -226,7 +226,7 @@ still-graph-resident content node, not a removed one.
 ## What this doc is not
 
 - **Not the feed-ranking spec.** Where a Post surfaces in any
-  given viewer's feed — including the friend-authored fresh-post
+  given viewing user's feed — including the friend-authored fresh-post
   reorder layer, the community bot-defense / self-redemption
   usage conventions that ride on top of regular Posts, and the
   per-viewer filter and decay layers — lives in

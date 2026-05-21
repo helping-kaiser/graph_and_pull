@@ -45,7 +45,7 @@ The two non-default values reach the node by different paths:
   auto-flip on `moderation_status` exists so frontends can
   distinguish three filter states: normal content, soft-filterable
   sensitive content, and partially-or-fully-redacted illegal
-  content (which a viewer may want hidden entirely).
+  content (which a viewing user may want hidden entirely).
 
 `'illegal'` is the strongest state — it isn't downgraded by a
 later `'sensitive'` Proposal while redacted fields remain.

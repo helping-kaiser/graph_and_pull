@@ -62,7 +62,7 @@ procedure in §3:
 Content that is lawful but disturbing, mature, or otherwise
 warranting a viewer-side filter. Crossing the `sensitive`
 threshold sets `moderation_status = 'sensitive'`; the frontend
-respects each viewer's `content_filtering_severity_level`
+respects each viewing user's `content_filtering_severity_level`
 ([data-model.md](../implementation/data-model.md) "User
 preferences"). The content stays — no redaction.
 
@@ -81,7 +81,7 @@ Starter list:
 - **Drug use depictions** — recreational use of legal or illegal
   substances depicted approvingly.
 - **Strongly disturbing material** that doesn't fit a category
-  above but a reasonable Network member would expect a viewer
+  above but a reasonable Network member would expect a viewing user
   filter to apply (e.g. detailed descriptions of torture).
 
 ### `normal`

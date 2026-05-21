@@ -50,7 +50,7 @@ Every user-input-bearing node carries a `moderation_status` graph
 property (`'normal'` / `'sensitive'` / `'illegal'`, default
 `'normal'`, layered — see [nodes.md](../primitive/nodes.md)). A
 passing `'sensitive'` Proposal flips the top layer of this
-property to `'sensitive'`. Effect: frontend respects each viewer's
+property to `'sensitive'`. Effect: frontend respects each viewing user's
 `content_filtering_severity_level` (see
 [data-model.md](../implementation/data-model.md) "User
 preferences"); content stays. Reversible via a counter-Proposal
@@ -81,7 +81,7 @@ redaction cascade:
 3. The node's `moderation_status` is auto-flipped to
    `'illegal'` so frontends can distinguish a partially-or-fully
    redacted node from a merely sensitive one and hide it
-   entirely if the viewer prefers. This is a system-side
+   entirely if the viewing user prefers. This is a system-side
    derivation, not a separate Proposal. `'illegal'` is the
    strongest state and is not downgraded by a later
    `'sensitive'` Proposal while any redacted fields remain.

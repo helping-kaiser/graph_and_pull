@@ -92,7 +92,7 @@ Concrete property types and indexes live in
 
 None. The Proposal's full substance is `target_property` +
 `proposed_value` + the `:TARGETS` edge — anything
-human-readable a viewer might want about the Proposal is
+human-readable a viewing user might want about the Proposal is
 derivable from those plus the target node's current state.
 
 The platform-guidelines amendment Proposal (see

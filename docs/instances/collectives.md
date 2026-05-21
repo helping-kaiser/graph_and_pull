@@ -665,7 +665,7 @@ Two redaction triggers apply to a Collective today:
 - **Moderation: `'sensitive'` classification.** A passing
   `'sensitive'` Proposal flips the top layer of `moderation_status`
   to `'sensitive'`. No redaction; display content stays. Each
-  viewer's `content_filtering_severity_level` (see
+  viewing user's `content_filtering_severity_level` (see
   [data-model.md](../implementation/data-model.md) "User
   preferences") decides how aggressively the frontend filters
   the Collective. Reversible by a counter-Proposal back to

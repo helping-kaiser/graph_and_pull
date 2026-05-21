@@ -21,7 +21,7 @@ must resist re-centralization.
 
 ## What CoGra commits to
 
-**No AI in the feed.** Ranking is computed from each viewer's own
+**No AI in the feed.** Ranking is computed from each viewing user's own
 position in the graph and the weighted edges they create through
 explicit interactions. There are no learned models and no
 popularity amplifiers.
@@ -58,7 +58,7 @@ another user's feed.
 including severing ties — affects only the severing community's
 own outbound paths. The severed party's other neighbours are
 unaffected: the severance does not propagate forward to them.
-It does reshape the feeds of viewers whose own outbound paths
+It does reshape the feeds of viewing users whose own outbound paths
 pass through the severing community — each of them can in turn
 decide whether to sever or not. The cascade spreads by choice,
 not by propagation.
