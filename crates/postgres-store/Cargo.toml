@@ -3,6 +3,9 @@ name    = "postgres-store"
 version.workspace = true
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 common   = { path = "../common" }
 sqlx     = { workspace = true }

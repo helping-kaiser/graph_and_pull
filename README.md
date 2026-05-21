@@ -23,25 +23,28 @@ must resist re-centralization.
 
 **No AI in the feed.** Ranking is computed from each viewer's own
 position in the graph and the weighted edges they create through
-explicit interactions. There are no learned models, no popularity
-amplifiers, no engagement loops.
+explicit interactions. There are no learned models and no
+popularity amplifiers.
 
 **Directional edges only.** What you see is shaped by your
 outgoing edges, never by who points at you. Bot clusters and
 unwanted attention can't insert themselves into your feed by
 liking your content.
 
-**Append-only history.** Graph state — edges and node properties —
-is immutable. New layers go on top; nothing is silently deleted
-or overwritten. The only carve-out is in-place redaction of
-illegal content, and even that leaves a visible trace.
-Transparency and auditability over convenience.
+**[Append-only](docs/primitive/layers.md#append-only-vocabulary)
+history.** Graph state — edges and node properties — is
+immutable. New layers go on top; nothing is silently deleted or
+overwritten. The only carve-out is in-place redaction of illegal
+content, and even that leaves a visible trace. Transparency and
+auditability over convenience.
 
 **Governance, not admin escape hatches.** Takedowns, redactions,
 and policy changes run through community votes on the graph, with
 weights and thresholds visible. There is no admin override — even
-court orders prompt a moderator to file the same proposal anyone
-else would, leaving an auditable trail rather than a silent edit.
+court orders prompt a moderator to file
+[the same Proposal](docs/instances/moderation.md#2-reports--proposals-on-the-graph)
+anyone else would, leaving an auditable trail rather than a
+silent edit.
 
 **Fair economics.** Ad revenue distributes across the economic
 landscape of the graph. Bot clusters earn nothing because real
@@ -52,10 +55,13 @@ No amount of money changes that. No one forces their way into
 another user's feed.
 
 **Community choices stay local.** What a community decides —
-including cutting ties with another — affects only the
-perspectives of its own members. Severance does not cascade
-outward; the rest of the network is unaffected by another
-community's stance.
+including severing ties — affects only the severing community's
+own outbound paths. The severed party's other neighbours are
+unaffected: the severance does not propagate forward to them.
+It does reshape the feeds of viewers whose own outbound paths
+pass through the severing community — each of them can in turn
+decide whether to sever or not. The cascade spreads by choice,
+not by propagation.
 
 **Fully public graph; no account needed to read.** Everything in
 the graph is visible without signing in. Accounts gate

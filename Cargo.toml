@@ -12,6 +12,9 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 
+[workspace.lints.clippy]
+unwrap_used = "deny"
+
 [workspace.dependencies]
 # Async runtime
 tokio = { version = "1", features = ["full"] }

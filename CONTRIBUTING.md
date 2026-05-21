@@ -1,9 +1,12 @@
 # Contributing to CoGra
 
-This guide is for human contributors. AI-assistant-specific rules
-(session hygiene, what Claude must do or avoid) live in
-[CLAUDE.md](CLAUDE.md); the workflow rules below are mirrored there
-so both audiences see the same truth.
+This guide is for human contributors. [CLAUDE.md](CLAUDE.md) is
+the AI-facing equivalent. Rules that apply to both audiences are
+kept in both files — the shared subset is mission, core
+principles, hard design rules, and workflow basics. Rules that
+apply to only one audience (session hygiene, AI-specific
+guardrails) live only in CLAUDE.md. Drift between the two is
+caught by author vigilance, not tooling.
 
 ---
 
@@ -38,12 +41,13 @@ them:
 2. **All edges are directional.** Nothing can push onto you.
    Inbound edges from others never affect your feed. Only your
    outgoing edges shape what you see.
-3. **Append-only on the graph.** Graph state (edges and node
-   properties) is immutable — you cannot delete or overwrite past
-   interactions or values. New layers are added on top. The
-   principle extends to Postgres-side display content, which uses
-   versioned rows rather than overwrites. Transparency and
-   auditability over convenience. See
+3. **[Append-only](docs/primitive/layers.md#append-only-vocabulary)
+   on the graph.** Graph state (edges and node properties) is
+   immutable — you cannot delete or overwrite past interactions
+   or values. New layers are added on top. The principle extends
+   to Postgres-side display content, which uses versioned rows
+   rather than overwrites. Transparency and auditability over
+   convenience. See
    [docs/primitive/layers.md](docs/primitive/layers.md) for the
    full rule.
 4. **Fair economics.** Ad revenue distributes across the economic
@@ -53,14 +57,35 @@ them:
 5. **User comes first.** No amount of money changes this. Users
    choose what they see, including ads. No one can force their way
    into another user's feed.
-6. **Transparency over black boxes.** The system is a visible,
+6. **Governance, not admin escape hatches.** Takedowns,
+   redactions, and policy changes run through community votes on
+   the graph. There is no admin override — even court orders
+   prompt a moderator to file
+   [the same Proposal](docs/instances/moderation.md#2-reports--proposals-on-the-graph)
+   anyone else would, leaving an auditable trail rather than a
+   silent edit.
+7. **Community choices stay local.** What a community decides —
+   including severing ties — affects only the severing
+   community's own outbound paths. The severance does not
+   propagate forward to the severed party's other neighbours;
+   viewers whose own paths pass through the severing community
+   see their feeds reshaped, but each of them chooses whether
+   to cascade the severance further.
+8. **Transparency over black boxes.** The system is a visible,
    auditable graph. Follow the principles of BTC: transparency,
    immutability, fairness.
-7. **Fully open source.** The entire codebase is open source — a
-   factual commitment, not a spirit. Forking, self-hosting, and
-   running disconnected graphs are architecturally supported.
-8. **Freedom of the mind.** No rewards for outrage, no
-   manipulation, no dark patterns.
+9. **Fully public graph; no account needed to read.** Everything
+   in the graph is visible without signing in. Accounts gate
+   participation, not visibility.
+10. **Privacy is per-content, not per-topology.** Chats and
+    messages can be end-to-end encrypted; the social fabric —
+    who is connected to whom — is intentionally public. CoGra
+    protects what travels along the graph, not the graph itself.
+11. **Fully open source.** The entire codebase is open source — a
+    factual commitment, not a spirit. Forking, self-hosting, and
+    running disconnected graphs are architecturally supported.
+12. **Freedom of the mind.** No rewards for outrage, no
+    manipulation, no dark patterns.
 
 ---
 
@@ -68,8 +93,12 @@ them:
 
 ### Never
 
-- **Never introduce AI-based ranking or recommendations.** The
-  graph and its weights are the only ranking mechanism.
+- **Never introduce AI into ranking, recommendations, or
+  economics.** Feed ranking and ad-revenue distribution are
+  driven only by the graph and its weights. AI as a
+  frontend/UI helper is open — that boundary is intentionally
+  permissive — but it must not touch the graph's signal or the
+  economics computation.
 - **Never delete graph structure.** Nodes, edges, and layer stacks
   are never removed. State transitions are always layered, never
   destructive. The only permitted "deletion" on the graph is
@@ -158,7 +187,9 @@ Skip:
 ### Tests
 
 Run `make ci` before pushing. `cargo fmt`, `cargo clippy -D
-warnings`, unit tests, and integration tests must all pass.
+warnings`, unit tests, integration tests, and the docs
+link-check (`make docs-link-check`, requires `lychee` —
+`cargo install lychee`) must all pass.
 
 ---
 

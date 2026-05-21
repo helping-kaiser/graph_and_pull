@@ -4,7 +4,7 @@ export
 DOCKER_COMPOSE = docker compose -f docker/docker-compose.yml
 CARGO          = cargo
 
-.PHONY: help init up down reset-db migrate api run ci lint fmt test build logs dev
+.PHONY: help init up down reset-db migrate api run ci lint fmt test build logs dev docs-link-check
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -56,7 +56,7 @@ dev: up ## Start DBs, run migrations, then start the API
 
 run: init dev ## Full start: init + dev (first-time friendly)
 
-ci: lint test ## Run full CI pipeline locally (lint + test)
+ci: lint test docs-link-check ## Run full CI pipeline locally (lint + test + docs)
 
 lint: ## Run clippy and fmt check (read-only, matches CI)
 	$(CARGO) fmt --all -- --check
@@ -67,6 +67,10 @@ fmt: ## Format all code
 
 test: ## Run all tests
 	$(CARGO) test --all
+
+docs-link-check: ## Check markdown link targets + anchors (mirrors docs-ci.yml; needs lychee)
+	@command -v lychee >/dev/null 2>&1 || { echo "Error: lychee not found (cargo install lychee)"; exit 1; }
+	lychee --offline --include-fragments --no-progress 'docs/**/*.md' '*.md'
 
 build: ## Build all crates
 	$(CARGO) build --all

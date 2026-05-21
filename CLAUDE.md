@@ -4,14 +4,15 @@ This file is loaded into every Claude Code conversation on this
 repo. **The rules below are operative, not background reading.**
 Re-read this file at the start of every task.
 
-The project's mission, core principles, hard design rules, and
-contribution workflow are mirrored in
-[CONTRIBUTING.md](CONTRIBUTING.md) for human contributors. The
-content overlaps deliberately: both audiences (Claude here,
-humans there) need the same rules in their canonical doc, and
-relying on Claude to navigate to a separate file before acting is
-unreliable. **Updates to workflow rules must be made in both
-files.**
+**Audience split.** CLAUDE.md is AI-facing;
+[CONTRIBUTING.md](CONTRIBUTING.md) is human-facing. Rules that
+apply to both audiences are kept in both files — the shared
+subset is mission, core principles, hard design rules, and
+workflow basics. Rules that apply to only one audience (e.g.
+"Never make design decisions autonomously," "Never deviate
+silently," and the Commit + Push + PR cycle below are AI-facing
+only) live in just that audience's file. Drift between the two
+is caught by author vigilance, not tooling.
 
 ---
 
@@ -26,9 +27,9 @@ these — these are the rules most often violated:
    unrelated changes.
 3. **Short commits, long PRs.** Commit body ≤ 2-3 lines. Full
    rationale goes in the PR description, never the commit body.
-4. **Re-read the relevant docs before claiming.** The docs are the
-   source of truth and grow long; recall is a worse source than
-   the file itself.
+4. **Verify claims against the docs, not recall.** Open the
+   relevant section before claiming how the system works — but
+   don't re-read what's already in conversation context.
 5. **Flag contradictions inline.** If a doc contradicts another or
    the user's framing, raise it in the same response. Don't paper
    over it.
@@ -79,8 +80,12 @@ Cross-cutting design questions live in
 
 ### Never
 
-- **Never introduce AI-based ranking or recommendations.** The
-  graph and its weights are the only ranking mechanism.
+- **Never introduce AI into ranking, recommendations, or
+  economics.** Feed ranking and ad-revenue distribution are
+  driven only by the graph and its weights. AI as a
+  frontend/UI helper is open — that boundary is intentionally
+  permissive — but it must not touch the graph's signal or the
+  economics computation.
 - **Never delete graph structure.** Nodes, edges, and layer stacks
   are never removed. State transitions are always layered, never
   destructive. The only permitted "deletion" on the graph is
@@ -111,11 +116,12 @@ Cross-cutting design questions live in
 - **Explain why.** This is a learning project as much as a
   building project. Explain the reasoning behind choices, not just
   the implementation.
-- **Move slowly and correctly.** Quality over speed.
+- **Move slowly and correctly.** Quality over speed. No
+  rushing, no shortcuts.
 - **Document decisions in the repo.** Any rule, principle, or
   agreement reached during discussion belongs in this file,
   [CONTRIBUTING.md](CONTRIBUTING.md), or a design doc — not in
-  memory or anyone's head.
+  private notes, assistant memory, or anyone's head.
 
 ---
 
@@ -174,14 +180,16 @@ done, the workflow runs straight through to the PR.
 
 ## Hard rules — research and session hygiene
 
-### Re-read docs before claiming
+### Verify claims against the docs, not recall
 
-The docs are the source of truth and grow long. Before making a
-claim about how the system works, open the relevant section and
-re-read it. Recall is a worse source than the file. When making
-math-shaped claims (about ranking, weights, dimensions), trace
-them back to the math in the docs — if you can't, the claim is
-suspect.
+The docs are the source of truth and grow long; recall is worse
+than the file. Before making a claim about how the system works,
+open the relevant section. The exception is files already in
+conversation context — if a doc is loaded and hasn't been
+edited, don't re-read it. Open what you need, skip what you
+have. When making math-shaped claims (about ranking, weights,
+dimensions), trace them back to the math in the docs — if you
+can't, the claim is suspect.
 
 ### Flag contradictions inline
 
@@ -189,17 +197,12 @@ If a doc contradicts another, conflicts with the user's framing,
 or seems out of place — flag it in the same response. Don't paper
 over it; don't file it as a separate later task.
 
-### Don't re-read what's already in context
+### Use a subagent for broad investigation
 
-If a file is already in conversation context and hasn't been
-edited, don't re-read it. Save the tokens.
-
-### Use the Explore subagent for multi-file research
-
-For broad investigations spanning more than a few files, spawn an
-`Explore` subagent. It does the heavy reading inside its own
-context, returns a summary, and keeps the main thread lean — this
-is the cheapest way to investigate without bloating the session.
+For investigations spanning more than a few files, spawn a
+subagent. It does the heavy reading inside its own context,
+returns a summary, and keeps the main thread lean — the cheapest
+way to investigate without bloating the session.
 
 ### One session per task
 
@@ -217,7 +220,7 @@ reload this file and start lean.
 make run    # first-time: init + start DBs + migrate + start API
 make dev    # returning: start DBs + migrate + start API
 make api    # just the API (if DBs already running)
-make ci     # lint + test (run before pushing)
+make ci     # lint + test + docs link check (run before pushing)
 ```
 
 Full make-target list, env vars, and other dev guidance:
