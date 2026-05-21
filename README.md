@@ -23,8 +23,8 @@ must resist re-centralization.
 
 **No AI in the feed.** Ranking is computed from each viewer's own
 position in the graph and the weighted edges they create through
-explicit interactions. There are no learned models, no popularity
-amplifiers, no engagement loops.
+explicit interactions. There are no learned models and no
+popularity amplifiers.
 
 **Directional edges only.** What you see is shaped by your
 outgoing edges, never by who points at you. Bot clusters and
