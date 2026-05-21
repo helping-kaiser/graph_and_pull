@@ -1,0 +1,6 @@
+offline = true
+
+exclude_path = [
+  "target",
+  "tmp_research_files",
+]

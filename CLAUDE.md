@@ -219,7 +219,7 @@ reload this file and start lean.
 make run    # first-time: init + start DBs + migrate + start API
 make dev    # returning: start DBs + migrate + start API
 make api    # just the API (if DBs already running)
-make ci     # lint + test (run before pushing)
+make ci     # lint + test + docs link check (run before pushing)
 ```
 
 Full make-target list, env vars, and other dev guidance:

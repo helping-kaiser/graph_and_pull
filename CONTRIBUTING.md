@@ -187,7 +187,9 @@ Skip:
 ### Tests
 
 Run `make ci` before pushing. `cargo fmt`, `cargo clippy -D
-warnings`, unit tests, and integration tests must all pass.
+warnings`, unit tests, integration tests, and the docs
+link-check (`make docs-link-check`, requires `lychee` —
+`cargo install lychee`) must all pass.
 
 ---
 
