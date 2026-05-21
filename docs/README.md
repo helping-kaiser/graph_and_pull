@@ -115,7 +115,7 @@ If you find yourself defining a new mechanism inside an
 - [architecture](implementation/architecture.md) — system design,
   dual-database split, data flow.
 - [data-model](implementation/data-model.md) — Postgres schema for
-  display metadata.
+  display content (plus a few operational-metadata tables).
 - [graph-data-model](implementation/graph-data-model.md) — Memgraph
   schema: node labels, edge labels, properties, indexes, constraints.
 - [development](implementation/development.md) — local setup,

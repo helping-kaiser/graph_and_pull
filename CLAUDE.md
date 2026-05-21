@@ -47,7 +47,7 @@ these — these are the rules most often violated:
 ## Architecture (one-screen reference)
 
 Dual-database: **Memgraph** (graph topology, edges, traversal) +
-**PostgreSQL** (metadata, display content). See
+**PostgreSQL** (display content + operational metadata). See
 [docs/implementation/architecture.md](docs/implementation/architecture.md).
 
 Crates:
@@ -56,7 +56,7 @@ Crates:
 |---|---|
 | `api` | Axum HTTP server, async-graphql schema |
 | `graph-engine` | Cypher queries against Memgraph via bolt protocol |
-| `postgres-store` | SQLx queries, migrations, metadata CRUD |
+| `postgres-store` | SQLx queries, migrations, display-content CRUD |
 | `common` | Shared domain types, error types |
 
 Docs are layered:

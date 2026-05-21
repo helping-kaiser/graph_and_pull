@@ -21,8 +21,25 @@ database:
    well in a traditional RDBMS.
 
 Storing everything in one database forces a compromise. Storing graph topology
-in a graph DB and metadata in Postgres lets each database do what it was built
-for.
+in a graph DB and display content in Postgres lets each database do what it
+was built for.
+
+### Vocabulary: display content vs metadata
+
+These describe a value's *purpose*, not its storage location, and
+the two categories overlap:
+
+- **Display content** — data that UIs render to the viewing user
+  (post bodies, message bodies, profile text, attachment URLs,
+  display names). Mostly Postgres rows.
+- **Metadata** — data that drives flows rather than being rendered:
+  edge weights and layer history, junction approval state,
+  moderation flags, retention bookkeeping. Mostly graph state.
+
+A single value can be both — a `ChatMember.role` lives on the
+graph (where it weights governance tallies) and a UI may also
+display it next to the member's name. The labels say *what the
+value is used for*, not which database it sits in.
 
 ---
 
@@ -42,7 +59,7 @@ for.
                               │                                     │
                    ┌──────────▼──────────┐             ┌───────────▼───────────┐
                    │     Memgraph        │             │      PostgreSQL       │
-                   │   (graph layer)     │             │   (metadata layer)    │
+                   │   (graph layer)     │             │ (display-content layer)│
                    └─────────────────────┘             └───────────────────────┘
 ```
 
@@ -56,7 +73,7 @@ everything needed to display content. See the
 | Language | Rust 2021 |
 | API | Axum + async-graphql |
 | Graph DB | Memgraph (openCypher, bolt protocol) |
-| Metadata DB | PostgreSQL 16 (SQLx) |
+| Display-content DB | PostgreSQL 16 (SQLx) |
 | Local dev | Docker Compose |
 | CI | GitHub Actions |
 
@@ -223,7 +240,7 @@ Phase 2 — viewer-side ranking and filtering
 
 Phase 3 — display-content fetch and render
 
-7. Client requests display metadata for the top-N items it is
+7. Client requests display content for the top-N items it is
    about to render (post bodies, profile fields, media URLs)
    from postgres-store via the API.
 8. Client renders. As items pass through the viewport, the
