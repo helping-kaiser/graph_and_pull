@@ -10,6 +10,12 @@ name: CI
 # `paths-ignore` does NOT have this property: a path-skipped workflow
 # posts no commit status at all and leaves required checks hanging
 # forever, which is what blocked docs-only PRs before this structure.
+#
+# The `predicate-quantifier: 'every'` on the paths-filter step is
+# load-bearing: with the default `some` quantifier the negation
+# patterns are OR'd as alternative inclusions rather than subtracted,
+# so the `'**'` line alone matches every file and the gate never
+# fires. Do not remove it without replacing the filter shape.
 
 on:
   push:
@@ -31,6 +37,7 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          predicate-quantifier: 'every'
           filters: |
             code:
               - '**'

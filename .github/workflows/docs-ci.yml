@@ -1,20 +1,42 @@
 name: Docs CI
 
+# Triggers on every PR/push so the required `Markdown link check`
+# status posts on every PR. The job is gated at the job level on
+# whether any docs/markdown files changed; GitHub treats a skipped
+# job's check_run as a passing required status check, so docs-only
+# gating still leaves a mergeable PR.
+#
+# Workflow-level `paths:` is deliberately avoided here: a path-skipped
+# workflow posts NO status on PRs that don't match, leaving the
+# required check pending forever and blocking merges. See ci.yml's
+# header for the same rationale.
+
 on:
   push:
     branches: [main]
-    paths:
-      - 'docs/**'
-      - '**/*.md'
   pull_request:
     branches: [main]
-    paths:
-      - 'docs/**'
-      - '**/*.md'
 
 jobs:
+  changes:
+    name: Detect docs changes
+    runs-on: ubuntu-latest
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            docs:
+              - 'docs/**'
+              - '**/*.md'
+
   link-check:
     name: Markdown link check
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
