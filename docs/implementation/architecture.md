@@ -209,6 +209,41 @@ is the only place that can hold a Memgraph transaction and a
 Postgres transaction open simultaneously and commit them as one
 logical unit.
 
+### Partial-failure handling
+
+Two engines have two commit boundaries; an inter-commit window
+exists in which the first store has committed and the second
+has not. The pattern that closes the window is:
+
+- **Hold both transactions open** through every write. Any
+  error before either commit aborts both with a `ROLLBACK`; the
+  graph and the display-content row stay in pre-write state.
+- **Choose an order so the first-committed side is
+  idempotent on retry.** Graph writes use Cypher `MERGE` keyed
+  on the node UUID rather than `CREATE` — a retried
+  service-layer transaction collapses a duplicate Memgraph
+  commit into a no-op. Postgres inserts are paired with
+  `ON CONFLICT DO NOTHING` (or equivalent) on the relevant
+  primary key.
+- **Place the lower-risk commit last.** The order is chosen so
+  the more failure-prone engine commits first; if it fails,
+  rollback is clean. The second commit is then close to
+  guaranteed; if it does fail, the idempotency above lets the
+  caller retry safely.
+
+A two-phase commit primitive across the two engines is **not**
+in scope: implementation cost outweighs the gain at our scale.
+Idempotent retry + the cache-rebuild path
+([data-model.md](data-model.md#author_id-is-a-cached-derivation-except-for-media_attachments))
+together cover the residual inconsistency surface.
+
+Every dual-store write follows this shape: User registration
+(below), Post / Comment / ChatMessage authoring (graph node +
+Postgres body row), the redaction cascade (graph layer +
+Postgres archive row — and archive-first per
+[governance.md §6 "Cascade dispatch"](../primitive/governance.md#6-when-outcomes-take-effect)),
+account deletion (graph redactions + Postgres row clears).
+
 ### Genesis bootstrap
 
 The instance bootstrap migration is the system's clearest example
