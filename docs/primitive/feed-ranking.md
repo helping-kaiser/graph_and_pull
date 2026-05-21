@@ -868,6 +868,16 @@ within the graph mechanisms above. A frontend that doesn't
 offer scaffolding still works; the graph's signal doesn't
 depend on any particular client behaviour.
 
+**Invariant: the `bot-defense` Hashtag name is reserved.** The
+canonical name `bot-defense` is reserved at network birth —
+the Hashtag is seeded by the bootstrap migration (see
+[network.md §2](network.md#2-creation)) so it exists from the
+moment the graph does. No other Hashtag can take the name
+(the UUIDv5 derivation + the UNIQUE on `hashtags.name` close
+that out together), and the semantic role of the node — surface
+for community evidence-bearing posts about suspected bots — is
+platform-defined rather than emergent.
+
 **Authorship is open.** Anyone can author a bot-defense post.
 The post inherits the graph's existing trust mechanisms:
 

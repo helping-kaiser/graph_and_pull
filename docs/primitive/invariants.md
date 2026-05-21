@@ -116,6 +116,9 @@ listed under the most useful one.
 - [Hashtags do not participate in path products](../instances/hashtag.md#4-edges)
   — `:TAGGING` is pure topology for discovery, never traversed by
   feed ranking.
+- [The `bot-defense` Hashtag name is reserved](feed-ranking.md#383-community-bot-defense-posts--supplementary-evidence)
+  — seeded by the bootstrap migration; its semantic role is
+  platform-defined, not emergent from first use.
 
 ---
 
