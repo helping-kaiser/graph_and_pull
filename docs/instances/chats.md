@@ -186,12 +186,15 @@ a new version row, no overwrite.
 - **`description`** — optional body text. The longer-form
   explanation of what the chat is for, beyond the short `name`
   routing hint (§3.1).
-- **`image`** — optional chat avatar/header, pointed at by
-  `image_id` referencing one `media_attachments` asset, owned by
-  the same author as the Chat (anti-hijack rule per
+- **Image** — optional chat avatar/header, pointed at by the
+  `image_id` column referencing one `media_attachments` asset,
+  owned by the same author as the Chat (anti-hijack rule per
   [data-model.md "Why parents point at attachments"](../implementation/data-model.md#why-parents-point-at-attachments)).
+  "Image" is the *concept* in chat docs; `image_id` is the SQL
+  column — the same `concept → column` pattern as User `avatar` /
+  `avatar_id`.
 
-`description` and `image` are the two display fields an
+`description` and the image are the two display fields an
 `'illegal'` Proposal can target; together with the graph-side
 `name`, they make up the Chat's user-input field set per
 [moderation.md §5](moderation.md#5-scope). Concrete schema lives
@@ -1034,8 +1037,8 @@ occurred.
 
 `'illegal'`-classification target fields on a Chat: `name`
 (graph-side layer redaction), `description` (Postgres tombstone
-version row), `image` (media tombstone + asset removal), or
-the `'full'` shorthand per
+version row), the chat image (media tombstone + asset removal,
+targeted via `image_id`), or the `'full'` shorthand per
 [moderation.md §5](moderation.md#5-scope). A passing Proposal
 fires the redaction cascade and auto-flips `moderation_status`
 to `'illegal'`. The cascade does **not** propagate to the
