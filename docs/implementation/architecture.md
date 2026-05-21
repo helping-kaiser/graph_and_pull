@@ -114,15 +114,11 @@ graph topology.
 **Invariant:** All feed ranking is computed at query time from
 the edge tensor. There are no materialized counters, popularity
 scores, or algorithm-driven signals stored as node properties.
-
-There are no materialized counters, no popularity scores, no
-algorithm-driven signals stored as node properties. Feed ranking
-is computed at query time from the
-[edge tensor model](../primitive/graph-model.md) using the
-[feed ranking algorithm](../primitive/feed-ranking.md). The
-algorithm itself — its parameters, sort order, and tie-breaker
-chain — lives in `feed-ranking.md`; this doc covers only how the
-system runs it (per-viewer, off the central hot path).
+The algorithm itself — its parameters, sort order, and
+tie-breaker chain — lives in
+[feed-ranking.md](../primitive/feed-ranking.md); this doc covers
+only how the system runs it (per-viewer, off the central hot
+path).
 
 ### 4. Edges are the source of truth
 
@@ -233,10 +229,8 @@ Phase 2 — viewer-side ranking and filtering
    removes seen content from the candidate set (pre-rank
    exclusion per feed-ranking.md §8).
 6. Client runs the feed-ranking algorithm (feed-ranking.md
-   §1–§5) over the remaining candidates: a single sort by h(t)
-   with cumulative tie-breakers (h, h+i, h+i+j, h+i+j+k), and
-   S(t) as the final fallback. Output: an ordered list of
-   node IDs.
+   §1–§5) over the remaining candidates. Output: an ordered
+   list of node IDs.
 
 Phase 3 — display-content fetch and render
 
