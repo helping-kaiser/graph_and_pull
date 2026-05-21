@@ -173,13 +173,24 @@ CREATE TABLE items (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Hashtag registry (name lookup + metadata)
+-- Hashtag registry (name lookup + metadata).
 -- id is derived via UUIDv5 from the canonical name (see "Node identity
 -- strategies" below). No DEFAULT — the API must always supply the
 -- deterministic UUID; relying on a random fallback would break content-
--- addressing.
+-- addressing. The CHECK constraint is defense-in-depth: even a buggy
+-- backend cannot write a row whose id doesn't match the derivation.
+-- Requires the uuid-ossp extension to be loaded; the namespace UUID
+-- literal must match the value committed to source per "Node identity
+-- strategies".
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE hashtags (
-    id         UUID        PRIMARY KEY,
+    id         UUID        PRIMARY KEY
+                           CHECK (id = uuid_generate_v5(
+                               -- HASHTAG_NAMESPACE_UUID — fixed at the
+                               -- project level, committed to source.
+                               'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'::uuid,
+                               name)),
     name       TEXT        NOT NULL UNIQUE,  -- stored lowercase, no '#'
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -612,6 +623,13 @@ The namespace UUID is fixed at the project level and **never changes**.
 Changing it would break every previously-derived hashtag UUID.
 Implementation MUST commit the namespace value to source so all
 instances and forks compute identical UUIDs.
+
+The Postgres `hashtags` table carries a `CHECK (id = uuid_generate_v5(
+namespace, name))` constraint (per the Hashtag registry block earlier
+in this doc) so the derivation is enforced at the schema layer too —
+defense-in-depth against a buggy service layer that ever computes the
+wrong id. The constraint requires the `uuid-ossp` extension and the
+same namespace literal as the source-committed value.
 
 Federation across separated instances of these types requires **no
 reconciliation** — instances independently compute the same UUIDs from
