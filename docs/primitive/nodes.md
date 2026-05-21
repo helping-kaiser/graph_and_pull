@@ -31,11 +31,33 @@ additional `moderation_status` graph property:
 layered. The Network-wide governance instance described in
 [moderation.md](../instances/moderation.md) is what sets it.
 
+The three values are the platform's content-classification
+buckets. Their *meanings* and *behavioural consequences* are
+fixed at the primitive level; the *examples of what falls in
+each* are platform policy and live in
+[platform-guidelines.md §1](../instances/platform-guidelines.md#1-the-three-buckets):
+
+- **`'normal'`.** Default. Carries no special treatment — no
+  filter, no redaction. Not an enumerated category; the absence
+  of any other classification.
+- **`'sensitive'`.** Lawful content that warrants a viewer-side
+  filter (graphic, mature, disturbing). The content stays — no
+  redaction. Frontends respect each viewing user's
+  `content_filtering_severity_level` preference
+  ([data-model.md](../implementation/data-model.md)) when
+  rendering. Reversible via counter-Proposal back to `'normal'`.
+- **`'illegal'`.** Content the Network treats as unlawful or so
+  universally prohibited that hosting it is itself a harm.
+  Triggers the redaction cascade in
+  [layers.md §5](layers.md#5-deletion-policy) and the
+  archive-with-legal-hold disposition in
+  [retention-archive.md](retention-archive.md). Not reversible,
+  because the underlying redaction markers are append-only.
+
 The two non-default values reach the node by different paths:
 
 - `'sensitive'` — set directly by a passing `'sensitive'`
-  classification Proposal (community-flagged
-  mature/disturbing/etc.).
+  classification Proposal.
 - `'illegal'` — set automatically by the system when any field
   on the node receives a redaction marker per
   [layers.md §5](layers.md#5-deletion-policy). Illegal-content

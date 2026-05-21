@@ -14,19 +14,19 @@ the document itself lives here, in the repo.
 ## 1. The three buckets
 
 The classification a Network member assigns when authoring or
-voting on a moderation Proposal must match one of:
+voting on a moderation Proposal is one of `illegal`, `sensitive`,
+or `normal`. The bucket *meanings* and the *behavioural
+consequences* of each (redaction cascade, viewer filter,
+reversibility) are pinned at the primitive level — see
+[nodes.md "Universal: `moderation_status`"](../primitive/nodes.md#universal-moderation_status).
+What follows here is the platform policy: which content the
+Network puts in each bucket. The Network amends these lists via
+§3 as the platform evolves.
 
 ### `illegal`
 
-Content the Network treats as unlawful or so universally
-prohibited that hosting it is itself a harm. Crossing the
-`illegal` threshold triggers the redaction cascade
-([layers.md §5](../primitive/layers.md#5-deletion-policy)) and archive-with-legal-
-hold ([retention-archive.md](../primitive/retention-archive.md)).
-
 Starter list — adapted from the conventions of established
-public platforms; the Network can amend any of these via the
-procedure in §3:
+public platforms:
 
 - **Child sexual abuse material (CSAM).** Always, everywhere.
   Reported to authorities and scheduled for hard-delete on
@@ -59,13 +59,6 @@ procedure in §3:
 
 ### `sensitive`
 
-Content that is lawful but disturbing, mature, or otherwise
-warranting a viewer-side filter. Crossing the `sensitive`
-threshold sets `moderation_status = 'sensitive'`; the frontend
-respects each viewing user's `content_filtering_severity_level`
-([data-model.md](../implementation/data-model.md) "User
-preferences"). The content stays — no redaction.
-
 Starter list:
 
 - **Graphic violence** — real-world injury, gore, accident
@@ -86,8 +79,8 @@ Starter list:
 
 ### `normal`
 
-Everything else. The default. Not an enumerated category — the
-absence of an `illegal` or `sensitive` classification.
+Not a list. The default state for content that hasn't been
+classified into either of the above buckets.
 
 ## 2. Jurisdiction
 
