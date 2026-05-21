@@ -678,13 +678,11 @@ mid-epoch key rotation, platform moderation in
 stance stays decoupled from personal sentiment on
 `User → ChatMessage` or `User → ChatMember`. Both levels carry
 the same Proposal shape: `target_property = 'node'`,
-`proposed_value = 'disavowed'` — the `'node'` sentinel
-parallels moderation's `'full'` shorthand
-([moderation.md §1](moderation.md#1-the-two-classification-paths)),
-naming the whole target node rather than one of its graph
-properties. What differs between the two levels is the cascade
-behavior on threshold-cross, which dispatches on the target's
-node type.
+`proposed_value = 'disavowed'` — the `'node'` value is the
+whole-node-targeting sentinel defined in
+[nodes.md "Whole-node targeting"](../primitive/nodes.md#whole-node-targeting-the-node-sentinel).
+What differs between the two levels is the cascade behavior on
+threshold-cross, which dispatches on the target's node type.
 
 **Invariant:** Chat-internal disavowal routes through a Proposal
 node — both Level 1 (against a `ChatMessage`) and Level 2

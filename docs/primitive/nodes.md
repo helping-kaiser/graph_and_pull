@@ -66,6 +66,47 @@ reason: pure configuration state with no user-input fields. See
 
 ---
 
+## Whole-node targeting: the `'node'` sentinel
+
+A Proposal's `target_property` normally carries the name of one
+graph property on the target node — `'name'`, `'role'`,
+`'moderation_status'`, `'network_role'`, and so on. The sentinel
+value `'node'` reserves `target_property` for a whole-node
+operation rather than a single property: the Proposal targets the
+node itself, and the cascade interpreter dispatches on the
+target's node type instead of writing a layer on a named property.
+
+The sentinel exists because the value space of `target_property`
+is the graph-property names on the target node, and there is no
+graph-property name that means "the whole node." A reserved value
+extends that space without overloading any real property name.
+
+The cascade dispatch — what the interpreter actually writes when
+a `'node'` Proposal passes threshold — is specific to the
+mechanism that uses the sentinel. The primitive registers the
+sentinel and its meaning; the per-cascade behaviour lives with
+the instance:
+
+- **Chat-internal disavowal** — see
+  [chats.md §10](../instances/chats.md#10-moderation). The only
+  current consumer. `proposed_value` is `'disavowed'` (or
+  `'normal'` on counter-Proposal); dispatch differs for
+  `ChatMessage` and `ChatMember` targets.
+
+A future mechanism that needs whole-node operations on a
+different node type can register its own cascade against the
+same `'node'` sentinel rather than inventing parallel scaffolding.
+
+The illegal-content classification path in
+[moderation.md §1](../instances/moderation.md#1-the-two-classification-paths)
+uses a parallel shorthand `'full'`, which names every user-input
+field plus attached media on the target. `'full'` and `'node'`
+overlap in intent — both name the whole node rather than a
+property — and the relationship between the two is left for the
+moderation/redaction sweep to settle.
+
+---
+
 ## 1. Actor nodes
 
 Entities that take actions and create edges.

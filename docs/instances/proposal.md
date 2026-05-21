@@ -53,19 +53,20 @@ incoming vote edge from the authoring actor (§5).
   `'network_role'`, `'guidelines_version'`). Two sentinel
   values stand in for whole-node operations rather than a
   single property:
+  - `'node'` — whole-node targeting; the cascade
+    interpreter dispatches on the target's node type rather
+    than writing a layer on a named property. The primitive
+    sentinel is defined in
+    [nodes.md "Whole-node targeting"](../primitive/nodes.md#whole-node-targeting-the-node-sentinel);
+    its only current consumer is chat-internal disavowal in
+    [chats.md §10](chats.md#10-moderation) (Level 1 against
+    a `ChatMessage`, Level 2 against a `ChatMember`).
   - `'full'` — illegal-content classification across every
     user-input field plus every attached media on the node
     (see [moderation.md §1](moderation.md#1-the-two-classification-paths)).
-  - `'node'` — chat-internal disavowal targeting the whole
-    target node (Level 1 against a `ChatMessage`, Level 2
-    against a `ChatMember` — see
-    [chats.md §10](chats.md#10-moderation)). The cascade
-    interpreter dispatches on the target's node type: for
-    `ChatMember`, it writes a `dim1 < 0` layer on the
-    existing `Chat → ChatMember` approval edge; for
-    `ChatMessage`, no separate outcome edge is written and
-    the chat's stance is the existence of the passed
-    Proposal itself.
+    Parallel shorthand to `'node'`; the relationship between
+    the two is open and will be settled by the
+    moderation/redaction sweep.
 - **`proposed_value`** — the value to set on
   `target_property` if the Proposal passes. For the `'node'`
   sentinel, `'disavowed'` and `'normal'` are the two values

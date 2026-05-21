@@ -74,8 +74,9 @@ listed under the most useful one.
   — only mid-epoch rotation runs through governance.
 - [Chat-internal disavowal routes through a Proposal node](../instances/chats.md#10-moderation)
   — both Level 1 (message) and Level 2 (member) carry the
-  `'node'` sentinel; no direct vote edge from a `ChatMember`
-  drives the outcome.
+  whole-node `'node'` sentinel
+  ([nodes.md](nodes.md#whole-node-targeting-the-node-sentinel));
+  no direct vote edge from a `ChatMember` drives the outcome.
 - [Collective content-acts default permissive; governance-acts default deny](../instances/collectives.md#2-acting-through-the-collective)
   — asymmetry reflects reversibility.
 - [Edges attributed to a Collective carry no per-edge record of the acting member](edges.md#1-actor-edges)

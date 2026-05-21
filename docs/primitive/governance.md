@@ -377,10 +377,12 @@ design discussion (§9).
 - **Chat message disavowal** — [chats.md §10](../instances/chats.md#10-moderation).
   Shape B `ChatMember → Proposal` vote on a Proposal targeting
   the `ChatMessage` with `target_property = 'node'`,
-  `proposed_value = 'disavowed'` (the `'node'` sentinel parallels
-  moderation's `'full'`). Quorum + weighted-majority threshold.
-  No separate outcome edge — the chat's stance is the existence
-  of the passed Proposal.
+  `proposed_value = 'disavowed'` (the whole-node-targeting
+  sentinel, see
+  [nodes.md "Whole-node targeting"](nodes.md#whole-node-targeting-the-node-sentinel)).
+  Quorum + weighted-majority threshold. No separate outcome
+  edge — the chat's stance is the existence of the passed
+  Proposal.
 - **Chat member disavowal** — [chats.md §10](../instances/chats.md#10-moderation).
   Shape B `ChatMember → Proposal` vote on a Proposal targeting
   the member's `ChatMember` junction with the same `'node'` /
