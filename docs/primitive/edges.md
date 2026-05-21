@@ -269,6 +269,18 @@ restrictions, fanout-budget composition) live in
 [feed-ranking.md §3.5 "Traversal restrictions"](feed-ranking.md#35-traversal-restrictions)
 rules 4 and 5.
 
+**Enforcement.** Every `:REFERENCES` write originating from a
+given source node runs inside one service-layer transaction
+(see
+[architecture.md "Service-layer transactions"](../implementation/architecture.md#service-layer-transactions)).
+Inside that transaction the service layer reads the existing
+sibling top-layer weights, computes the post-write sum, and
+rejects the write if either dimension would exceed `1`. If a
+new reference requires lowering existing siblings to fit (e.g.
+the author shifts emphasis), the rebalancing layers on each
+sibling write inside the same transaction — the budget is
+never observably breached at any commit point.
+
 ### Voting (Shape B)
 
 System-created when a voter casts a Shape B vote (see
