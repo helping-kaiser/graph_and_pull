@@ -974,7 +974,7 @@ layers on the existing structural edges.
   `Chat → ChatMember` structural edge for the target. The
   admission-time `ChatMember → ChatMember` edges remain on the
   graph in their original state — they are not re-layered by
-  disavowal. There is no admin-unilateral kick; admins
+  disavowal. There is no admin-unilateral disavowal; admins
   participate in the disavowal vote with their role-weighted
   vote alongside everyone else.
 

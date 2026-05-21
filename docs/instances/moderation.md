@@ -23,6 +23,21 @@ chat key has been disclosed, chat-internal disavowal
 ([chats.md §10](chats.md#10-moderation)) is the only meaningful
 recourse.
 
+### Vocabulary: moderation vs disavowal
+
+**Invariant — scope reservation.** "Moderation" is Network-scope:
+the act of flipping a node's `moderation_status` to `'sensitive'`
+or `'illegal'` via the governance flow in this doc. "Disavowal"
+is Chat-scope: a `dim1 < 0` layer landed (via the Level 1 / Level 2
+Proposals in [chats.md §10](chats.md#10-moderation)) on a
+ChatMessage- or ChatMember-targeting outcome. The two are
+mechanically and authorization-wise different — different
+eligibility (Network actives vs chat members), different cascade
+(redaction vs `:APPROVAL` edge layer), different reversibility.
+Older drafts used "moderation" loosely for both; sweep toward the
+scoped terms. In chat contexts, use "disavowal" — not "removal,"
+"kick," "fire," or "expel."
+
 ## 1. The two classification paths
 
 `sensitive` and `illegal` operate on different units. Both are

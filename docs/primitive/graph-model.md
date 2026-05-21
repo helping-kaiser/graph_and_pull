@@ -445,7 +445,10 @@ entity that writes to structural edges. It reacts to votes:
   (`User/Collective → junction` actor edge). The system appends a
   new layer on the **claim-side** structural edge with
   `dim1 < 0`. Self-determined; not a governance decision.
-- **Removal via governance instance (kick / fire / expel).**
+- **Removal via governance instance** — *disavowal* in chat
+  scope ([chats.md §10](../instances/chats.md#10-moderation)),
+  unnamed-generic in collective scope (the social contract
+  picks the wording — "remove member," "fire worker," etc.).
   Removal uses the **same Shape B vote machinery as approval**,
   with stance flipped: each eligible voter (typically other
   holders of the same junction type for the same parent) writes
