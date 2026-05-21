@@ -86,6 +86,10 @@ listed under the most useful one.
 - [Edges attributed to a Collective carry no per-edge record of the acting member](edges.md#1-actor-edges)
   — accountability lives in the social contract, not in edge
   attribution. Deliberate non-feature.
+- [Bearer/self-claim validation is atomic](edges.md#bearer-binding)
+  — the check against the existing `:BEARER` edge and the
+  self-claim's commit ride one service-layer transaction;
+  mismatches never partially land.
 
 ## Ranking
 

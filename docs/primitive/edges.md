@@ -149,6 +149,15 @@ self-claims. This is what enables invite-only flows
 the inviter creates the junction with a known bearer before the
 invitee acts.
 
+**Invariant: bearer/self-claim validation is atomic.** The
+service-layer transaction that accepts a self-claim reads the
+existing `:BEARER` edge and refuses to commit if the claimer is
+not the bearer. The validation + the claim write happen in one
+transaction; mismatches never partially land. The `:BEARER`
+edge itself may predate the self-claim (the invite-only window
+above is intentional); the atomicity covers the check + claim,
+not the creation of both.
+
 Common queries:
 - "What junctions am I bearer of (active and pending)?" — single
   inbound traversal from the actor along `:BEARER`.
