@@ -642,6 +642,15 @@ themselves are the `Chat.rotate_key_quorum` and
 can be changed via Proposals targeting them — governance of
 governance applies all the way down.
 
+**At most one open mid-epoch rotation Proposal per Chat.** The
+service layer rejects a new rotation Proposal if an unresolved
+one already targets this Chat's `epoch`. The new Proposal's
+`proposed_value` is auto-set to the current `epoch + 1` rather
+than a user-supplied value — there is no "rotate to epoch X+3"
+gesture. Together the two rules close the collision where
+Proposal B opens for the next epoch while Proposal A is still
+counting votes: B can't open until A resolves.
+
 Mid-epoch rotation is forward protection only, not a privacy
 upgrade against prior leakage: messages already encrypted under
 the previous key stay readable to anyone who holds it.
