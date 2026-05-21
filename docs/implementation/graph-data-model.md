@@ -259,6 +259,7 @@ targeting that property name. See
 | Property                          | Type    | Notes |
 |---|---|---|
 | `id`                              | String  | UUID v4. Always set by the API at instance bootstrap. |
+| `singleton_marker`                | String  | Always `'singleton'`. Combined with the existence + uniqueness constraints below, prevents a second `:Network` node from ever being inserted. Set at bootstrap; never changes. |
 | `mod_role_change_quorum`          | Float   | Minimum fraction of active members that must cast a vote on a `User.network_role` Proposal. Default `0.30`. |
 | `mod_role_change_threshold`       | Float   | Fraction of cast votes required in favor for a `User.network_role` Proposal to pass. Default `0.50`. Mod-gate applies (≥1 existing mod positive vote). |
 | `moderation_sensitive_quorum`     | Float   | Quorum for `'sensitive'` classification Proposals. Default `0.01` (1%). |
@@ -277,12 +278,27 @@ targeting that property name. See
 
 ```cypher
 CREATE CONSTRAINT ON (n:Network) ASSERT n.id IS UNIQUE;
+CREATE CONSTRAINT ON (n:Network) ASSERT EXISTS (n.singleton_marker);
+CREATE CONSTRAINT ON (n:Network) ASSERT n.singleton_marker IS UNIQUE;
 CREATE INDEX ON :Network(id);
 ```
 
 There is exactly **one** `:Network` node per CoGra instance.
-Singleton enforcement is application-level (the bootstrap path
-creates it; ordinary code paths never insert a second). The
+Singleton enforcement combines two mechanisms:
+
+- **Graph-side constraint.** The `singleton_marker` property
+  carries a fixed value (`'singleton'`); the existence +
+  uniqueness constraints together refuse any second insert. A
+  second `:Network` either omits the property (fails the
+  existence constraint) or carries the only legal value (fails
+  the uniqueness constraint).
+- **Application discipline.** The bootstrap migration
+  ([network.md §2](../primitive/network.md#2-creation)) is the
+  only writer; ordinary code paths never attempt a second
+  `:Network`.
+
+Belt-and-suspenders: discipline keeps the wrong code from
+running; the constraint catches it if discipline fails. The
 instance configuration knows the singleton's `id`.
 
 ---
