@@ -55,9 +55,12 @@ and user-owned cryptographic material are distinct concerns.
 
 ## Account lifecycle
 
-Three paths reach the same end state — a User node plus the
-account's invitation edges in the graph and credentials in
-Postgres.
+Every User node visible to auth — every account this doc
+governs — arrives by invitation acceptance. The genesis User is
+the exception: it is created by the bootstrap migration that
+also writes the `:Network` singleton (see
+[network.md §2](../primitive/network.md#2-creation)) and never
+passes through any of the flows below.
 
 ### Invitation generation (inviter side)
 
@@ -105,19 +108,6 @@ state and no concept of partial actorhood. The invariant lives
 in [user.md §2](../primitive/user.md#2-creation); this section
 implements it via the off-graph pending-registration record
 described above.
-
-### First-user genesis bootstrap
-
-A fresh instance has no accounts. The first user creates
-themselves directly, without an invitation token. The server
-detects "first user" by the User table being empty (and no
-pending registrations holding it open). On verification, the
-created User is marked as the genesis moderator per
-[network.md](../primitive/network.md). Subsequent registrations
-require an invitation token.
-
-Email verification still applies — the pending-registration
-mechanism is the same.
 
 ### Self-service deletion (handoff out)
 
@@ -300,8 +290,9 @@ upgrade.
   primitive that registration consumes.
 - [account-deletion.md](../instances/account-deletion.md) —
   consumes session listing and email verification.
-- [network.md](../primitive/network.md) — first-user genesis
-  bootstrap; `network_role` read at action time.
+- [network.md](../primitive/network.md) — bootstrap migration
+  that produces the genesis User; `network_role` read at action
+  time.
 - [api-spec.md](api-spec.md) — outdated; the auth-stub line in
   §Authentication points here.
 - [open-questions.md Q15](../open-questions.md) — federation
