@@ -425,6 +425,39 @@ holds no Cypher or SQL of its own. See
 [architecture.md "Service-layer transactions"](../implementation/architecture.md#service-layer-transactions)
 for where the code lives.
 
+### Tally serialization
+
+A tally runs inside the same service-layer transaction as the
+vote-layer write that triggers it, so the tally observes the
+new layer and the cascade fan-out commits or rolls back as one
+unit.
+
+Two writers can target the same Proposal concurrently — two
+voters pressing send at the same moment. **Tallies are
+serialized per Proposal:** two tallies on the same Proposal
+never run in parallel. The first acquires a per-Proposal lock,
+runs to completion, observes the threshold (or not), and
+commits; the second runs against the post-commit state. If the
+first crossed threshold, the second sees the outcome layer
+already written and does not fire the cascade twice.
+
+The serialization primitive is Memgraph's per-node lock taken
+on the Proposal node at the start of the tally transaction. If
+a chosen Memgraph build turns out to lack the needed primitive,
+a Postgres advisory lock keyed on the Proposal UUID is a valid
+fallback — the service layer holds both pools and can take the
+lock on either side. The doctrine (*tallies serialized per
+Proposal*) fixes the requirement; the exact mechanism is an
+implementation choice settled in
+[architecture.md](../implementation/architecture.md).
+
+True-simultaneous writes — two commits the chosen DB isolation
+cannot serialize — are an open question for the storage
+engines and are filed in
+[open-questions.md](../open-questions.md). The lock primitive
+above is sufficient under standard read-committed isolation;
+weaker conditions would need re-spec.
+
 ### Why outcomes are sticky, not continuously rendered
 
 Consider a member who voted on 1000 past disavowals and then leaves
