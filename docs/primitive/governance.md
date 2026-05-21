@@ -533,7 +533,10 @@ community.
 - **Network moderator role changes** — [network.md §9](network.md#9-mod-role-changes-via-multi-sig-proposal).
   Shape A from the User node directly (no per-member Network
   junction exists). Multi-sig: ≥1 existing moderator's positive
-  vote plus a community-quorum threshold.
+  vote plus a community-quorum threshold. Two dispatch
+  exceptions — the **moderator floor** of 1 and the
+  **undemotable bootstrap mod** — refuse the outcome write even
+  on a passed tally.
 - **Content moderation classifications** — [moderation.md](../instances/moderation.md).
   Shape A from the User node directly. Mod-vote-required gate
   on every classification change (`sensitive` / `illegal` and

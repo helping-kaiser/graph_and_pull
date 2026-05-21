@@ -315,9 +315,28 @@ and in §11. Each gate of the multi-gate pair counters a distinct
 failure mode (sitting-mod coup vs community coordinated removal);
 both required = both failure modes blocked.
 
-Removal is symmetric to promotion: same Proposal mechanism with
-`proposed_value = 'member'`, same dual-gate rule. There is no
-privileged path that exempts mod removal from either gate.
+Removal mirrors promotion mechanically: same Proposal
+mechanism with `proposed_value = 'member'`, same dual-gate
+rule. Two structural constraints sit on top of the mechanism:
+
+- **Moderator floor.** The active moderator count cannot drop
+  below **1**. A removal Proposal that would push the count
+  below the floor is rejected at the dispatch check, regardless
+  of vote tally. Without at least one moderator the mod-gate
+  (§7,
+  [governance.md §7](governance.md#7-the-mod-gate))
+  cannot be opened, and every Network-scope Proposal would
+  silently stall.
+- **Bootstrap mod undemotable.** The genesis User installed by
+  the bootstrap migration (§2) carries an undemotable
+  `'moderator'` status: no Proposal can move them off
+  `network_role = 'moderator'`. The dispatch check rejects the
+  outcome write even on a passed tally. The exception exists
+  for bot-defense — if every other moderator is compromised or
+  removed, the bootstrap mod remains as the immovable floor of
+  the mod-gate, blocking a coordinated full-takeover. The
+  asymmetry is deliberate; this is the only mechanism in the
+  system that exempts a graph object from governance reach.
 
 ---
 
