@@ -31,11 +31,12 @@ outgoing edges, never by who points at you. Bot clusters and
 unwanted attention can't insert themselves into your feed by
 liking your content.
 
-**Append-only history.** Graph state — edges and node properties —
-is immutable. New layers go on top; nothing is silently deleted
-or overwritten. The only carve-out is in-place redaction of
-illegal content, and even that leaves a visible trace.
-Transparency and auditability over convenience.
+**[Append-only](docs/primitive/layers.md#append-only-vocabulary)
+history.** Graph state — edges and node properties — is
+immutable. New layers go on top; nothing is silently deleted or
+overwritten. The only carve-out is in-place redaction of illegal
+content, and even that leaves a visible trace. Transparency and
+auditability over convenience.
 
 **Governance, not admin escape hatches.** Takedowns, redactions,
 and policy changes run through community votes on the graph, with

@@ -41,12 +41,13 @@ them:
 2. **All edges are directional.** Nothing can push onto you.
    Inbound edges from others never affect your feed. Only your
    outgoing edges shape what you see.
-3. **Append-only on the graph.** Graph state (edges and node
-   properties) is immutable — you cannot delete or overwrite past
-   interactions or values. New layers are added on top. The
-   principle extends to Postgres-side display content, which uses
-   versioned rows rather than overwrites. Transparency and
-   auditability over convenience. See
+3. **[Append-only](docs/primitive/layers.md#append-only-vocabulary)
+   on the graph.** Graph state (edges and node properties) is
+   immutable — you cannot delete or overwrite past interactions
+   or values. New layers are added on top. The principle extends
+   to Postgres-side display content, which uses versioned rows
+   rather than overwrites. Transparency and auditability over
+   convenience. See
    [docs/primitive/layers.md](docs/primitive/layers.md) for the
    full rule.
 4. **Fair economics.** Ad revenue distributes across the economic
