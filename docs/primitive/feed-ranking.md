@@ -44,11 +44,15 @@ target nodes as seen from `U`.
 
 ## 3. Per-edge composition along a path
 
-Per-target metrics (§4) are computed by composing edge tensors along
-each path from `U` to a reactor (a node with an actor edge to the
-target). The composition uses **parallel tracks**: `dim1` and `dim2`
-flow independently through the path product and only collapse to a
-scalar at sort time.
+Per-target metrics (§4) are computed by composing edge tensors
+along each **path from the viewing user `U` to the target `t`**.
+A path crosses one or more edge types in their stored direction
+and ends with an actor edge from a node `B` into `t`; that final
+`B → t` is the **reactor edge** and `B` is the **reactor** for
+that path. The path-internal hops are unconstrained by edge type
+modulo the §3.5 traversal restrictions. The composition uses
+**parallel tracks**: `dim1` and `dim2` flow independently through
+the path product and only collapse to a scalar at sort time.
 
 **Invariant: forward-only traversal.** Feed-ranking paths
 traverse edges in their stored direction only. Reverse-direction
