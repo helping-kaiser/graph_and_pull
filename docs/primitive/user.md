@@ -66,6 +66,21 @@ The credential and email-verification flow that wraps both paths
 lives in [auth.md](../implementation/auth.md). The graph-side
 edge-creation pattern is in [invitations.md](invitations.md).
 
+**Invariant: no User node before verification.** The graph has
+no "unverified" or "pending" User state and no concept of
+partial actorhood. A User node either exists with full standing
+or it does not exist. This is the no-half-state spirit of
+[layers.md](layers.md) applied at the node-existence level: an
+"unverified" holding state would add semantics no other
+primitive uses, and the ranking math
+([feed-ranking.md](feed-ranking.md)) is not designed for actors
+whose actor-edges have provisional weight. Pre-verification
+state is held off-graph (a pending-registration record in
+auth's storage); on email verification, the User node and its
+invitation edges are written atomically. See
+[auth.md "Account lifecycle"](../implementation/auth.md#account-lifecycle)
+for the implementation.
+
 ---
 
 ## 3. Graph-side properties

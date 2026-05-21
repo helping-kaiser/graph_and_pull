@@ -99,12 +99,12 @@ record expires. No User node is created, no edges are written.
 The invitation row itself is unaffected — its lifecycle is
 independent of any one pending registration.
 
-**Why no User node before verification:** the graph has no
-"unverified" state and no concept of partial actorhood. Per the
-no-half-state spirit of [layers.md](../primitive/layers.md), nodes
-either exist with full standing or they don't. An unverified
-holding state would add semantics no other primitive uses and the
-ranking math is not designed for.
+**Why no User node before verification:** because the primitive
+forbids it — the graph has no "unverified" or "pending" User
+state and no concept of partial actorhood. The invariant lives
+in [user.md §2](../primitive/user.md#2-creation); this section
+implements it via the off-graph pending-registration record
+described above.
 
 ### First-user genesis bootstrap
 

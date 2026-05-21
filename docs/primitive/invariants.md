@@ -53,6 +53,9 @@ listed under the most useful one.
 - [Junction state is encoded in topology](graph-model.md#5-junction-node-flows)
   — claim only = pending; claim + approval = active; negative top
   layer on either = revoked. No status flag.
+- [No User node before verification](user.md#2-creation) — the
+  graph has no "unverified" or "pending" User state; nodes
+  either exist with full standing or they don't.
 - [Every Collective has or has had ≥1 active member](../instances/collectives.md#9-lifecycle)
   — zero active members ≡ dissolved.
 - [ItemOwnership forms an append-only chain](../instances/items.md#7-supersession-exactly-one-active-itemownership-per-item)
