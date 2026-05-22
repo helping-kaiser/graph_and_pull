@@ -275,7 +275,7 @@ designed.
 -- Used by the feed-ranking computation as an exclusion set
 -- (see feed-ranking.md §8).
 CREATE TABLE user_view_log (
-    user_id        UUID        NOT NULL,
+    user_id        UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content_id     UUID        NOT NULL,
     first_seen_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (user_id, content_id)
@@ -296,7 +296,7 @@ seen-list mechanism in
 -- hidden_type disambiguates which table the hidden_id refers to,
 -- same shape as author_type / target_type elsewhere.
 CREATE TABLE user_hidden_actors (
-    viewer_id   UUID        NOT NULL,
+    viewer_id   UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     hidden_id   UUID        NOT NULL,
     hidden_type TEXT        NOT NULL CHECK (hidden_type IN ('user', 'collective')),
     hidden_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -310,7 +310,7 @@ CREATE TABLE user_hidden_actors (
 -- row's most recent update IS last_read_at, so no separate
 -- updated_at column is needed.
 CREATE TABLE chat_read_state (
-    user_id      UUID        NOT NULL,
+    user_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     chat_id      UUID        NOT NULL,
     last_read_at TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (user_id, chat_id)
@@ -322,7 +322,7 @@ CREATE TABLE chat_read_state (
 -- event, not a stance). content_id can be any node UUID; a
 -- discriminator is intentionally not stored, mirroring user_view_log.
 CREATE TABLE user_bookmarks (
-    user_id       UUID        NOT NULL,
+    user_id       UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content_id    UUID        NOT NULL,
     bookmarked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (user_id, content_id)
@@ -353,7 +353,7 @@ means the central backend has to be the source of truth.
 -- Sensitive-content classification itself is community-moderated;
 -- the moderation mechanism lives in instances/moderation.md.
 CREATE TABLE user_preferences (
-    user_id                          UUID     PRIMARY KEY,
+    user_id                          UUID     PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     content_filtering_severity_level SMALLINT CHECK (
         content_filtering_severity_level IS NULL OR
         (content_filtering_severity_level BETWEEN 0 AND 10)
@@ -377,7 +377,7 @@ graph never requires a row here — see
 -- semantics live in auth.md §Tokens.
 CREATE TABLE auth_refresh_tokens (
     id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id       UUID         NOT NULL,
+    user_id       UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token_hash    BYTEA        NOT NULL UNIQUE,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     last_used_at  TIMESTAMPTZ,
@@ -396,9 +396,10 @@ CREATE INDEX auth_refresh_tokens_user_idx
 -- updates to inviter_dim1 / inviter_dim2 / inviter_id after
 -- creation); revocation sets revoked_at.
 --
--- inviter_id references the inviting User; same no-FK shape as
--- auth_refresh_tokens.user_id (different actor types are not
--- supported here today — only Users issue invitations).
+-- inviter_id references the inviting User (different actor types
+-- are not supported here today — only Users issue invitations); no
+-- FK is declared because future inviter-type support may make this
+-- column polymorphic, same reason author_id columns carry no FK.
 -- inviter_dim1 / inviter_dim2 are the values that will be written
 -- to the inviter's outgoing edge toward each accepting invitee
 -- per invitations.md "Pre-committed inviter values."
@@ -494,6 +495,24 @@ rebuild semantics.
 node, so there is no graph-side authorship derivation to cache. The
 column is Postgres-native source of truth. If it gets corrupted, the
 recovery path is object-storage ACLs / upload logs — not the graph.
+
+### User-scoped FKs are defense-in-depth, not deletion mechanics
+
+Every user-scoped table (`auth_refresh_tokens`, `user_view_log`,
+`user_hidden_actors`, `chat_read_state`, `user_bookmarks`,
+`user_preferences`) carries `user_id REFERENCES users(id) ON DELETE
+CASCADE`. Account deletion does **not** remove the `users` row — PII
+is redacted in place per
+[account-deletion.md §1](../instances/account-deletion.md#1-two-redaction-levels)
+— so `ON DELETE CASCADE` does not fire in any normal flow. The FK
+exists to prevent orphans from buggy code paths and to give an
+operator running an explicit `DELETE` (e.g. emergency cleanup) a
+single command that takes the user's private state with them.
+
+The polymorphic-actor columns (`posts.author_id`,
+`comments.author_id`, `chat_messages.author_id`,
+`media_attachments.author_id`, `auth_invitations.inviter_id`) carry
+no FK by design — see the next two notes.
 
 ### author_id + author_type — discriminator, not foreign key
 
