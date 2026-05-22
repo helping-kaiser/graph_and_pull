@@ -118,15 +118,10 @@ derived from counting active ChatMembers — if the underlying
 graph changes, rebuild the cache. Layering it would duplicate
 history that already lives in the source data.
 
-### Operational filter state — explicit exception
-
-`user_view_log` (per-viewer seen-list, see
-[feed-ranking.md §8](feed-ranking.md#8-the-already-seen-filter)) is **operational filter
-state**, not graph history. It is exempt from append-only and
-runs a periodic compaction (1-year default — see
-[feed-ranking.md §8.5](feed-ranking.md#85-compaction--drop-entries-older-than-1-year-frontend-convention)). The trace it leaves is
-the visible "history" UI surface fed by the same data, not a
-preserved layer stack.
+Named carve-outs to append-only exist only on the Postgres
+side and only for operational state (not history) — see
+[§5 "Scope of the invariant"](#scope-of-the-invariant). The
+graph itself has no carve-outs.
 
 ---
 
@@ -149,8 +144,9 @@ here: Postgres display content is append-only too.
 
 ## 5. Deletion policy
 
-Append-only is the norm, but not absolute everywhere. Three tiers,
-each with its own rule.
+Append-only is the norm, but not absolute on every surface.
+"Scope of the invariant" below states which surface is bound to
+which rule.
 
 ### Redaction vs severance — two different vocabularies
 
@@ -171,20 +167,40 @@ This section covers redaction only. "Takedown" is not a CoGra
 term — older drafts used it as a synonym for redaction; sweep it
 in favor of "redaction" wherever encountered.
 
-### Graph structure is never deleted
+### Scope of the invariant
 
-**Invariant:** No node, edge, or layer is ever removed from the
-graph. The structure is append-only and absolute — there is no API
-path, no admin escape hatch, no court-order path that deletes graph
-topology. State transitions (revocation, departure, supersession)
-are encoded as new layers on existing edges, not as deletions.
-"Deletion" in CoGra always means in-place layer redaction or a
-Postgres tombstone version row — see below.
+Append-only is the rule, but not every system in the stack falls
+under it identically. Three surfaces, three rules:
 
-Nodes, edges, and the layer stacks themselves are **never removed**.
-No node deletion, no edge deletion, no layer removal, ever. This is
-absolute. The graph's job is to be the transparent auditable record;
-erasing from it would defeat the whole point.
+- **The graph (Memgraph): nothing is removed.** No node, no
+  edge, no layer, ever. There is no API path, no admin escape
+  hatch, no court-order path that deletes graph topology. State
+  transitions (revocation, departure, supersession) are encoded
+  as new layers on existing edges, not as deletions. The graph's
+  job is to be the transparent auditable record; erasing from it
+  would defeat the whole point.
+- **Postgres: almost nothing is removed.** Display content (post
+  bodies, message bodies, profile text, media metadata) is
+  append-only; edits write new version rows. Redaction
+  tombstones the row (see "Postgres / media display content —
+  tombstonable" below), and the tombstone itself stays. The
+  named carve-outs to append-only are limited and listed
+  explicitly here:
+  - `user_view_log` — per-viewer seen-list, operational filter
+    state rather than history, compacted on a 1-year default
+    per
+    [feed-ranking.md §8.5](feed-ranking.md#85-compaction--drop-entries-older-than-1-year-frontend-convention).
+
+  Additions to this list require a named exception added here.
+- **Frontends, miners, indexers, and off-graph systems: not
+  governed by this invariant.** Whatever they cache, summarize,
+  or discard is their concern, not the graph's. The graph is the
+  canonical record; downstream consumers may keep, project, or
+  drop their copies on their own contracts.
+
+"Deletion" in CoGra always means in-place layer redaction
+(graph layer) or a Postgres tombstone version row — see the
+mechanism subsections below.
 
 ### Layer contents on node properties — redactable
 
