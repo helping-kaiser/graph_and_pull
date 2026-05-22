@@ -101,17 +101,27 @@ via `:TAGGING`), the same pair never gets a second structural edge
 of a different type (no parallel `Post → Hashtag` via `:REFERENCES`).
 This is what drives the `:TAGGING` / `:REFERENCES` carve-out below.
 
-**Enforcement.** Structural edge writes go through the service
-layer, which checks pre-write that no other structural label
-between the same source and target already exists; the
-[`:TAGGING` / `:REFERENCES` carve-out below](#reference)
-captures the only label-collision case the rule arbitrates.
-Memgraph has no native edge-tuple UNIQUE constraint, so the
-invariant is held by service-layer discipline rather than a
-schema constraint. Layering preserves the rule trivially:
-subsequent layers attach to the same logical
-`(source, target, label)` tuple rather than spawning a parallel
-one.
+**Enforcement.** The rule has two pieces: *layers within the
+same label are fine; a second label on the same
+`(source, target)` pair is not*. Phrased as a single insert-
+time check it reads — when writing an edge between `(A, B)`
+with label L, abort if any existing edge between `(A, B)` has
+label L' ≠ L.
+
+The service layer is the primary check: before inserting a new
+edge it queries existing edges between the same endpoints and
+rejects the write if their label differs. A Memgraph insert
+trigger that aborts on the same condition (reading
+`startNode(e), endNode(e), type(e)` and the existing
+`(A)-[*]->(B)` relationships) is a viable storage-level
+backstop for code paths that bypass the service layer. The
+service layer is the primary because it returns a meaningful
+error to the caller; the trigger is the safety net.
+
+The framing generalizes the
+[`:TAGGING` / `:REFERENCES` carve-out below](#reference) — the
+only label-collision case the current catalog actually
+produces, where the more specific label wins.
 
 ### Containment / belonging
 
