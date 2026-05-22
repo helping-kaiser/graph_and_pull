@@ -285,6 +285,17 @@ graph-level guards that would be both too weak (off-graph
 disclosure exists, and the graph cannot detect it) and too strict
 (legitimate cases like contract disputes would be blocked).
 
+**The cascade fires regardless of disclosure state.** If a
+Proposal targeting an encrypted ChatMessage crosses threshold —
+including the mod-gate `+1` — the redaction cascade in §1 runs
+whether or not any voter actually read the body. The protocol
+inspects the tally, not the readers' decryption state. This is
+**intentional**: a Network whose moderators wave through
+cascades on opaque ciphertext is already broken, and the remedy
+is the de-mod-ing path above (the Network votes the offending
+mod out), not protocol veto. The robustness guarantee rests on
+moderator judgment, not on the protocol second-guessing it.
+
 ## 6. Coexistence with chat-internal moderation
 
 Platform moderation (this doc) and chat-internal disavowal
