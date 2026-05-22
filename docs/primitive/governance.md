@@ -122,24 +122,42 @@ by the eligibility-dropout cascade — is specified in
 ### 2.3 Weight function
 
 How each vote's contribution is scaled. Derived from properties on
-the voter's eligibility junction:
+the voter's eligibility junction, optionally overridden by an
+explicit per-junction `voting_weight`.
 
-- ChatMember: `role` (`admin` / `chat_mod` / `member`). Optionally
-  a direct `voting_weight` property when the chat sets per-member
-  weight explicitly instead of deriving it from `role`. The
-  `chat_mod` label is chat-scope; do not confuse with the
-  Network-scope moderator role (`User.network_role = 'moderator'`).
-- CollectiveMember: `role` + `ownership_pct` combine into a
-  composite. Optionally a direct `voting_weight` for collectives
-  whose weight is not tied to equity (e.g. one-member-one-vote
-  with role-based multipliers, or per-member negotiated weight).
-- Future cases: whatever properties the junction exposes.
+**Role-derived defaults by junction type:**
 
-`voting_weight` is the escape hatch for any junction whose weight
-doesn't naturally fall out of role + ownership. When present it is
-read directly as the voter's weight; when absent the instance falls
-back to whatever rule it defines over `role` and other properties.
-See [nodes.md §3](nodes.md#3-junction-nodes) for the property declaration.
+| Junction         | Default source                                                                       | Out-of-the-box roles → weights |
+|------------------|--------------------------------------------------------------------------------------|---|
+| ChatMember       | Per-Chat role-weight properties on the Chat node — see [chats.md §3.1](../instances/chats.md#31-chat)                                                  | `admin = 5`, `chat_mod = 3`, `member = 1`; per-chat amendable |
+| CollectiveMember | Composite of `role` and `ownership_pct` per the collective's social contract — see [collectives.md](../instances/collectives.md) | Defined per collective; e.g. `role = founder` weighted by `ownership_pct`, or one-member-one-vote with role multipliers |
+| Future junctions | Whatever properties the junction exposes                                             | Defined by the application |
+
+The chat-scope `chat_mod` role is deliberately distinct from the
+Network-scope `User.network_role = 'moderator'`; do not confuse
+them (see [§7](#7-the-mod-gate)).
+
+**`voting_weight` override.** Any junction node may carry an
+optional, **nullable** `voting_weight` property. When set
+(non-null), it is read directly as the voter's weight and the
+role-derived default is ignored. When null (the default), the
+role-derived rule above applies. The override is the escape
+hatch for instances whose intended weight does not fall out
+naturally from role + ownership — e.g. a small collective with
+per-member negotiated weights, or a chat that wants to deviate
+from the role-weight table for a specific bearer. Schema
+declaration for the property itself lives on the junction node:
+ChatMember carries it nullable (see
+[chats.md §3.3](../instances/chats.md#33-chatmember));
+CollectiveMember carries it nullable (see
+[collectives.md](../instances/collectives.md)); future junctions
+follow the same pattern. See
+[nodes.md §3](nodes.md#3-junction-nodes) for the cross-junction
+property declaration.
+
+For Network-scope every active member's weight is `1`; no
+`voting_weight` override applies because Network membership has
+no junction to carry the property.
 
 ### 2.4 Threshold policy
 
