@@ -171,9 +171,19 @@ voting body for moderation Proposals.
 
   | Action | `P` (`*_quorum_fraction`) | `K` (`*_quorum_count`) | Mod gate |
   |---|---|---|---|
-  | Classify `sensitive`         | `Network.moderation_sensitive_quorum_fraction` (default `0.25`) | `Network.moderation_sensitive_quorum_count` (default `5000`) | ≥1 mod positive |
-  | Classify `illegal`           | `Network.moderation_illegal_quorum_fraction` (default `0.50`) | `Network.moderation_illegal_quorum_count` (default `10000`) | ≥1 mod positive |
-  | Un-classify back to `normal` | symmetric to the original action | symmetric | ≥1 mod positive |
+  | Classify `sensitive`                       | `Network.moderation_sensitive_quorum_fraction` (default `0.25`) | `Network.moderation_sensitive_quorum_count` (default `5000`) | ≥1 mod positive |
+  | Classify `illegal`                         | `Network.moderation_illegal_quorum_fraction` (default `0.50`) | `Network.moderation_illegal_quorum_count` (default `10000`) | ≥1 mod positive |
+  | Un-classify `sensitive` → `normal`         | symmetric to the original action (`moderation_sensitive_*`)     | symmetric                                                       | ≥1 mod positive |
+
+  `'illegal'` is **not** reversible. The redaction markers on
+  the targeted fields are append-only per
+  [layers.md §5](../primitive/layers.md#5-deletion-policy), and
+  `moderation_status = 'illegal'` is a system-derived consequence
+  of those markers existing on the node — flipping the status back
+  while markers remain would misrepresent the node's state. A
+  later `'sensitive'` Proposal also does not downgrade the status
+  while any redacted fields remain (see
+  [nodes.md](../primitive/nodes.md)).
 
 The fractional bar `P` governs while the network is small (a real
 majority of active members is required to pass). Once membership
