@@ -142,19 +142,21 @@ engagement, but this is a UX nudge, not a graph mechanism.
 
 ### 3.2 Zero handling — kill rule
 
-**Invariant:** A `0` in either dim of any actor edge along a path
-zeros that dim's path product irreversibly. Zeros are real
-multiplicative factors, never skipped or treated as identity, and
-once a dim is zeroed on a path it cannot be revived downstream.
+**Invariant:** A `0` in either dim of any factor-contributing edge
+(actor or `:REFERENCES`) along a path zeros that dim's path product
+irreversibly. Zeros are real multiplicative factors, never skipped
+or treated as identity, and once a dim is zeroed on a path it
+cannot be revived downstream.
 
-A factor of `0` in either dim of any actor edge along the path
-zeros that dimension's path product. Zeros are **not** skipped
-or treated as multiplicative identity — they are real factors
-that, through ordinary multiplication, collapse the chain.
+A factor of `0` in either dim of any actor or `:REFERENCES` edge
+along the path zeros that dimension's path product. Zeros are
+**not** skipped or treated as multiplicative identity — they are
+real factors that, through ordinary multiplication, collapse the
+chain.
 
 ```
-if dim1(eᵢ) = 0 for any actor edge eᵢ in path  →  s_path = 0
-if dim2(eᵢ) = 0 for any actor edge eᵢ in path  →  c_path = 0
+if dim1(eᵢ) = 0 for any actor or :REFERENCES edge eᵢ in path  →  s_path = 0
+if dim2(eᵢ) = 0 for any actor or :REFERENCES edge eᵢ in path  →  c_path = 0
 ```
 
 The two tracks are independent: a zero in one dim does not affect
@@ -172,12 +174,15 @@ zero hop scores stronger than a path with two real weak hops.
 
 ### 3.3 dim1 chain — signed multiplication
 
-For a path with actor edges `e_1, e_2, ..., e_R'` (where `R'` is the
-number of actor edges in the path; structural edges contribute no
-factors per §3.1):
+For a path with factor-contributing edges `e_1, e_2, ..., e_R'`
+(where `R'` is the number of **actor edges plus `:REFERENCES`
+edges** in the path — the two edge classes that carry a
+`(dim1, dim2)` tensor per §3.1; `R'` is independent of `R`, the
+full traversable path length, which also counts non-contributing
+structural edges):
 
 ```
-s_path = ∏ dim1(e_k)   over all actor edges in the path
+s_path = ∏ dim1(e_k)   over actor edges and :REFERENCES edges in the path
        = 0             if any dim1(e_k) is zero (kill rule, §3.2)
 ```
 
@@ -200,7 +205,7 @@ which is meaningless).
 Instead, dim2 composes via a **taint rule**:
 
 ```
-|c_path|     = ∏ |dim2(e_k)|   over all actor edges in the path
+|c_path|     = ∏ |dim2(e_k)|   over actor edges and :REFERENCES edges in the path
 sign(c_path) = -1   if ANY dim2(e_k) in the path is negative
              = +1   otherwise
 c_path       = sign(c_path) × |c_path|
