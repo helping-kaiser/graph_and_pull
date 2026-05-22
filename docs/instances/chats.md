@@ -191,6 +191,33 @@ Junction nodes carry no `moderation_status` per
 [nodes.md](../primitive/nodes.md#universal-moderation_status) —
 ChatMember has no user-input fields.
 
+### 3.4 ChatMember roles and their powers
+
+The three `ChatMember.role` values carry the following
+mechanical powers. Every power is mediated by a `Chat`
+property — none is hardcoded into the role.
+
+| Power | Carrier property on `Chat` | Default for `'admin'` | Default for `'chat_mod'` | Default for `'member'` |
+|---|---|---|---|---|
+| Propose an invitation under `'invite-only'`            | `invite_proposer_roles` (§3.1)        | yes | yes | no  |
+| Cast a counting approver vote (any join policy)        | `entry_approval_eligible_roles` (§3.1) | yes | yes | no  |
+| Cast a counting vote in chat-internal disavowal (§10)  | role weight on `Chat` (§10 "How roles fit in") | weight `5` | weight `3` | weight `1` |
+| Cast a counting vote on chat property-change Proposals | role weight on `Chat`                 | weight `5` | weight `3` | weight `1` |
+| Vote-weight override on a per-bearer basis             | `ChatMember.voting_weight` (§3.3)     | nullable | nullable | nullable |
+
+The defaults are starting points, not fixed rules: every
+property above is a layered `Chat`-node property, amendable via
+a property-change Proposal (§10 "Property and role changes via
+Proposals"). A chat that wants admins to lose the unilateral
+proposer privilege simply removes `'admin'` from
+`invite_proposer_roles`; one that wants every member to count
+as an approver adds `'member'` to `entry_approval_eligible_roles`.
+
+No role grants a unilateral disavowal or a unilateral property
+change: every act runs through a Proposal vote, weighted but
+never veto-bearing. The admin's higher weight matters only at
+the margin where a tally is close.
+
 ---
 
 ## 4. Postgres-side content
