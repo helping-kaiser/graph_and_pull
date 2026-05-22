@@ -152,22 +152,14 @@ choice is per-application:
 For Network-scope governance (moderation, mod role changes,
 `:Network` parameter amendments — see
 [network.md §10](../primitive/network.md#10-network-wide-governance)),
-the vote runs from the voter's **User node** directly. Per
-the edges catalog, that edge is the `User → Proposal`
-**actor edge** already listed in
-[edges.md §1](../primitive/edges.md#1-actor-edges) — no
-separate structural vote edge is created. The actor edge
-keeps its normal actor-edge meaning: `dim1` is the voter's
-full sentiment toward the change (positive = support,
-negative = oppose), `dim2` is importance / personal stake.
-The **tally** reads `sign(dim1)` for the binary outcome
-(same rule as Shape A). governance.md and network.md
-describe this case as "Shape B" to emphasize the User-node
-carrier; in edge mechanics it collapses to the actor edge —
-a Proposal has no separate personal stance to preserve apart
-from the vote, so the actor edge alone is enough. Treat
-"Shape B" there as governance-conceptual rather than
-edge-mechanical.
+the vote is Shape A: the `User → Proposal` actor edge from
+[edges.md §1](../primitive/edges.md#1-actor-edges) carries
+the vote. Network membership has no per-member junction, so
+the User node is itself the eligibility carrier. The actor
+edge keeps its normal meaning: `dim1` is the voter's
+sentiment toward the change (positive = support, negative =
+oppose), `dim2` is importance / personal stake. The tally
+reads `sign(dim1)` for the binary outcome.
 
 **Reference edges:**
 

@@ -3,7 +3,7 @@
 CoGra moderates publicly-visible content via the same governance
 primitive everything else uses: any User can create a Proposal
 classifying content as `sensitive` (per-node soft flag) or
-`illegal` (per-field redaction); the Network votes Shape B;
+`illegal` (per-field redaction); the Network votes Shape A;
 threshold-cross applies the classification via cascade.
 **No privileged moderator role with extra weight** — mods exist as
 a gate, not as weighted voters.
@@ -108,7 +108,7 @@ A user reporting content **is** the act of creating a Proposal:
     the node. `proposed_value = 'illegal'`.
 - **First reporter** authors the Proposal — the system reads the
   authoring as their +1 vote.
-- **Subsequent reporters** cast Shape B votes
+- **Subsequent reporters** cast Shape A votes
   ([governance.md §3](../primitive/governance.md#3-the-two-vote-shapes)) on the existing
   Proposal rather than authoring duplicates. A reporter who
   wants a different target field on the same content node (e.g.,
@@ -118,7 +118,7 @@ A user reporting content **is** the act of creating a Proposal:
 - **Threshold-cross** triggers the cascade described in §1.
 
 There is **no separate Postgres reports table**. Reports live on
-the graph as Proposal authoring + Shape B vote layers — fully
+the graph as Proposal authoring + Shape A vote layers — fully
 transparent, fully auditable, append-only by construction.
 
 ## 3. The mod-gate rule
@@ -154,10 +154,11 @@ voting body for moderation Proposals.
   least one outgoing actor edge inside the
   `Network.active_threshold_days` window).
 - **Vote weight:** 1 per voter — mod or member.
-- **Vote shape:** Shape B from the voter's User node directly.
-  See [governance.md §3](../primitive/governance.md#3-the-two-vote-shapes) for the relaxation
-  that permits a User node (rather than a junction) to carry
-  the vote for Network-level governance.
+- **Vote shape:** Shape A — the `User → Proposal` actor edge
+  carries the vote. Network membership has no per-member
+  junction (see [network.md §8](../primitive/network.md#8-membership-and-roles)),
+  so the User node is itself the eligibility carrier. See
+  [governance.md §3](../primitive/governance.md#3-the-two-vote-shapes).
 - **Thresholds (read from the `:Network` singleton — see
   [graph-data-model.md](../implementation/graph-data-model.md)):**
 

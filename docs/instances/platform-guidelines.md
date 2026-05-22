@@ -128,8 +128,8 @@ sets these two properties to the new version's values.
 **Eligibility.** All active Network members
 ([network.md](../primitive/network.md)).
 
-**Vote shape.** Shape B from the voter's User node, same as
-moderation Proposals
+**Vote shape.** Shape A — the `User → Proposal` actor edge
+carries the vote, same as moderation Proposals
 ([moderation.md §4](moderation.md#4-eligibility-weights-thresholds)).
 
 **Threshold.**

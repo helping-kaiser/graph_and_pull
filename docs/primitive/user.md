@@ -200,10 +200,12 @@ Every registered User is automatically a member of the
 node. Their `network_role` graph property carries the role.
 
 The User node serves as the eligibility carrier for
-network-wide governance directly — this is the single relaxation
-of the Shape B junction-carrier rule, justified by the Network
-having no per-member junction. See
-[network.md §10](network.md#10-network-wide-governance).
+network-wide governance directly. Network membership has no
+per-member junction, so Network-scope votes use the Shape A
+`User → Proposal` actor edge from
+[edges.md §1](edges.md#1-actor-edges) — the natural Shape A
+case from [governance.md §3](governance.md#3-the-two-vote-shapes).
+See [network.md §10](network.md#10-network-wide-governance).
 
 Whether Collectives can carry `network_role` (i.e. participate
 in platform-wide governance as actors in their own right) is
