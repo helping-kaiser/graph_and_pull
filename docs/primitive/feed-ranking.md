@@ -37,7 +37,7 @@ target nodes as seen from `U`.
 
 | Symbol | Name | Meaning |
 |--------|------|---------|
-| `R` | Real number of graph hops | Path length (number of edges) from `U` to the target. Targets with the same `R` form a comparison group. Both actor and structural edges count toward `R`. |
+| `R` | Real number of graph hops | Path length (number of edges) from `U` to the target. Counts every edge in the traversable path (actor edges plus the traversable structural edges admitted by §3.5). `R` has no math-imposed upper bound — it is an **operational cost parameter** capped at the system level (see §3.1); within whatever cap the system runs at, `d(R)` does the attenuation. |
 | `S` | Scalar value of a node | An intrinsic scalar assigned to each node. Used in the **sort** phase to pre-order nodes within an `R` group. (S's exact derivation is open — tracked as [Q16](../open-questions.md).) |
 
 ---
@@ -111,8 +111,20 @@ it sits on, even by a small margin.
 
 Deep structural chains (e.g., replies of replies on a post)
 accumulate `R` naturally and decay via `d(R)` without needing an
-explicit depth cap. The dataminer's R-fetch limit (typically `R ≤
-5` or `6` in practice) bounds traversal at the system level.
+explicit depth cap.
+
+**`R` is an operational cost knob, not a math-defining bound.**
+The path-product math (§3.3–§3.4) and per-target sums (§4) are
+well-defined for any `R`; nothing in the math caps it. What caps
+`R` in practice is system cost: enumerating paths grows with `R`,
+and traversal at the data-fetch boundary
+([architecture.md](../implementation/architecture.md), "traverse
+N hops") is bounded for performance reasons — typically `R ≤ 5`
+or `6` per fetch. If a denser graph makes higher-`R` traversal
+unaffordable, the tuning lever is `d(R)`'s decay shape, not a
+new math-side cap: a steeper `d(R)` attenuates distant paths
+enough that fetching them stops paying for itself, at which
+point the system cap is the right gate.
 
 State-bearing structural edges fall into two cases with
 different treatment:
