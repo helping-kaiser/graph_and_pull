@@ -459,11 +459,21 @@ CREATE INDEX auth_pending_registrations_email_idx
 -- and "where are the patch notes for version X?". Append-only —
 -- each release adds a row; previous rows stay so past patch-note
 -- links remain resolvable.
+--
+-- released_by is an optional list of actor UUIDs the release credits
+-- (community contributors beyond what the upstream repo's commit
+-- history captures — e.g. designers, translators, testers). UUID[]
+-- carries Users and Collectives in the same array; the frontend
+-- resolves each id against both actor tables since there is no
+-- per-element type discriminator. Display-only, never an input to
+-- ranking or economics. NULL when nobody beyond the commit history
+-- is being credited.
 CREATE TABLE versions (
     component       TEXT        NOT NULL CHECK (component IN
                                 ('backend', 'ios', 'android', 'web')),
     version         TEXT        NOT NULL,
     patch_notes_url TEXT,
+    released_by     UUID[],
     released_at     TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (component, version)
 );
