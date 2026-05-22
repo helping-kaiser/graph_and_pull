@@ -140,6 +140,17 @@ fractional bar (`P`, `*_quorum_fraction`) and an absolute bar
   the guidelines-amendment instance itself. Gating bucket:
   critical.
 
+### Feed-ranking calibration
+
+- **`time_decay_half_life_days`** — half-life of the reactor-edge
+  time-decay factor `f(Δt)` used by the feed-ranking algorithm
+  (see [feed-ranking.md §7.3](feed-ranking.md#73-shape--exponential-30-day-half-life-frontend-tunable)).
+  The default seeded at genesis is 30 days; the property is
+  amendable so the network can recalibrate freshness sensitivity
+  as the graph matures. Frontend overrides remain available per
+  §7.3; this property sets the network default. Gating bucket:
+  baseline.
+
 ### Amendment-rule pairs (governance of governance)
 
 The pairs that govern changes to the singleton's own parameters,
@@ -148,8 +159,8 @@ dual-quorum pair:
 
 - **Baseline:** **`property_change_quorum_fraction`**,
   **`property_change_quorum_count`** — for low-stakes parameters
-  (`moderation_sensitive_*`, `active_threshold_days`, and the
-  baseline pair itself).
+  (`moderation_sensitive_*`, `active_threshold_days`,
+  `time_decay_half_life_days`, and the baseline pair itself).
 - **Critical:** **`critical_property_change_quorum_fraction`**,
   **`critical_property_change_quorum_count`** — for parameters
   whose abuse has destructive or platform-wide reach

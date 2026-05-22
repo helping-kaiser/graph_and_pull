@@ -163,10 +163,17 @@ relationship between the junction and its *bearing actor*.
 | ItemOwnership → User \| Collective | This ownership belongs to this actor |
 
 The edge is written once at junction creation and never re-pointed
-— a junction's bearer is its identity. The actor's Shape A
-self-claim that activates the junction must originate from the
-actor at the other end of `:BEARER`; the API rejects mismatched
-self-claims. This is what enables invite-only flows
+— a junction's bearer is its identity. Changing who a junction
+represents is conceptually a *different* junction; ownership
+transfers (`ItemOwnership`) and impersonation defenses all rely on
+this — a new bearer means a new junction node with a new `:BEARER`
+edge, not a re-pointing of the existing one. Key rotation on the
+bearing actor doesn't shift `:BEARER` either: the edge points at
+the actor's graph identity (User or Collective node), which is
+stable across key changes. The actor's Shape A self-claim that
+activates the junction must originate from the actor at the other
+end of `:BEARER`; the API rejects mismatched self-claims. This is
+what enables invite-only flows
 ([chats.md §11](../instances/chats.md#11-joining-and-leaving-a-chat)):
 the inviter creates the junction with a known bearer before the
 invitee acts.

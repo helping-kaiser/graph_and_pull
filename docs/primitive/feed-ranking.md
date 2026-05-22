@@ -37,7 +37,7 @@ target nodes as seen from `U`.
 
 | Symbol | Name | Meaning |
 |--------|------|---------|
-| `R` | Real number of graph hops | Path length (number of edges) from `U` to the target. Targets with the same `R` form a comparison group. Both actor and structural edges count toward `R`. |
+| `R` | Real number of graph hops | Path length (number of edges) from `U` to the target. Counts every edge in the traversable path (actor edges plus the traversable structural edges admitted by §3.5). `R` has no math-imposed upper bound — it is an **operational cost parameter** capped at the system level (see §3.1); within whatever cap the system runs at, `d(R)` does the attenuation. |
 | `S` | Scalar value of a node | An intrinsic scalar assigned to each node. Used in the **sort** phase to pre-order nodes within an `R` group. (S's exact derivation is open — tracked as [Q16](../open-questions.md).) |
 
 ---
@@ -46,10 +46,14 @@ target nodes as seen from `U`.
 
 Per-target metrics (§4) are computed by composing edge tensors
 along each **path from the viewing user `U` to the target `t`**.
-A path crosses one or more edge types in their stored direction
-and ends with an actor edge from a node `B` into `t`; that final
-`B → t` is the **reactor edge** and `B` is the **reactor** for
-that path. The path-internal hops are unconstrained by edge type
+A path crosses one or more edge types in their stored direction —
+actor edges, `:REFERENCES`, and the traversable structural edges
+of §3.5 — and ends with a **factor-contributing edge** into `t`:
+either an actor edge `B → t` (with `B` a User or Collective), or
+a `:REFERENCES` edge from a content carrier `C → t`. That final
+edge is the path's **reactor edge**. For an actor terminal edge,
+`B` is the path's **reactor** — the actor expressing a stance
+on `t`. The path-internal hops are unconstrained by edge type
 modulo the §3.5 traversal restrictions. The composition uses
 **parallel tracks**: `dim1` and `dim2` flow independently through
 the path product and only collapse to a scalar at sort time.
@@ -82,14 +86,17 @@ The walk maintains a per-path visited set to enforce the invariant.
 **Actor edges** and **`:REFERENCES`** contribute factors to the
 path products. `:REFERENCES` is a state-bearing structural
 edge (§3.5 rule 5): it carries a `(dim1, dim2)` tensor with the
-same shape as actor edges and composes the same way. All other
-structural edges count toward `R` (path length) but do not
-contribute factors — they are pure topology.
+same shape as actor edges and composes the same way. The other
+**traversable** structural edges count toward `R` (path length)
+but do not contribute factors — they are pure topology.
+Non-traversable structural edges (`:APPROVAL`, `:BEARER`,
+`:TARGETS` per §3.5 rules 1–3) never appear in any feed-ranking
+path; they contribute nothing to `R` because no path crosses them.
 
 ```
 s_path uses only dim1 of actor and :REFERENCES edges in the path
 |c_path| uses only |dim2| of actor and :REFERENCES edges in the path
-R counts every edge in the path (actor + structural)
+R counts every edge in the (traversable) path
 ```
 
 Why structural edges count toward `R` but not toward the products:
@@ -104,8 +111,20 @@ it sits on, even by a small margin.
 
 Deep structural chains (e.g., replies of replies on a post)
 accumulate `R` naturally and decay via `d(R)` without needing an
-explicit depth cap. The dataminer's R-fetch limit (typically `R ≤
-5` or `6` in practice) bounds traversal at the system level.
+explicit depth cap.
+
+**`R` is an operational cost knob, not a math-defining bound.**
+The path-product math (§3.3–§3.4) and per-target sums (§4) are
+well-defined for any `R`; nothing in the math caps it. What caps
+`R` in practice is system cost: enumerating paths grows with `R`,
+and traversal at the data-fetch boundary
+([architecture.md](../implementation/architecture.md), "traverse
+N hops") is bounded for performance reasons — typically `R ≤ 5`
+or `6` per fetch. If a denser graph makes higher-`R` traversal
+unaffordable, the tuning lever is `d(R)`'s decay shape, not a
+new math-side cap: a steeper `d(R)` attenuates distant paths
+enough that fetching them stops paying for itself, at which
+point the system cap is the right gate.
 
 State-bearing structural edges fall into two cases with
 different treatment:
@@ -135,19 +154,21 @@ engagement, but this is a UX nudge, not a graph mechanism.
 
 ### 3.2 Zero handling — kill rule
 
-**Invariant:** A `0` in either dim of any actor edge along a path
-zeros that dim's path product irreversibly. Zeros are real
-multiplicative factors, never skipped or treated as identity, and
-once a dim is zeroed on a path it cannot be revived downstream.
+**Invariant:** A `0` in either dim of any factor-contributing edge
+(actor or `:REFERENCES`) along a path zeros that dim's path product
+irreversibly. Zeros are real multiplicative factors, never skipped
+or treated as identity, and once a dim is zeroed on a path it
+cannot be revived downstream.
 
-A factor of `0` in either dim of any actor edge along the path
-zeros that dimension's path product. Zeros are **not** skipped
-or treated as multiplicative identity — they are real factors
-that, through ordinary multiplication, collapse the chain.
+A factor of `0` in either dim of any actor or `:REFERENCES` edge
+along the path zeros that dimension's path product. Zeros are
+**not** skipped or treated as multiplicative identity — they are
+real factors that, through ordinary multiplication, collapse the
+chain.
 
 ```
-if dim1(eᵢ) = 0 for any actor edge eᵢ in path  →  s_path = 0
-if dim2(eᵢ) = 0 for any actor edge eᵢ in path  →  c_path = 0
+if dim1(eᵢ) = 0 for any actor or :REFERENCES edge eᵢ in path  →  s_path = 0
+if dim2(eᵢ) = 0 for any actor or :REFERENCES edge eᵢ in path  →  c_path = 0
 ```
 
 The two tracks are independent: a zero in one dim does not affect
@@ -165,12 +186,15 @@ zero hop scores stronger than a path with two real weak hops.
 
 ### 3.3 dim1 chain — signed multiplication
 
-For a path with actor edges `e_1, e_2, ..., e_R'` (where `R'` is the
-number of actor edges in the path; structural edges contribute no
-factors per §3.1):
+For a path with factor-contributing edges `e_1, e_2, ..., e_R'`
+(where `R'` is the number of **actor edges plus `:REFERENCES`
+edges** in the path — the two edge classes that carry a
+`(dim1, dim2)` tensor per §3.1; `R'` is independent of `R`, the
+full traversable path length, which also counts non-contributing
+structural edges):
 
 ```
-s_path = ∏ dim1(e_k)   over all actor edges in the path
+s_path = ∏ dim1(e_k)   over actor edges and :REFERENCES edges in the path
        = 0             if any dim1(e_k) is zero (kill rule, §3.2)
 ```
 
@@ -193,7 +217,7 @@ which is meaningless).
 Instead, dim2 composes via a **taint rule**:
 
 ```
-|c_path|     = ∏ |dim2(e_k)|   over all actor edges in the path
+|c_path|     = ∏ |dim2(e_k)|   over actor edges and :REFERENCES edges in the path
 sign(c_path) = -1   if ANY dim2(e_k) in the path is negative
              = +1   otherwise
 c_path       = sign(c_path) × |c_path|
@@ -480,19 +504,29 @@ single declaration.
 
 #### The severance edge is not the everyday signal
 
-`(0, 0)` is reserved for **deliberate severance** — a declaration
-that the target is outside the user's graph of relevance entirely.
-`(+, +)`, `(−, +)`, `(+, −)`, `(−, −)` and floats in between remain
-the normal vocabulary for affinity, distance, dislike, and
-avoidance, all of which leave path products live and feed back into
-`h(t)` via the ordinary math. A user who simply dislikes a target
-uses `(−, −)`, not `(0, 0)`.
+`(0, 0)` is the **intended primitive for deliberate severance** —
+a declaration that the target is outside the user's graph of
+relevance entirely. By convention it is reserved for that purpose;
+the math does not enforce it, and a frontend may surface `(0, 0)`
+for other reasons (rendering experiments, intent placeholders)
+without breaking anything. `(+, +)`, `(−, +)`, `(+, −)`, `(−, −)`
+and floats in between remain the normal vocabulary for affinity,
+distance, dislike, and avoidance, all of which leave path products
+live and feed back into `h(t)` via the ordinary math. A user who
+simply dislikes a target uses `(−, −)`, not `(0, 0)`.
 
 Severance is a stronger statement and has stronger consequences: it
 kills both dim chains on every path through the edge, removes the
 severing user as a transit node toward the severed account, and
 contributes to placing the severed account into zero-jail (§5) when
 the entry path-set is fully community-marked.
+
+`h(t) = 0` is not exclusive to severance: in sparse graphs or with
+`+1/0/-1` integer values, exact cancellation between positive and
+negative path contributions can also produce `h(t) = 0` with no
+severance edge anywhere. The sort rule (§5) treats both cases the
+same — "graph signal toward this target sums to neutral" is a
+reasonable bucket to push out of the default feed either way.
 
 #### Three layered defenses
 
@@ -508,13 +542,23 @@ the entry path-set is fully community-marked.
    without an explicit gesture. A user who simply ignores a cluster
    creates no path into it from their neighborhood.
 
-3. **`(0, 0)` severance forces zero-jail.** When the community marks
-   every entry edge into the cluster with `(0, 0)`, every path from
-   `U` to any target inside the cluster has at least one severance
-   edge along it. The kill rule forces `s_path = 0` and `c_path = 0`
-   on every such path; the aggregate `h(t) = 0` exactly. The sort
-   rule (§5) banishes targets at exact `h(t) = 0` to the bottom of
-   the feed, invisible by default.
+3. **`(0, 0)` severance forces zero-jail.** Stated as a per-target
+   predicate:
+
+   > Zero-jail applies to `t` (from `U`'s vantage) **iff every path
+   > from `U` to `t` contains at least one severance edge `(0, 0)`
+   > along it.**
+
+   When this holds, the kill rule forces `s_path = 0` and
+   `c_path = 0` on every path from `U` to `t`; the aggregate
+   `h(t) = 0` exactly. The sort rule (§5) banishes targets at
+   exact `h(t) = 0` to the bottom of the feed, invisible by
+   default. The predicate is target-by-target, not cluster-wide —
+   the math only ever reads paths from `U` to a specific `t`. The
+   community-driven "mark every entry edge into the cluster"
+   framing is the recipe for satisfying the predicate across many
+   targets at once; "cluster" itself is a viewing convention
+   (§3.7), not a graph entity.
 
 The severance is **community-driven**, not gatekeeping. The math
 gives users a tool; communities use it. The fundamental constraint
@@ -555,12 +599,14 @@ transit node itself with `(0, 0)`. Every path that reached the
 cluster through that transit node is now killed at the transit hop
 in the kill rule (§3.2).
 
-As more viewing users cascade severance outward through the graph, the
-cluster's reach contracts. Full severance is achieved when, for
-every viewing user, every path into the cluster passes through at least
-one severance edge — at which point `h(t) = 0` exactly for every
-target inside (§3.6), and §5's zero-jail banishes those targets
-from view.
+As more viewing users cascade severance outward through the graph,
+the cluster's reach contracts. Full severance against a target
+`t` is achieved when the §3.6 zero-jail predicate holds for `t`
+from every viewing user's vantage — at which point `h(t) = 0`
+exactly for every such viewer, and §5's zero-jail banishes `t`
+from view. "Cluster" extends the same idea across many targets
+at once: the cluster is fully severed when the predicate holds
+for every target inside it.
 
 #### Cluster is a viewing convention, not a math entity
 
@@ -1128,8 +1174,9 @@ R=2 path roughly matches ~15 strong R=3 paths' aggregate
 contribution — balancing direct signal with friend-of-friend buzz.
 
 A separate **time-decay** factor `f(Δt)` is applied alongside `d(R)`
-on the reactor edge of each path — see §7. Both are
-frontend-tunable.
+on the reactor edge of each path. `f(Δt)`'s canonical shape and
+parameters live in §7.3; §4.2 below just composes them into the
+metric sums. Both `d(R)` and `f(Δt)` are frontend-tunable.
 
 **Considered and rejected: single-transit-cap.** A rule capping
 any single intermediate's contribution to a given target — or
@@ -1185,10 +1232,13 @@ Each metric is a **2-tuple** (one component per dim track):
 | `j` | absolute opinion | `J_s = ∑_B f(Δt_B→t) · dim1(B → t)` over reactors `B` (signed) | `J_c = ∑_B f(Δt_B→t) · dim2(B → t)` over reactors (signed) |
 | `k` | absolute reach | `K_s = ∑_B f(Δt_B→t) · \|dim1(B → t)\|` over reactors | `K_c = ∑_B f(Δt_B→t) · \|dim2(B → t)\|` over reactors |
 
-`f(Δt)` is the time-decay factor on the reactor edge (the last
-actor edge in the path, or `B → t` directly for `j` and `k`); see
-§7 for its definition and rationale. `Δt` is the elapsed time
-since that edge's top layer was added.
+`f(Δt)` is the time-decay factor on the reactor edge — the last
+factor-contributing edge of the path (typically an actor edge
+`B → t`; can also be a `:REFERENCES` edge `C → t` per §3.5
+rule 4); `j` and `k` sum over actor reactor edges `B → t`
+directly. **§7.3 is the canonical home for `f(Δt)`'s shape and
+parameters;** §4.2 only composes it into the metric sums.
+`Δt` is the elapsed time since the edge's top layer was added.
 
 Reading:
 - `h` — personal opinion: trust- and connection-weighted opinion
@@ -1279,10 +1329,11 @@ is exactly zero are banished from the feed — sorted below the
 negatives, into nothingness. This is the only sort position
 **immovable under unbounded internal cluster amplification**: a
 cluster with infinite internal nodes can tune its target's `h(t)`
-to any non-zero value (positive or negative) but cannot move it off
-exact zero once every path from `U` into the cluster has at least
-one severance edge `(0, 0)` along it. Zero-jail is the math-level
-realization of full community severance (see §3.6).
+to any non-zero value (positive or negative) but cannot move it
+off exact zero once the §3.6 zero-jail predicate holds — i.e.,
+every path from `U` to `t` contains at least one severance edge
+`(0, 0)` along it. Zero-jail is the math-level realization of
+full community severance (see §3.6).
 
 Why exact, not an `[−ε, 0]` interval: bots facing an interval-jail
 simply tune their amplification to land at `−ε − δ` and re-enter
@@ -1543,11 +1594,16 @@ Time decay closes this gap by attenuating contributions from
 
 ### 7.1 What decays — reactor-edge top-layer age
 
-Decay anchors on the **top-layer timestamp of the reactor edge**:
-the last actor edge in the path (`B → t`), the edge that
-expresses a stance toward the target. Per
-[layers.md](layers.md), every edge has a stack of timestamped
-layers; the top layer is the most recent stance expression.
+Decay anchors on the **top-layer timestamp of the reactor edge** —
+the last factor-contributing edge of the path. This is typically
+an actor edge `B → t` (with `B` a User or Collective expressing a
+stance toward `t`); it can also be a `:REFERENCES` edge `C → t`
+per §3.5 rule 4, with the carrier `C`'s reference timestamp
+driving the decay. The principle is uniform: time decay always
+applies to the last factor-contributing hop of the path, and
+intermediate hops do not decay. Per [layers.md](layers.md),
+every edge has a stack of timestamped layers; the top layer is
+the most recent expression.
 
 A new layer on the reactor edge — a friend re-liking,
 commenting again, updating their reaction — resets the age clock
@@ -1652,6 +1708,15 @@ who wants longer-tail visibility softens the half-life (e.g. 90
 days). One who wants strict freshness shortens it (e.g. 7 days).
 Setting `f(Δt) = 1` constant disables decay entirely — useful as
 an opt-in "no-decay" sort for users who want pure-graph signal.
+
+**Network default is tunable too.** The 30-day half-life is the
+default seeded at genesis on the `:Network` singleton's
+`time_decay_half_life_days` property (see
+[network.md §3](network.md#feed-ranking-calibration)). The
+network can recalibrate it via a baseline-bucket Proposal as the
+graph matures and freshness sensitivity needs to shift; frontend
+overrides continue to layer on top of whatever network default is
+current.
 
 ### 7.4 What this does not solve
 
