@@ -93,7 +93,8 @@ at properties. Each subject type has a natural node to address:
   [graph-model.md §5](graph-model.md#5-junction-node-flows)) writes a new layer on the
   target property with `proposed_value`. Multiple Proposals
   targeting the same property coexist; each passes or fails on its
-  own votes. Reverting a passed change requires a counter-Proposal —
+  own votes. Reverting a passed change requires a
+  **counter-Proposal** — defined in [§3 "Counter-Proposals"](#counter-proposals),
   consistent with §6.
 
 Whether the vote edge uses Shape A or Shape B (§3) is a separate,
@@ -113,29 +114,51 @@ state:
 Eligibility is evaluated at **tally time**, not vote time. A vote
 from someone who becomes ineligible afterward drops out; a vote
 from someone who becomes eligible later (e.g. a newly-approved
-member) counts once their status flips.
+member) counts once their status flips. The mechanism that
+neutralizes an in-flight vote when its caster loses eligibility
+mid-flight — a `(0,0)` layer written on the affected vote edges
+by the eligibility-dropout cascade — is specified in
+[§6 "Eligibility-dropout cascade"](#eligibility-dropout-cascade).
 
 ### 2.3 Weight function
 
 How each vote's contribution is scaled. Derived from properties on
-the voter's eligibility junction:
+the voter's eligibility junction, optionally overridden by an
+explicit per-junction `voting_weight`.
 
-- ChatMember: `role` (`admin` / `chat_mod` / `member`). Optionally
-  a direct `voting_weight` property when the chat sets per-member
-  weight explicitly instead of deriving it from `role`. The
-  `chat_mod` label is chat-scope; do not confuse with the
-  Network-scope moderator role (`User.network_role = 'moderator'`).
-- CollectiveMember: `role` + `ownership_pct` combine into a
-  composite. Optionally a direct `voting_weight` for collectives
-  whose weight is not tied to equity (e.g. one-member-one-vote
-  with role-based multipliers, or per-member negotiated weight).
-- Future cases: whatever properties the junction exposes.
+**Role-derived defaults by junction type:**
 
-`voting_weight` is the escape hatch for any junction whose weight
-doesn't naturally fall out of role + ownership. When present it is
-read directly as the voter's weight; when absent the instance falls
-back to whatever rule it defines over `role` and other properties.
-See [nodes.md §3](nodes.md#3-junction-nodes) for the property declaration.
+| Junction         | Default source                                                                       | Out-of-the-box roles → weights |
+|------------------|--------------------------------------------------------------------------------------|---|
+| ChatMember       | Per-Chat role-weight properties on the Chat node — see [chats.md §3.1](../instances/chats.md#31-chat)                                                  | `admin = 5`, `chat_mod = 3`, `member = 1`; per-chat amendable |
+| CollectiveMember | Composite of `role` and `ownership_pct` per the collective's social contract — see [collectives.md](../instances/collectives.md) | Defined per collective; e.g. `role = founder` weighted by `ownership_pct`, or one-member-one-vote with role multipliers |
+| Future junctions | Whatever properties the junction exposes                                             | Defined by the application |
+
+The chat-scope `chat_mod` role is deliberately distinct from the
+Network-scope `User.network_role = 'moderator'`; do not confuse
+them (see [§7](#7-the-mod-gate)).
+
+**`voting_weight` override.** Any junction node may carry an
+optional, **nullable** `voting_weight` property. When set
+(non-null), it is read directly as the voter's weight and the
+role-derived default is ignored. When null (the default), the
+role-derived rule above applies. The override is the escape
+hatch for instances whose intended weight does not fall out
+naturally from role + ownership — e.g. a small collective with
+per-member negotiated weights, or a chat that wants to deviate
+from the role-weight table for a specific bearer. Schema
+declaration for the property itself lives on the junction node:
+ChatMember carries it nullable (see
+[chats.md §3.3](../instances/chats.md#33-chatmember));
+CollectiveMember carries it nullable (see
+[collectives.md](../instances/collectives.md)); future junctions
+follow the same pattern. See
+[nodes.md §3](nodes.md#3-junction-nodes) for the cross-junction
+property declaration.
+
+For Network-scope every active member's weight is `1`; no
+`voting_weight` override applies because Network membership has
+no junction to carry the property.
 
 ### 2.4 Threshold policy
 
@@ -146,13 +169,20 @@ What tally triggers the outcome. Possible shapes:
 - Supermajority for irreversible decisions.
 - Quorum + percentage (M% of eligible weight participates, N% of
   cast weight agrees).
+- **Petition with dual quorum** — positive-vote-only tally; pass
+  on the lower of (fraction × eligible) or absolute count.
+  Used at Network scope where unbounded membership and bot
+  inflation make a single percentage or single fixed count
+  insufficient. See [§3 "Petition-style tally and dual quorum"](#petition-style-tally-and-dual-quorum-network-scope-only).
 - **Multi-gate** — two or more independent eligibility groups
   voting on the same subject; each gate has its own threshold,
   and the outcome triggers only when **all** gates cross.
 
 Percentages scale with the voter pool; fixed counts don't. An
 instance that picks fixed numbers has to defend why it won't need
-re-tuning as the pool grows.
+re-tuning as the pool grows. Dual quorum bounds both ends: the
+fractional bar dominates while the network is small, the absolute
+bar dominates once membership scales past the crossover point.
 
 **Multi-gate decisions are a separation of powers.** When a single
 subject is gated by two or more distinct eligibility groups —
@@ -174,6 +204,14 @@ property on the subject, not a hardcoded constant. Changing any of
 them is done via a Proposal (see §2.1), voted on by the same
 eligibility rules. Defaults exist to bootstrap; they are not fixed
 rules.
+
+**Tally evaluation.** Whichever shape the threshold policy
+adopts, a tally is computed only when a new or updated vote
+layer is written on the subject — never on a clock, never as
+a background sweep. See
+[§6 "When outcomes take effect"](#6-when-outcomes-take-effect)
+for the trigger conditions and the per-subject serialization
+that orders concurrent vote writes.
 
 ### 2.5 Outcome
 
@@ -290,6 +328,108 @@ approver votes that admit and later remove a junction holder).
 A future case that doesn't fit either shape is a signal to add a
 third shape to this doc, not to hack an existing one.
 
+### Petition-style tally and dual quorum (Network-scope only)
+
+Network-scope governance — moderator role changes, content
+moderation classifications, and `:Network` parameter
+amendments (see
+[network.md §10](network.md#10-network-wide-governance)) —
+uses **petition-style tally**: only positive votes
+contribute. The mechanism applies at Network scope only.
+Chat-internal and collective-internal voting retain
+bidirectional Shape B tally (positive and negative votes
+both count); bounded membership in those contexts means
+bot-driven denominator inflation is not the dominant threat.
+
+**Per-vote arithmetic.** Each Shape A vote edge from an
+active member to a Network-scope Proposal carries `dim1` as a
+continuous value in `[-1, +1]` and `dim2` as the voter's
+personal stake (also continuous). Its contribution to the
+petition tally is:
+
+- `contribution = max(sign(dim1), 0) × voter_weight` — that
+  is, `+1 × voter_weight` when `dim1 > 0`, `0` when
+  `dim1 ≤ 0`. The petition tally reads only the sign of
+  `dim1`; the magnitude does not scale the contribution.
+- `dim2` is not read by the tally. It carries personal
+  stake / importance, which is informational for ranking
+  and frontends, not governance arithmetic.
+- The actor edges with `dim1 ≤ 0` are valid graph objects
+  encoding the voter's sentiment; they simply do not enter
+  the tally.
+- `voter_weight` is the value defined in §2.3. For
+  Network-scope every member's weight is `1`; the
+  `voting_weight` override is reserved for chat and
+  collective contexts that define non-uniform weights.
+
+The Network-scope positive-vote total is the sum of these
+contributions across all active members' top-layer vote
+edges to the Proposal:
+
+```
+positive_count = Σᵥ  max(sign(v.dim1), 0) × voter_weight(v)
+                (over the top vote-edge layer of each active member)
+```
+
+**Dual-quorum pass condition.** A Network-scope Proposal
+passes when its positive-vote total is at least the lower of
+two bars, evaluated at tally time:
+
+```
+positive_count ≥ min( P × |active_members| , K )
+```
+
+- `P` is the proposal-type's **`*_quorum_fraction`** property
+  on the `:Network` singleton.
+- `K` is the proposal-type's **`*_quorum_count`** property on
+  the `:Network` singleton.
+- `|active_members|` is the count of Users active inside
+  `Network.active_threshold_days`.
+
+In addition, the mod-gate of §7 must be satisfied — every
+Network-scope Proposal also requires at least one
+moderator's positive vote. The mod-gate and the dual-quorum
+bar are independent checks evaluated on the same set of
+vote layers.
+
+**Why two bars.** A fractional bar alone is unbounded above:
+a 50%-of-active rule becomes unreachable as membership
+scales. An absolute bar alone is unbounded below: in a small
+network, a low `K` could let a tiny faction pass things over
+a silent majority. The pair is bounded on both ends — the
+fractional bar dominates while `P × |active_members| < K`
+(at small membership a real majority is required), the
+absolute bar dominates once `P × |active_members| ≥ K` (at
+large membership a fixed real-vote count is sufficient).
+Both `P` and `K` are properties on the `:Network` singleton,
+amendable through the same primitive, so the operative bar
+self-corrects as the network grows and as conditions shift.
+
+**Why petition (positive-only).** A counted "no" vote
+operates as a perpetual veto: bot accounts that cast it
+never expire, so they hold a Proposal blocked indefinitely
+against any later turnout. Restricting tally contributions
+to positive votes removes the passive-veto vector.
+Opposition retains an explicit structural path — author a
+**counter-Proposal** (see [§3 "Counter-Proposals"](#counter-proposals)
+for the definition). The graph still records negative-
+`dim1` actor edges as personal sentiment; the tally simply
+does not aggregate them.
+
+**Known limitation.** Bot accounts can still inflate the
+fractional-bar denominator by existing as active members
+(any outgoing actor edge inside `active_threshold_days`).
+The absolute bar `K` is the floor that survives any
+denominator inflation, but `K` itself is a static parameter
+whose correct calibration over long horizons is unsettled.
+A fully bot-resistant, non-arbitrary quorum model remains an
+open question — see
+[open-questions.md](../open-questions.md). The dual-quorum
+mechanism is a v1 compromise: petition eliminates the
+passive-no attack; the absolute floor bounds damage from
+denominator inflation; meta-governance over `P` and `K`
+lets the network re-calibrate as conditions evolve.
+
 ### Co-signed acts: threshold > 1 in either shape
 
 When a graph-state change requires more than one party to
@@ -335,6 +475,47 @@ A future actor that needs N-party authorization on its own
 outgoing edges (a multi-sig bot, a council acting jointly)
 parameterizes this same primitive rather than inventing a new
 one.
+
+### Counter-Proposals
+
+Reversing a passed Proposal is done with a **counter-Proposal**:
+an ordinary `Proposal` node — same label, same `:TARGETS`
+edge, same eligibility/weight/threshold/outcome semantics —
+whose `target_property` matches the prior passed Proposal
+and whose `proposed_value` is the inverse (or the prior
+value, where the property is multi-valued). No new node
+label, no new edge label, no separate mechanism. Tally
+arithmetic, the petition-vs-bidirectional choice, the
+cascade dispatch, and the outcome rules apply identically.
+
+A counter-Proposal is the structural opposition path under
+petition-style tally (§3 "Petition-style tally and dual
+quorum"): voters who oppose a change have no way to register
+the opposition inside the original Proposal's tally, so they
+author or vote on a counter-Proposal that proposes the
+reverse. The same pattern is the only reversal path under
+bidirectional tally as well — an outcome is sticky (§6
+"Why outcomes are sticky"), so a previously-passed change
+does not flip back when later votes shift sentiment; a new
+Proposal must explicitly carry the reverse.
+
+**Re-cascade on reversal.** A counter-Proposal that passes
+fires the cascade machinery a second time, symmetrically. If
+the original outcome triggered downstream writes — a
+moderation-status property change that cascaded into
+redaction layers, a role change that cascaded into derived
+permission edges — the counter-Proposal's threshold-cross
+re-runs the same cascade dispatch with the reversed
+`proposed_value`. The mechanism is the one defined in
+[§6 "Cascade dispatch"](#cascade-dispatch); no special
+reversal path exists. The resulting graph state will
+typically mirror the pre-original state, but exact mirror is
+not guaranteed: cascades may not be idempotent across
+reversals (intervening state changes on dependent edges or
+nodes can leave residue that the reversal cascade does not
+undo). Where exact mirror matters, the application is
+responsible for designing its cascade so the forward and
+reverse sequences compose to identity.
 
 ---
 
@@ -521,14 +702,18 @@ member's worth of weight to the tally — the same as every other
 voter. The mod-gate sits *alongside* the member-weighted tally,
 not on top of it.
 
-**A moderator's positive vote counts in BOTH the mod-gate check
-AND the member-tally arithmetic; it is not double-spent in any
-other sense.** The mod casts `+1` once; that same vote opens the
-gate *and* contributes its weight of `1` to the count tallied
-against quorum and threshold. The "mod weight = 1" rule means
-the moderator's contribution to the member arithmetic is
-exactly one member's worth — nothing more — even though the same
-vote also opened the gate.
+**A moderator's positive vote contributes once to (a) the
+mod-gate satisfaction and once to (b) the member-tally
+arithmetic. The two are independent checks evaluated on the
+same vote layer.** The mod casts `+1` once; that same vote
+opens the gate *and* contributes its weight of `1` to the
+count tallied against the threshold policy of the instance —
+for Network-scope Proposals, the dual-quorum bar from
+[§3 "Petition-style tally and dual quorum"](#petition-style-tally-and-dual-quorum-network-scope-only).
+The "mod weight = 1" rule means the moderator's contribution
+to the member arithmetic is exactly one member's worth —
+nothing more — even though the same vote also opened the
+gate.
 
 The gate applies symmetrically in both directions of any
 classification — setting `sensitive` or `illegal`, and

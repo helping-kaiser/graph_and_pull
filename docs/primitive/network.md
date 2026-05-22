@@ -102,21 +102,31 @@ amendment-rule pair gates changes to it.
   Composes with tally-time eligibility per §10. Gating bucket:
   baseline (§11).
 
+Network-scope governance uses petition-style tally under a
+dual-quorum gate (see
+[governance.md §3](governance.md#petition-style-tally-and-dual-quorum-network-scope-only)).
+Each instance below carries a **pair** of parameters: a
+fractional bar (`P`, `*_quorum_fraction`) and an absolute bar
+(`K`, `*_quorum_count`). The operative bar at tally time is
+`min(P × |active|, K)`.
+
 ### Mod-role-change governance
 
-- **`mod_role_change_quorum`**, **`mod_role_change_threshold`** —
-  thresholds for the multi-sig Proposal that adds or removes a
-  moderator (§9). Gating bucket: critical (§11).
+- **`mod_role_change_quorum_fraction`**,
+  **`mod_role_change_quorum_count`** — dual-quorum pair for
+  the multi-sig Proposal that adds or removes a moderator
+  (§9). Gating bucket: critical (§11).
 
 ### Content-moderation governance
 
-- **`moderation_sensitive_quorum`**,
-  **`moderation_sensitive_threshold`** — thresholds for
-  `'sensitive'` classification Proposals. Gating bucket:
+- **`moderation_sensitive_quorum_fraction`**,
+  **`moderation_sensitive_quorum_count`** — dual-quorum pair
+  for `'sensitive'` classification Proposals. Gating bucket:
   baseline.
-- **`moderation_illegal_quorum`**, **`moderation_illegal_threshold`**
-  — thresholds for `'illegal'` classification Proposals. Gating
-  bucket: critical.
+- **`moderation_illegal_quorum_fraction`**,
+  **`moderation_illegal_quorum_count`** — dual-quorum pair
+  for `'illegal'` classification Proposals. Gating bucket:
+  critical.
 
 ### Platform-guidelines governance
 
@@ -125,21 +135,23 @@ amendment-rule pair gates changes to it.
   [platform-guidelines.md](../instances/platform-guidelines.md)).
   Amended together by the guidelines-amendment instance below,
   not by either property-change bucket.
-- **`guidelines_change_quorum`**, **`guidelines_change_threshold`**
-  — thresholds for the guidelines-amendment instance itself.
-  Gating bucket: critical.
+- **`guidelines_change_quorum_fraction`**,
+  **`guidelines_change_quorum_count`** — dual-quorum pair for
+  the guidelines-amendment instance itself. Gating bucket:
+  critical.
 
 ### Amendment-rule pairs (governance of governance)
 
 The pairs that govern changes to the singleton's own parameters,
-split by stakes (§11):
+split by stakes (§11). Each amendment-rule pair is itself a
+dual-quorum pair:
 
-- **Baseline:** **`property_change_quorum`**,
-  **`property_change_threshold`** — for low-stakes parameters
+- **Baseline:** **`property_change_quorum_fraction`**,
+  **`property_change_quorum_count`** — for low-stakes parameters
   (`moderation_sensitive_*`, `active_threshold_days`, and the
   baseline pair itself).
-- **Critical:** **`critical_property_change_quorum`**,
-  **`critical_property_change_threshold`** — for parameters
+- **Critical:** **`critical_property_change_quorum_fraction`**,
+  **`critical_property_change_quorum_count`** — for parameters
   whose abuse has destructive or platform-wide reach
   (`mod_role_change_*`, `moderation_illegal_*`,
   `guidelines_change_*`, and the critical pair itself).
@@ -207,10 +219,10 @@ Network-scope governance instances do **not** create new
 structural edges to the `:Network` node. Votes on Network-scope
 Proposals — moderator role changes (§9), content moderation
 classifications, and singleton parameter amendments (§11) — use
-the existing `User → Proposal` **actor edge** under the carrier
-relaxation described in
-[edges.md §2 "Voting (Shape B)"](edges.md#voting-shape-b) and
-[governance.md §3](governance.md#3-the-two-vote-shapes). The
+the existing `User → Proposal` **actor edge** as the Shape A
+vote (see
+[edges.md §1](edges.md#1-actor-edges) and
+[governance.md §3](governance.md#3-the-two-vote-shapes)). The
 Proposal itself targets the relevant subject (a User for role
 changes, the `:Network` singleton for parameter amendments);
 the votes themselves never carry an edge to or from the Network
@@ -301,9 +313,11 @@ mechanism
   the new role.
 - **Eligibility:** all active Network members.
 - **Threshold:** multi-sig — **≥1 existing moderator's positive
-  vote** plus **`Network.mod_role_change_quorum`** of cast
-  eligible-member votes, with
-  **`Network.mod_role_change_threshold`** in favor.
+  vote** plus the dual-quorum bar from §3:
+  `positive_count ≥ min(Network.mod_role_change_quorum_fraction
+  × |active|, Network.mod_role_change_quorum_count)`. Tally is
+  petition-style (positive votes only) per
+  [governance.md §3](governance.md#petition-style-tally-and-dual-quorum-network-scope-only).
 
 The two gates implement a **separation of powers** — see
 [governance.md §2.4](governance.md#24-threshold-policy)
@@ -358,17 +372,14 @@ consequences shared across all three:
 - **The eligibility carrier is the User node itself**, not a
   junction. Network membership has no separate gesture (§8), so
   there is no `ChatMember`-/`CollectiveMember`-style junction to
-  carry the vote. At the edge layer the vote IS the existing
-  `User → Proposal` actor edge from
+  carry the vote. This is the natural Shape A case: the vote
+  IS the existing `User → Proposal` actor edge from
   [edges.md §1](edges.md#1-actor-edges) — no separate structural
   edge is created. The actor edge keeps its normal `(sentiment,
   importance)` meaning; the tally reads `sign(sentiment)` for
-  the binary outcome. "Shape B" here is governance-conceptual
-  (eligibility from the User, not a junction), not
-  edge-mechanical. See
+  the binary outcome. See
   [governance.md §3](governance.md#3-the-two-vote-shapes)
-  "Carrier relaxation for Network-level governance" for the
-  full resolution.
+  "Shape A".
 - **Mod weight = member weight = 1; mod is a gate, not a
   weight.** Moderators do not outvote the community; the
   "≥1 mod positive vote" rule is a procedural gate, never a
@@ -397,10 +408,14 @@ per tally, not snapshotted at vote time.
 Two amendment-rule pairs gate changes to the singleton's own
 properties, separated by stakes:
 
-| Bucket   | Pair                                  | Quorum (default) | Threshold (default) | Mod gate | Governs |
-|----------|---------------------------------------|------------------|---------------------|----------|---------|
-| Baseline | `property_change_quorum`, `property_change_threshold` | 5%  | ≥2/3 | required | `moderation_sensitive_*`, `active_threshold_days`, the baseline pair itself |
-| Critical | `critical_property_change_quorum`, `critical_property_change_threshold` | 10% | ≥3/4 | required | `mod_role_change_*`, `moderation_illegal_*`, `guidelines_change_*`, the critical pair itself |
+| Bucket   | Dual-quorum pair                                  | `P` default | `K` default | Mod gate | Governs |
+|----------|---------------------------------------------------|-------------|-------------|----------|---------|
+| Baseline | `property_change_quorum_fraction`, `property_change_quorum_count` | `0.25` | `5000` | required | `moderation_sensitive_*`, `active_threshold_days`, the baseline pair itself |
+| Critical | `critical_property_change_quorum_fraction`, `critical_property_change_quorum_count` | `0.50` | `10000` | required | `mod_role_change_*`, `moderation_illegal_*`, `guidelines_change_*`, the critical pair itself |
+
+Pass condition for either pair is the dual-quorum form from
+[governance.md §3](governance.md#petition-style-tally-and-dual-quorum-network-scope-only):
+`positive_count ≥ min(P × |active members|, K)`.
 
 `guidelines_version` and `guidelines_hash` are not in either
 bucket — they are amended together by the guidelines-amendment

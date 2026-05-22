@@ -173,8 +173,8 @@ CREATE INDEX ON :Hashtag(id);
 | Property          | Type    | Notes |
 |---|---|---|
 | `id`              | String  | UUID v4. |
-| `target_property` | String  | Name of the property on the target node, or a moderation-specific directive: `'attachments'` (all attached media) or `'full'` (every user-input field plus all attachments) — see [moderation.md §5](../instances/moderation.md#5-scope). |
-| `proposed_value`  | Variant | The proposed new value (type matches the target property). For illegal-classification Proposals it is the literal `'illegal'`; the cascade handler interprets that to write redaction markers and archive originals per [moderation.md §1](../instances/moderation.md#1-the-two-classification-paths). |
+| `target_property` | String  | Name of the property on the target node, or one of the reserved values: the moderation directive `'full'` (every user-input field on the node, plus all attachments) — see [moderation.md §5](../instances/moderation.md#5-scope); or the whole-node sentinel `'node'` — see [nodes.md "Whole-node targeting"](../primitive/nodes.md#whole-node-targeting-the-node-sentinel). |
+| `proposed_value`  | Variant | The proposed new value (type matches `target_property`). Common patterns: (a) **Moderation classification.** `'sensitive'` Proposals set `target_property = 'moderation_status'` and `proposed_value ∈ {'sensitive', 'normal'}`; `'illegal'` Proposals set `target_property` to a specific user-input field name (or `'full'`) and `proposed_value = 'illegal'`. See [moderation.md §1](../instances/moderation.md#1-the-two-classification-paths). The cascade interprets `'illegal'` to write redaction markers and archive originals. (b) **Chat-internal disavowal.** `target_property = 'node'`, `proposed_value ∈ {'disavowed', 'normal'}`. The cascade writes a `dim1 < 0` (or `dim1 > 0` on reversal) layer on the relevant `:APPROVAL` edge per [chats.md §10](../instances/chats.md#10-moderation). (c) **Property amendments.** `proposed_value` is the new value of whatever graph property `target_property` names — a role string, a numeric threshold, etc. |
 
 The target node itself is reached via a `:TARGETS` structural edge
 (`Proposal → Target`), not a foreign-key property — see
@@ -260,20 +260,20 @@ targeting that property name. See
 |---|---|---|
 | `id`                              | String  | UUID v4. Always set by the API at instance bootstrap. |
 | `singleton_marker`                | String  | Always `'singleton'`. Combined with the existence + uniqueness constraints below, prevents a second `:Network` node from ever being inserted. Set at bootstrap; never changes. |
-| `mod_role_change_quorum`          | Float   | Minimum fraction of active members that must cast a vote on a `User.network_role` Proposal. Default `0.30`. |
-| `mod_role_change_threshold`       | Float   | Fraction of cast votes required in favor for a `User.network_role` Proposal to pass. Default `0.50`. Mod-gate applies (≥1 existing mod positive vote). |
-| `moderation_sensitive_quorum`     | Float   | Quorum for `'sensitive'` classification Proposals. Default `0.01` (1%). |
-| `moderation_sensitive_threshold`  | Float   | Pass-threshold for `'sensitive'`. Default `0.50`. Mod-gate applies. |
-| `moderation_illegal_quorum`       | Float   | Quorum for `'illegal'` classification Proposals. Default `0.02` (2%). |
-| `moderation_illegal_threshold`    | Float   | Pass-threshold for `'illegal'`. Default `0.667` (2/3). Mod-gate applies. |
+| `mod_role_change_quorum_fraction`     | Float   | Fractional bar for `User.network_role` Proposals: `positive_count ≥ P × \|active members\|`. Default `0.50`. Mod-gate applies (≥1 existing mod positive vote). |
+| `mod_role_change_quorum_count`        | Integer | Absolute bar for `User.network_role` Proposals: `positive_count ≥ K`. Default `5000`. The operative bar at tally time is `min(P × \|active\|, K)`. See [governance.md §3 "Petition-style tally and dual quorum"](../primitive/governance.md#petition-style-tally-and-dual-quorum-network-scope-only). |
+| `moderation_sensitive_quorum_fraction` | Float   | Fractional bar for `'sensitive'` classification Proposals. Default `0.25`. Mod-gate applies. |
+| `moderation_sensitive_quorum_count`   | Integer | Absolute bar for `'sensitive'`. Default `5000`. |
+| `moderation_illegal_quorum_fraction`  | Float   | Fractional bar for `'illegal'` classification Proposals. Default `0.50`. Mod-gate applies. |
+| `moderation_illegal_quorum_count`     | Integer | Absolute bar for `'illegal'`. Default `10000`. |
 | `guidelines_version`              | Integer | Monotonic version of the [platform guidelines](../instances/platform-guidelines.md). Bumped by 1 on each amendment Proposal. Default `1` at bootstrap. |
 | `guidelines_hash`                 | String  | SHA-256 hex digest of the canonical guidelines document at the current version. 64 lowercase hex chars. Set at bootstrap to the digest of the version-1 doc; updated together with `guidelines_version` on each amendment. |
-| `guidelines_change_quorum`        | Float   | Quorum for guidelines amendment Proposals. Default `0.05` (5%). |
-| `guidelines_change_threshold`     | Float   | Pass-threshold for guidelines amendments. Default `0.667` (2/3). Mod-gate applies. |
-| `property_change_quorum`          | Float   | Quorum for amending baseline-bucket `:Network` properties (`moderation_sensitive_*`, `active_threshold_days`, the baseline pair itself). Default `0.05` (5%). Mod-gate applies. See [network.md §11](../primitive/network.md#11-amending-network-parameters). |
-| `property_change_threshold`       | Float   | Pass-threshold for the same. Default `0.667` (2/3). Mod-gate applies. |
-| `critical_property_change_quorum` | Float   | Quorum for amending critical-bucket `:Network` properties (`mod_role_change_*`, `moderation_illegal_*`, `guidelines_change_*`, the critical pair itself). Default `0.10` (10%). Mod-gate applies. See [network.md §11](../primitive/network.md#11-amending-network-parameters). |
-| `critical_property_change_threshold` | Float | Pass-threshold for the same. Default `0.75` (3/4). Mod-gate applies. |
+| `guidelines_change_quorum_fraction`   | Float   | Fractional bar for guidelines amendment Proposals. Default `0.50`. Mod-gate applies. |
+| `guidelines_change_quorum_count`      | Integer | Absolute bar for guidelines amendments. Default `10000`. |
+| `property_change_quorum_fraction`     | Float   | Fractional bar for amending baseline-bucket `:Network` properties (`moderation_sensitive_*`, `active_threshold_days`, the baseline pair itself). Default `0.25`. Mod-gate applies. See [network.md §11](../primitive/network.md#11-amending-network-parameters). |
+| `property_change_quorum_count`        | Integer | Absolute bar for the same. Default `5000`. |
+| `critical_property_change_quorum_fraction` | Float | Fractional bar for amending critical-bucket `:Network` properties (`mod_role_change_*`, `moderation_illegal_*`, `guidelines_change_*`, the critical pair itself). Default `0.50`. Mod-gate applies. See [network.md §11](../primitive/network.md#11-amending-network-parameters). |
+| `critical_property_change_quorum_count` | Integer | Absolute bar for the same. Default `10000`. |
 | `active_threshold_days`           | Integer | A User counts as an "active member" if they have at least one outgoing actor edge with timestamp within the last N days. Default `30`. |
 
 ```cypher

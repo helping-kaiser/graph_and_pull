@@ -45,7 +45,9 @@ each* are platform policy and live in
   redaction. Frontends respect each viewing user's
   `content_filtering_severity_level` preference
   ([data-model.md](../implementation/data-model.md)) when
-  rendering. Reversible via counter-Proposal back to `'normal'`.
+  rendering. Reversible via
+  [counter-Proposal](governance.md#counter-proposals) back to
+  `'normal'`.
 - **`'illegal'`.** Content the Network treats as unlawful or so
   universally prohibited that hosting it is itself a harm.
   Triggers the redaction cascade in
@@ -71,7 +73,8 @@ The two non-default values reach the node by different paths:
 
 `'illegal'` is the strongest state — it isn't downgraded by a
 later `'sensitive'` Proposal while redacted fields remain.
-`'sensitive'` is reversible via a counter-Proposal back to
+`'sensitive'` is reversible via a
+[counter-Proposal](governance.md#counter-proposals) back to
 `'normal'`; `'illegal'` is not, because the underlying redaction
 markers are append-only.
 
@@ -85,6 +88,20 @@ to redact and no Postgres-side display content either. The
 **`:Network` singleton** is in the same position for the same
 reason: pure configuration state with no user-input fields. See
 [network.md §3](network.md#3-graph-side-properties).
+
+**Distinct from chat-internal disavowal.** Moderation status —
+the `'normal'` / `'sensitive'` / `'illegal'` value set described
+above — is a Network-scope graph property (or per-field redaction
+state) maintained by the moderation flow in
+[moderation.md](../instances/moderation.md). Chat-internal
+disavowal is a **separate value system**: a Chat-scope
+Proposal-mediated state with the value set `'normal'` /
+`'disavowed'`, set on `:APPROVAL` edges (Level 2) or as the
+existence of a passed disavowal Proposal targeting a
+ChatMessage (Level 1) via the `'node'` sentinel below. The two
+share no values, no scope, and no graph property — see
+[moderation.md §"Vocabulary: moderation vs disavowal"](../instances/moderation.md#vocabulary-moderation-vs-disavowal)
+for the boundary.
 
 ---
 
