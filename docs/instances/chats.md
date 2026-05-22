@@ -121,6 +121,21 @@ A Chat node carries:
 - **`name`** — optional routing/display hint. Layered.
 - **`join_policy`** — one of `open`, `invite-only`,
   `request-entry` (§11). Layered.
+- **`invite_proposer_roles`** — list of `ChatMember.role`
+  values whose bearers may propose a new ChatMember under
+  `'invite-only'`. Inapplicable to `'open'` (no proposer needed)
+  and `'request-entry'` (the would-be member proposes
+  themselves). Layered.
+- **`entry_approval_required_count`** — integer N ≥ 0. Number
+  of Shape B approver votes the new ChatMember's junction must
+  collect before the system writes the `Chat → ChatMember`
+  approval edge. `0` under `'open'`; `1` for a standard
+  `'invite-only'` or `'request-entry'`; higher values produce
+  the multi-sig configuration shape per §11 "Higher N". Layered.
+- **`entry_approval_eligible_roles`** — list of
+  `ChatMember.role` values whose bearers' Shape B votes count
+  toward `entry_approval_required_count`. Inapplicable to
+  `'open'`. Layered.
 - **`epoch`** — integer chat-key-rotation counter (§9). Default
   `1`. Layered. Advances by `1` on every membership change and
   on every passing mid-epoch rotation Proposal.
@@ -877,8 +892,9 @@ which combines two voting shapes
   to cast a Shape B vote.
 - **Zero or more Shape B approver votes** from existing
   ChatMembers — `ChatMember_approver → ChatMember_new` (`dim1 > 0`).
-  The number required comes from the chat's `join_policy`
-  (§3.1).
+  The number required is `entry_approval_required_count` (§3.1);
+  votes only count when the approver's `role` is listed in
+  `entry_approval_eligible_roles`.
 
 When the policy is satisfied the system writes the
 `Chat → ChatMember` approval edge, and the membership is
@@ -932,7 +948,8 @@ edge. The membership is active.
 
 ### Invite-only
 
-The **inviter** — an existing member with invite rights —
+The **inviter** — an existing member whose `role` is listed in
+`invite_proposer_roles` (§3.1) —
 casts a `ChatMember_inviter → ChatMember_new` **Shape B vote**
 (`dim1 > 0`) toward a new junction node. At the same time the
 system writes the `ChatMember → invitee` `:BEARER` edge,
@@ -959,9 +976,11 @@ The **would-be member** writes their
 creates the `ChatMember → Chat` claim edge. The membership is
 pending.
 
-An **admin** (or any ChatMember that satisfies the chat's
-policy) casts a `ChatMember_admin → ChatMember_new` **Shape B
-vote** (`dim1 > 0`). The system writes the `Chat → ChatMember`
+An existing ChatMember whose `role` is listed in
+`entry_approval_eligible_roles` (§3.1) — typically `'admin'` or
+`'chat_mod'` by default — casts a
+`ChatMember_approver → ChatMember_new` **Shape B vote**
+(`dim1 > 0`). The system writes the `Chat → ChatMember`
 approval edge. The membership is active.
 
 ### Higher N (a.k.a. multi-sig)
@@ -969,10 +988,12 @@ approval edge. The membership is active.
 Any of the variants above can require **multiple Shape B
 approver votes** instead of one — e.g., "two admins must
 approve before the membership activates." Same primitive, just
-a higher count read from the chat's policy. The junction stays
-pending until the Nth approver's Shape B vote crosses the
-threshold. "Multi-sig" is a label for this configuration
-shape, not a fourth flow.
+a higher `entry_approval_required_count` (§3.1) drawn from the
+chat's policy, with `entry_approval_eligible_roles` continuing
+to gate which approvers count. The junction stays pending until
+the Nth qualifying Shape B vote crosses the threshold.
+"Multi-sig" is a label for this configuration shape, not a
+fourth flow.
 
 ### State encoding
 
