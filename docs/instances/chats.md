@@ -688,6 +688,15 @@ themselves are the `Chat.rotate_key_quorum` and
 can be changed via Proposals targeting them — governance of
 governance applies all the way down.
 
+The advance commits regardless of who is online when the
+Proposal passes — graph state is the source of truth, not member
+presence. Key derivation is **lazy**: the new key is produced
+the first time a current member reads into the new epoch
+(decrypting an incoming message or composing one), not at
+threshold-cross. An epoch with no usable key is acceptable; it
+stays inert until a reader needs it, and the off-graph
+group-key-update runs whenever current members next coincide.
+
 **At most one open mid-epoch rotation Proposal per Chat.** The
 service layer rejects a new rotation Proposal if an unresolved
 one already targets this Chat's `epoch`. The new Proposal's
