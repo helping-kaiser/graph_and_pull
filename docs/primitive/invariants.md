@@ -26,8 +26,10 @@ listed under the most useful one.
 - [Edge tensor uniformity](graph-model.md#4-edge-structure) —
   every edge carries 2 dimensions + system dimensions; shape is
   the same across all edge types.
-- [At most one structural edge per `(source, target)` pair](edges.md#2-structural-edges)
-  — drives the `:TAGGING` / `:REFERENCES` carve-out.
+- [At most one edge label per `(source, target)` pair](edges.md#2-structural-edges)
+  — actor or structural; layers within one label are the only way
+  the pair grows. Drives the `:TAGGING` / `:REFERENCES` carve-out
+  and the parent-Collective `:APPROVAL` / `:ACTOR` exclusion.
 - [Chat topology is always public](../instances/chats.md#1-mental-model-reset)
   — only message **bodies** are private, and only when encrypted.
 - [No structural 1:1 chat uniqueness](../instances/chats.md#12-11-vs-group-chats)

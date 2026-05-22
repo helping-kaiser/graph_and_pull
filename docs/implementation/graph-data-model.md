@@ -341,6 +341,51 @@ for picking the right one live in
 | `:REFERENCES`  | ChatMessage → any node; Post → any node (except Hashtag); Comment → any node (except Hashtag) | System     |
 | `:STRUCTURAL`  | Any structural edge not in a sub-category above                          | System     |
 
+### Single-edge-label enforcement
+
+A `(source, target)` pair carries **at most one edge label** —
+actor or structural. Layers within that single label are how the
+pair accumulates history; a second label between the same
+endpoints is forbidden. See
+[edges.md §2](../primitive/edges.md#2-structural-edges) for the
+invariant, the rationale, and the cases this rule rules out
+(notably the `Post → Hashtag` `:TAGGING` / `:REFERENCES` carve-out
+and the parent-Collective `:APPROVAL` / `:ACTOR` collision).
+
+Two enforcement layers:
+
+1. **Service-layer transaction (primary).** Before any edge
+   insert, the service layer reads existing edges between the
+   same endpoints and rejects the write if any existing edge
+   carries a different label. Returns a meaningful error to the
+   caller. Same-label layerings (the normal append-only path)
+   pass through.
+2. **Memgraph trigger (backstop).** Detects writes that bypass
+   the service layer. Indicative shape — the exact abort
+   primitive depends on the Memgraph version and the
+   query-modules library available:
+
+   ```cypher
+   CREATE TRIGGER unique_edge_label_per_pair
+   ON --> CREATE
+   BEFORE COMMIT
+   EXECUTE
+     UNWIND createdEdges AS new_e
+     MATCH (startNode(new_e))-[other]->(endNode(new_e))
+     WHERE id(other) <> id(new_e)
+       AND type(other) <> type(new_e)
+     // Abort the transaction. The exact call depends on the
+     // procedure library — e.g. a custom mgps.assert(false, msg)
+     // or a write that fails (RAISE-equivalent) — but the
+     // matching condition above is the invariant's contract.
+     CALL custom.abort_transaction(
+       'multiple labels between same (source, target) pair forbidden')
+     YIELD * RETURN *;
+   ```
+
+   Same-label layers do not match the `type(other) <> type(new_e)`
+   filter and pass through unchanged.
+
 ## Edge properties
 
 Every edge carries the same property shape, regardless of label:

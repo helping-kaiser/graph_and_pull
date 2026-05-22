@@ -7,10 +7,13 @@ structural edge types could overlap.
 The catalog this doc visualizes lives in
 [edges.md §2](edges.md#2-structural-edges). The invariant the
 audit feeds into is
-[edges.md §2 "at most one structural edge per `(source, target)`
+[edges.md §2 "at most one edge label per `(source, target)`
 pair"](edges.md#2-structural-edges), surfaced in
 [invariants.md](invariants.md#topology-and-visibility). This doc
-adds no new mechanism — it makes the existing rules navigable.
+visualizes the structural slice of that rule; the actor edges
+covered by the same rule live in
+[edges.md §1](edges.md#1-actor-edges). This doc adds no new
+mechanism — it makes the existing rules navigable.
 
 For the conceptual model (categories, dimensions, append-only),
 see [graph-model.md](graph-model.md). For the per-node edge
