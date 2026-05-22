@@ -67,6 +67,16 @@ CREATE CONSTRAINT ON (u:User) ASSERT u.username IS UNIQUE;
 CREATE INDEX ON :User(id);
 ```
 
+The `username` UNIQUE constraint applies to the property's
+current value — the top layer. When an account-deletion or
+illegal-content cascade redacts a User's `username`, the new top
+layer takes the form `redacted-user-{user_id_uuid}`, mirroring
+the Postgres tombstone (see
+[account-deletion.md "Username post-redaction"](../instances/account-deletion.md#username-post-redaction)).
+The embedded UUID suffix makes the sentinel unique per User by
+construction, so the UNIQUE constraint holds across any number
+of redactions without requiring layer-aware constraint logic.
+
 #### `:Collective`
 
 | Property            | Type   | Notes |

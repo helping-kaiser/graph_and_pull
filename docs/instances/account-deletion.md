@@ -33,10 +33,10 @@ identity-level by default, content-level on opt-in.
 **Identity-level (default).** The User-side fields touched:
 
 - The `username` layer on the graph User node is replaced with
-  the [layers.md §5](../primitive/layers.md#5-deletion-policy)
-  redaction marker. The User node itself stays; edges and layer
-  stacks stay; counts and authorship derivation continue to
-  work.
+  the per-user-unique sentinel defined in
+  "Username post-redaction" below (the same form as the Postgres
+  tombstone). The User node itself stays; edges and layer stacks
+  stay; counts and authorship derivation continue to work.
 - The Postgres `users` row is tombstoned — a new version row in
   which `display_name`, `bio`, `avatar_id`, and `website_url`
   are cleared (`NOT NULL` fields set to a redaction marker,
@@ -86,10 +86,15 @@ user-facing display value is rendered as `[redacted user]` (or
 similar) at the API layer; the storage form satisfies the
 uniqueness constraint.
 
-The graph-side `User.username` layer carries the standard
-[layers.md §5](../primitive/layers.md#5-deletion-policy) redaction marker, not this string —
-layer values have no uniqueness constraint, and the marker is
-the auditable absence the layer history requires.
+The graph-side `User.username` top layer uses the **same**
+`redacted-user-{user_id_uuid}` form. The graph carries a
+`:User.username IS UNIQUE` constraint (see
+[graph-data-model.md](../implementation/graph-data-model.md));
+the per-user-unique sentinel satisfies the constraint across
+any number of redactions without requiring layer-aware
+constraint logic. The `redacted-user-` prefix is the visible
+signal that the layer was redacted — the auditable absence the
+layer history requires.
 
 ## 2. What is preserved
 
