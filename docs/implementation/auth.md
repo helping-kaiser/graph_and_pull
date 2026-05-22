@@ -90,6 +90,9 @@ or until the inviter explicitly revokes it (`revoked_at`).
 3. **Email verification.** The invitee clicks the verification
    link. The server atomically:
    - Creates the User node with the registered username.
+   - Inserts the `users` row, copying `email` and `password_hash`
+     across from the pending-registration row — verified
+     credentials live on `users` from this point on.
    - Writes the two invitation edges per
      [invitations.md](../primitive/invitations.md), using the
      pre-committed inviter values read from `auth_invitations`

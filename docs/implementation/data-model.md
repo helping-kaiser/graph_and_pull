@@ -72,10 +72,16 @@ CREATE INDEX media_attachments_author_idx
 ### Actors
 
 ```sql
--- Users: identity and profile display data
+-- Users: identity and profile display data.
+-- email and password_hash live here once the account is verified;
+-- before that, they sit on auth_pending_registrations and are moved
+-- across in the same transaction that creates this row
+-- (see auth.md §Account lifecycle and §First-user genesis bootstrap).
 CREATE TABLE users (
     id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     username      TEXT        NOT NULL UNIQUE,
+    email         TEXT        NOT NULL UNIQUE,
+    password_hash TEXT        NOT NULL,
     display_name  TEXT        NOT NULL,
     bio           TEXT,
     avatar_id     UUID        REFERENCES media_attachments(id),
