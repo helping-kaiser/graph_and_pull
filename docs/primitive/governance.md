@@ -687,14 +687,18 @@ member's worth of weight to the tally — the same as every other
 voter. The mod-gate sits *alongside* the member-weighted tally,
 not on top of it.
 
-**A moderator's positive vote counts in BOTH the mod-gate check
-AND the member-tally arithmetic; it is not double-spent in any
-other sense.** The mod casts `+1` once; that same vote opens the
-gate *and* contributes its weight of `1` to the count tallied
-against quorum and threshold. The "mod weight = 1" rule means
-the moderator's contribution to the member arithmetic is
-exactly one member's worth — nothing more — even though the same
-vote also opened the gate.
+**A moderator's positive vote contributes once to (a) the
+mod-gate satisfaction and once to (b) the member-tally
+arithmetic. The two are independent checks evaluated on the
+same vote layer.** The mod casts `+1` once; that same vote
+opens the gate *and* contributes its weight of `1` to the
+count tallied against the threshold policy of the instance —
+for Network-scope Proposals, the dual-quorum bar from
+[§3 "Petition-style tally and dual quorum"](#petition-style-tally-and-dual-quorum-network-scope-only).
+The "mod weight = 1" rule means the moderator's contribution
+to the member arithmetic is exactly one member's worth —
+nothing more — even though the same vote also opened the
+gate.
 
 The gate applies symmetrically in both directions of any
 classification — setting `sensitive` or `illegal`, and
