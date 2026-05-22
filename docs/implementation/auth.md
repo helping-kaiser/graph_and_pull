@@ -299,6 +299,11 @@ standard floor for a community network and avoids the support
 burden of TOTP / WebAuthn / recovery-code mechanics during early
 operations.
 
+No schema reservation either: the `users` table carries no MFA
+column today. When MFA lands, a normal column-add migration
+covers the existing rows with `NULL` (the "not enrolled" state),
+so there is nothing to plan-around now.
+
 When MFA is added, the natural shape is **TOTP as the second
 factor with a WebAuthn upgrade path**, plus single-use recovery
 codes (stored hashed) issued at enrollment. MFA becomes a
