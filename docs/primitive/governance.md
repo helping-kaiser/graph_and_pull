@@ -342,21 +342,34 @@ both count); bounded membership in those contexts means
 bot-driven denominator inflation is not the dominant threat.
 
 **Per-vote arithmetic.** Each Shape A vote edge from an
-active member to a Network-scope Proposal contributes to the
-tally as:
+active member to a Network-scope Proposal carries `dim1` as a
+continuous value in `[-1, +1]` and `dim2` as the voter's
+personal stake (also continuous). Its contribution to the
+petition tally is:
 
-- `dim1 > 0` → contributes `+1 × voter_weight` to the
-  positive-vote total.
-- `dim1 ≤ 0` → contributes `0`. The actor edge still exists
-  as a graph object encoding the voter's sentiment; it
-  simply does not enter the tally arithmetic.
-- `dim2` is not read by the tally (it carries personal
+- `contribution = max(sign(dim1), 0) × voter_weight` — that
+  is, `+1 × voter_weight` when `dim1 > 0`, `0` when
+  `dim1 ≤ 0`. The petition tally reads only the sign of
+  `dim1`; the magnitude does not scale the contribution.
+- `dim2` is not read by the tally. It carries personal
   stake / importance, which is informational for ranking
-  and frontends, not governance arithmetic).
+  and frontends, not governance arithmetic.
+- The actor edges with `dim1 ≤ 0` are valid graph objects
+  encoding the voter's sentiment; they simply do not enter
+  the tally.
 - `voter_weight` is the value defined in §2.3. For
   Network-scope every member's weight is `1`; the
   `voting_weight` override is reserved for chat and
   collective contexts that define non-uniform weights.
+
+The Network-scope positive-vote total is the sum of these
+contributions across all active members' top-layer vote
+edges to the Proposal:
+
+```
+positive_count = Σᵥ  max(sign(v.dim1), 0) × voter_weight(v)
+                (over the top vote-edge layer of each active member)
+```
 
 **Dual-quorum pass condition.** A Network-scope Proposal
 passes when its positive-vote total is at least the lower of
