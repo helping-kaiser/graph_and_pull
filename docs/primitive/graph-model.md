@@ -36,12 +36,12 @@ independent edges; one does not imply the other.
 **Invariant:** Every change to graph state, after instance
 bootstrap, originates either in an actor gesture (creating or
 layering an actor edge — see §3) or in a governance threshold-cross
-(the system writing or re-layering a structural edge in response to
-votes — see §5). The only two writes that escape this rule are the
-ones that bring the `:Network` singleton into existence: creation
-of the singleton node itself, and the genesis moderator's
-`network_role` layer. Both happen once per instance, at bootstrap.
-See [network.md §2](network.md#2-creation).
+(the system writing or re-layering a structural edge in response
+to votes — see §5). The instance-bootstrap transaction itself
+sits outside this rule by construction — see
+[network.md §2 "Creation"](network.md#2-creation) for what
+bootstrap installs and why it cannot run under the same rule it
+establishes.
 
 **Invariant:** Topology is always public — every node and every
 edge is visible without an account. Privacy of content is achieved
