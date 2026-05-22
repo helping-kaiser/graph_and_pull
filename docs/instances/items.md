@@ -367,7 +367,7 @@ Two redaction triggers apply to an Item today:
 - **Moderation: `'illegal'` classification.** A passing
   `'illegal'` Proposal targets one of the Item's user-input
   fields — `name`, `description`, `attachments` (every attached
-  media), or the literal `'full'` shorthand for all of the above
+  media), or the `'node'` sentinel covering all of the above
   per the per-node field list in
   [moderation.md §5](moderation.md#5-scope) —
   and fires the redaction cascade per

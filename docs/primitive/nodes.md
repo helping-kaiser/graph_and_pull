@@ -64,8 +64,11 @@ The two non-default values reach the node by different paths:
   on the node receives a redaction marker per
   [layers.md §5](layers.md#5-deletion-policy). Illegal-content
   classification itself is **per-field**, not per-node — the
-  Proposal targets one field (or the `'full'` shorthand) and the
-  field's top layer is replaced with a redaction marker. The
+  Proposal targets one specific field, or the `'node'` sentinel
+  (covering every user-input field plus every attached media on
+  the target — see "Whole-node targeting" below), and each
+  targeted field's top layer is replaced with a redaction marker.
+  The
   auto-flip on `moderation_status` exists so frontends can
   distinguish three filter states: normal content, soft-filterable
   sensitive content, and partially-or-fully-redacted illegal
@@ -126,23 +129,22 @@ mechanism that uses the sentinel. The primitive registers the
 sentinel and its meaning; the per-cascade behaviour lives with
 the instance:
 
+- **Illegal-content classification** — see
+  [moderation.md §1](../instances/moderation.md#1-the-two-classification-paths).
+  `proposed_value` is `'illegal'`. The cascade interprets the
+  sentinel as "every user-input field plus every attached media"
+  on the target — see
+  [moderation.md §5](../instances/moderation.md#5-scope) for the
+  per-node field coverage.
 - **Chat-internal disavowal** — see
-  [chats.md §10](../instances/chats.md#10-moderation). The only
-  current consumer. `proposed_value` is `'disavowed'` (or
-  `'normal'` on counter-Proposal); dispatch differs for
-  `ChatMessage` and `ChatMember` targets.
+  [chats.md §10](../instances/chats.md#10-moderation).
+  `proposed_value` is `'disavowed'` (or `'normal'` on
+  counter-Proposal); dispatch differs for `ChatMessage` and
+  `ChatMember` targets.
 
 A future mechanism that needs whole-node operations on a
 different node type can register its own cascade against the
 same `'node'` sentinel rather than inventing parallel scaffolding.
-
-The illegal-content classification path in
-[moderation.md §1](../instances/moderation.md#1-the-two-classification-paths)
-uses a parallel shorthand `'full'`, which names every user-input
-field plus attached media on the target. `'full'` and `'node'`
-overlap in intent — both name the whole node rather than a
-property — and the relationship between the two is left for the
-moderation/redaction sweep to settle.
 
 ---
 

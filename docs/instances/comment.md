@@ -229,7 +229,7 @@ Two redaction triggers apply to a Comment today:
 - **Moderation: `'illegal'` classification.** A passing
   `'illegal'` Proposal targets one of the Comment's user-input
   fields — `content` (the body), `attachments` (every attached
-  media), or the literal `'full'` shorthand for both — and
+  media), or the `'node'` sentinel covering both — and
   fires the redaction cascade per
   [moderation.md §1](moderation.md#1-the-two-classification-paths):
   the Postgres body row is tombstoned with a version marker,

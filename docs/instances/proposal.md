@@ -50,27 +50,22 @@ incoming vote edge from the authoring actor (§5).
 - **`target_property`** — the name of the graph property
   on the target node being proposed for change (e.g.
   `'moderation_status'`, `'name'`, `'role'`,
-  `'network_role'`, `'guidelines_version'`). Two sentinel
-  values stand in for whole-node operations rather than a
-  single property:
-  - `'node'` — whole-node targeting; the cascade
-    interpreter dispatches on the target's node type rather
-    than writing a layer on a named property. The primitive
-    sentinel is defined in
-    [nodes.md "Whole-node targeting"](../primitive/nodes.md#whole-node-targeting-the-node-sentinel);
-    its only current consumer is chat-internal disavowal in
-    [chats.md §10](chats.md#10-moderation) (Level 1 against
-    a `ChatMessage`, Level 2 against a `ChatMember`).
-  - `'full'` — illegal-content classification across every
-    user-input field plus every attached media on the node
-    (see [moderation.md §1](moderation.md#1-the-two-classification-paths)).
-    Parallel shorthand to `'node'`; the relationship between
-    the two is open and will be settled by the
-    moderation/redaction sweep.
+  `'network_role'`, `'guidelines_version'`), or the reserved
+  sentinel `'node'` for whole-node operations. The sentinel
+  is defined in
+  [nodes.md "Whole-node targeting"](../primitive/nodes.md#whole-node-targeting-the-node-sentinel)
+  and has two consumers:
+  - **Illegal-content classification** — every user-input
+    field plus every attached media on the node (see
+    [moderation.md §1](moderation.md#1-the-two-classification-paths)).
+    `proposed_value = 'illegal'`.
+  - **Chat-internal disavowal** — Level 1 against a
+    `ChatMessage` or Level 2 against a `ChatMember` (see
+    [chats.md §10](chats.md#10-moderation)).
+    `proposed_value ∈ {'disavowed', 'normal'}`.
 - **`proposed_value`** — the value to set on
-  `target_property` if the Proposal passes. For the `'node'`
-  sentinel, `'disavowed'` and `'normal'` are the two values
-  used by chat-internal disavowal and its counter-Proposals.
+  `target_property` if the Proposal passes. Values used with
+  the `'node'` sentinel are listed in the two bullets above.
 
 Neither property layers — the Proposal's identity *is* the
 specific change it proposes; mutating either mid-lifecycle

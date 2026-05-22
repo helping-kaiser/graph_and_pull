@@ -209,7 +209,7 @@ authorization, scope, and archive treatment:
 |                | Moderation (illegal)                                              | Account deletion                                  |
 |----------------|-------------------------------------------------------------------|---------------------------------------------------|
 | Authorization  | Network governance + mod gate                                     | User self-service (with grace)                    |
-| Scope          | One specific field on a content node, or the node's `'full'` set  | User profile + (opt-in) all authored content      |
+| Scope          | One specific field on a content node, or the whole-node `'node'` sentinel | User profile + (opt-in) all authored content |
 | Archive hold   | Set asynchronously by `legal_admin` per case                      | Per row — short for PII, longer for financial data |
 | Initiator      | Any active Network member                                         | The account owner                                 |
 
