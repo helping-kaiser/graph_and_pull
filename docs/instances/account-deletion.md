@@ -231,7 +231,7 @@ authorization, scope, and archive treatment:
 |----------------|-------------------------------------------------------------------|---------------------------------------------------|
 | Authorization  | Network governance + mod gate                                     | User self-service (with grace)                    |
 | Scope          | One specific field on a content node, or the whole-node `'node'` sentinel | User profile + (opt-in) all authored content |
-| Archive hold   | Set asynchronously by `legal_admin` per case                      | Per row — short for PII, longer for financial data |
+| Archive hold   | Set asynchronously by `legal_admin` per case (off-graph; see [retention-archive.md §4](../primitive/retention-archive.md#4-access-path)) | Per row — short for PII, longer for financial data |
 | Initiator      | Any active Network member                                         | The account owner                                 |
 
 The two paths run independently. A user under active moderation
@@ -253,8 +253,10 @@ ordinary retention for illegal content specifically.
   authorization path that happens to invoke the same mechanism.
 - **Not the archive schema.** Concrete column types, indexes,
   migrations, the polymorphic JSONB shape, and the
-  `legal_admin` role's auth model live in
-  [data-model.md](../implementation/data-model.md).
+  access-control shape under which `legal_admin` reaches the
+  archive — a host-operations concern, not a graph role; see
+  [retention-archive.md §4](../primitive/retention-archive.md#4-access-path) —
+  live in [data-model.md](../implementation/data-model.md).
 - **Not the future triggers.** Court order, next-of-kin
   (§ 1922 BGB), and network-admin emergency action are listed
   here as planned reusers of the redaction scope; each warrants

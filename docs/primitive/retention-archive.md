@@ -65,7 +65,8 @@ Different content types and authorization paths set different
 - **Illegal content.** All redacted originals from
   illegal-classification cascades land in the archive
   automatically at threshold-cross — the cascade does not block
-  on a hold decision. `legal_admin` reviews each case
+  on a hold decision. `legal_admin` (see §4 — a member of the
+  host's operations team, not a graph role) reviews each case
   asynchronously and sets `legal_hold_until` per the relevant
   law: some content is retained for prosecution (terror financing
   evidence, fraud records); other content is illegal to retain
@@ -113,22 +114,45 @@ they have shown the redaction marker since the redaction itself.
 The archive is **not** a graph-visible surface. It plays no role
 in feed ranking, traversal, or any normal API path.
 
-A `legal_admin` role exists solely to surface archive contents to
-legal authorities under compulsion (court order, prosecutor
-request, tax-audit subpoena, etc.). The role carries:
+`legal_admin` is a **person on the host's operations team**, not
+a graph role, not a `network_role` value, and not something the
+graph or governance flow appoints. We use the name as shorthand
+for the human(s) whose job is to act on cases the moderation flow
+has already removed from the network: case review, setting per-row
+hold values per the relevant law, reporting illegal content to
+authorities, surfacing archive contents under compulsion (court
+order, prosecutor request, tax-audit subpoena), and scheduling
+statutory hard-delete.
 
-- **No** graph reach.
-- **No** moderation authority.
-- **No** ability to write to the archive.
-- **No** ability to extend or shorten hold values (those are set
-  at redaction time per case).
+The work is **post-redaction**. By the time `legal_admin`
+touches a case, the redaction cascade has already removed the
+content from the live graph and public Postgres surfaces;
+`legal_admin` has no path back into the live graph and no part
+in deciding what gets redacted in the first place.
 
-The role is intentionally narrow because the archive's existence
-is the platform's only means of meeting statutory obligations;
-widening access would turn a compliance store into a surveillance
-surface. Concrete role definition, audit-logging, and access-
-control mechanics belong in
-[data-model.md](../implementation/data-model.md).
+The invariants are deliberately narrow:
+
+- **No graph reach.** `legal_admin` cannot author Proposals,
+  classify content, or otherwise act on the live graph.
+- **No moderation authority.** The graph's "no admin override"
+  rule still holds — illegal-content classification runs through
+  the [moderation](../instances/moderation.md) flow before
+  `legal_admin` ever sees the case.
+- **No write access to the archive itself.** Archive rows are
+  inserted by the redaction cascade; `legal_admin` only reads
+  them (and triggers the per-row hard-delete on hold expiry).
+- **No power to set arbitrary hold values.** Per-row holds are
+  determined by the relevant law per case, not by `legal_admin`
+  preference.
+
+Widening this access would turn a compliance store into a
+surveillance surface. Concrete access-control mechanics,
+audit-logging, and the authentication shape under which an
+operations-team member reaches the archive belong in
+[data-model.md](../implementation/data-model.md) — whatever shape
+that takes (Postgres role, off-instance tooling, a dedicated
+admin app), it is a host-operations concern and the graph and
+public Postgres surfaces never see it.
 
 ## What this doc is not
 

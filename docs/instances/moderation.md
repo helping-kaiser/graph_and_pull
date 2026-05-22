@@ -73,11 +73,14 @@ redaction cascade:
 2. Each redacted original is written to the
    [retention archive](../primitive/retention-archive.md)
    automatically. The `legal_hold_until` value is set
-   asynchronously by `legal_admin` after case review (see
-   retention-archive.md) — the cascade itself does not block
-   on this decision. `legal_admin` chooses what happens next:
-   report to authorities, retain for prosecution evidence,
-   schedule statutory hard-delete, etc.
+   asynchronously by `legal_admin` — a member of the host's
+   operations team, not a graph role, see
+   [retention-archive.md §4](../primitive/retention-archive.md#4-access-path) —
+   after case review. The cascade itself does not block on this
+   decision. `legal_admin` chooses what happens next: report to
+   authorities, retain for prosecution evidence, schedule
+   statutory hard-delete, etc. The handoff is post-redaction;
+   `legal_admin` has no path back into the live graph.
 3. The node's `moderation_status` is auto-flipped to
    `'illegal'` so frontends can distinguish a partially-or-fully
    redacted node from a merely sensitive one and hide it
