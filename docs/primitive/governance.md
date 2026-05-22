@@ -113,7 +113,11 @@ state:
 Eligibility is evaluated at **tally time**, not vote time. A vote
 from someone who becomes ineligible afterward drops out; a vote
 from someone who becomes eligible later (e.g. a newly-approved
-member) counts once their status flips.
+member) counts once their status flips. The mechanism that
+neutralizes an in-flight vote when its caster loses eligibility
+mid-flight — a `(0,0)` layer written on the affected vote edges
+by the eligibility-dropout cascade — is specified in
+[§6 "Eligibility-dropout cascade"](#eligibility-dropout-cascade).
 
 ### 2.3 Weight function
 
