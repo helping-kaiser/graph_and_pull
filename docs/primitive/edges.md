@@ -101,6 +101,28 @@ via `:TAGGING`), the same pair never gets a second structural edge
 of a different type (no parallel `Post → Hashtag` via `:REFERENCES`).
 This is what drives the `:TAGGING` / `:REFERENCES` carve-out below.
 
+**Enforcement.** The rule has two pieces: *layers within the
+same label are fine; a second label on the same
+`(source, target)` pair is not*. Phrased as a single insert-
+time check it reads — when writing an edge between `(A, B)`
+with label L, abort if any existing edge between `(A, B)` has
+label L' ≠ L.
+
+The service layer is the primary check: before inserting a new
+edge it queries existing edges between the same endpoints and
+rejects the write if their label differs. A Memgraph insert
+trigger that aborts on the same condition (reading
+`startNode(e), endNode(e), type(e)` and the existing
+`(A)-[*]->(B)` relationships) is a viable storage-level
+backstop for code paths that bypass the service layer. The
+service layer is the primary because it returns a meaningful
+error to the caller; the trigger is the safety net.
+
+The framing generalizes the
+[`:TAGGING` / `:REFERENCES` carve-out below](#reference) — the
+only label-collision case the current catalog actually
+produces, where the more specific label wins.
+
 ### Containment / belonging
 
 | Edge type | Meaning |
@@ -148,6 +170,15 @@ self-claims. This is what enables invite-only flows
 ([chats.md §11](../instances/chats.md#11-joining-and-leaving-a-chat)):
 the inviter creates the junction with a known bearer before the
 invitee acts.
+
+**Invariant: bearer/self-claim validation is atomic.** The
+service-layer transaction that accepts a self-claim reads the
+existing `:BEARER` edge and refuses to commit if the claimer is
+not the bearer. The validation + the claim write happen in one
+transaction; mismatches never partially land. The `:BEARER`
+edge itself may predate the self-claim (the invite-only window
+above is intentional); the atomicity covers the check + claim,
+not the creation of both.
 
 Common queries:
 - "What junctions am I bearer of (active and pending)?" — single
@@ -259,6 +290,18 @@ Feed-ranking traversal rules for `:REFERENCES` (endpoint
 restrictions, fanout-budget composition) live in
 [feed-ranking.md §3.5 "Traversal restrictions"](feed-ranking.md#35-traversal-restrictions)
 rules 4 and 5.
+
+**Enforcement.** Every `:REFERENCES` write originating from a
+given source node runs inside one service-layer transaction
+(see
+[architecture.md "Service-layer transactions"](../implementation/architecture.md#service-layer-transactions)).
+Inside that transaction the service layer reads the existing
+sibling top-layer weights, computes the post-write sum, and
+rejects the write if either dimension would exceed `1`. If a
+new reference requires lowering existing siblings to fit (e.g.
+the author shifts emphasis), the rebalancing layers on each
+sibling write inside the same transaction — the budget is
+never observably breached at any commit point.
 
 ### Voting (Shape B)
 

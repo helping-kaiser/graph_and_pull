@@ -199,6 +199,132 @@ Shared types with no external dependencies. Responsibilities:
 
 ---
 
+## Service-layer transactions
+
+Every write that touches more than one store, or more than one
+node in Memgraph that must succeed or fail together, runs inside
+a **single service-layer transaction** wrapped by the API. The
+service layer is the only place with handles on both pools, so it
+is the only place that can hold a Memgraph transaction and a
+Postgres transaction open simultaneously and commit them as one
+logical unit.
+
+### Partial-failure handling
+
+Two engines have two commit boundaries; an inter-commit window
+exists in which the first store has committed and the second
+has not. The pattern that closes the window is:
+
+- **Hold both transactions open** through every write. Any
+  error before either commit aborts both with a `ROLLBACK`; the
+  graph and the display-content row stay in pre-write state.
+- **Choose an order so the first-committed side is
+  idempotent on retry.** Graph writes use Cypher `MERGE` keyed
+  on the node UUID rather than `CREATE` — a retried
+  service-layer transaction collapses a duplicate Memgraph
+  commit into a no-op. Postgres inserts are paired with
+  `ON CONFLICT DO NOTHING` (or equivalent) on the relevant
+  primary key.
+- **Place the lower-risk commit last.** The order is chosen so
+  the more failure-prone engine commits first; if it fails,
+  rollback is clean. The second commit is then close to
+  guaranteed; if it does fail, the idempotency above lets the
+  caller retry safely.
+
+A two-phase commit primitive across the two engines is **not**
+in scope: implementation cost outweighs the gain at our scale.
+Idempotent retry + the cache-rebuild path
+([data-model.md](data-model.md#author_id-is-a-cached-derivation--except-for-media_attachments))
+together cover the residual inconsistency surface.
+
+Every dual-store write follows this shape: User registration
+(below), Post / Comment / ChatMessage authoring (graph node +
+Postgres body row), the redaction cascade (graph layer +
+Postgres archive row — and archive-first per
+[governance.md §6 "Cascade dispatch"](../primitive/governance.md#6-when-outcomes-take-effect)),
+account deletion (graph redactions + Postgres row clears).
+
+### Genesis bootstrap
+
+The instance bootstrap migration is the system's clearest example
+of the pattern. It writes three nodes — the `:Network` singleton,
+the genesis User, and the `bot-defense` Hashtag — and all three
+go in one transaction. See
+[network.md §2](../primitive/network.md#2-creation) for the
+primitive-side framing of what the migration produces.
+
+Because no graph exists until the transaction commits, no hostile
+Proposal can race the bootstrap: there is no target to file
+against, no Network singleton to scope to, no eligibility set to
+vote from. The pre-graph window is fully closed. After commit, the
+graph is in a complete state — singleton + bootstrap moderator +
+bot-defense Hashtag — and ordinary governance applies from there.
+
+The migration is the **only** writer of these three nodes; no
+runtime path produces a second `:Network` or a second genesis
+User. It is also the only step in the system that escapes the
+actor-gesture-or-governance rule (per
+[graph-model.md §1](../primitive/graph-model.md#1-core-principles)),
+and that escape is confined to the migration.
+
+### Cascade handler
+
+Every governance threshold-cross — moderation classification,
+member disavowal, eligibility dropout, Chat epoch rotation, Item
+ownership transfer — fans out through the **cascade handler**: a
+single dispatch module in the API service layer that sequences
+the derived writes for each cascade type. See
+[governance.md §6](../primitive/governance.md#6-when-outcomes-take-effect)
+for the mechanism.
+
+The handler runs **synchronously** inside the same service-layer
+transaction as the triggering vote layer. Per cascade type it
+knows the fan-out order; **archive writes precede graph
+mutations** (so a failed archive never leaves a redacted layer
+without an archive copy); any step failure **rolls back the
+whole transaction**, including the triggering write.
+
+The handler lives in `api/` (orchestration). It calls into
+`graph-engine` for the Cypher writes and `postgres-store` for
+the archive rows; per the code-style rules in CLAUDE.md, the
+cascade module sequences the calls but holds no DB-specific code
+itself.
+
+### User registration (invitation acceptance)
+
+Email verification creates the User node, its invitation edges,
+and the first session in one service-layer transaction. The
+trigger is the invitee clicking the verification link with the
+single-use token written to the `auth_pending_registrations`
+row at registration submit (see
+[auth.md "Invitation acceptance"](auth.md#invitation-acceptance-the-default-path)).
+
+Inside the transaction:
+
+1. Validate the verification token (Postgres read).
+2. Read the inviter's pre-committed `(dim1, dim2)` from the
+   linked `auth_invitations` row (Postgres read).
+3. Create the User node in Memgraph with `network_role =
+   'member'` and layered properties initialized.
+4. Write the two invitation actor edges per
+   [invitations.md](../primitive/invitations.md) — inviter
+   value outward, invitee value back.
+5. Insert the first `auth_refresh_tokens` row (Postgres).
+6. Delete the `auth_pending_registrations` row (Postgres).
+
+The order makes each step rollback-safe. If any step fails the
+service layer rolls back both pools' transactions; the pending
+registration row survives so the invitee can retry.
+
+There is **no observable window** in which the User node exists
+without its invitation edges or in which a session token is
+issued before the User. The
+[no-User-node-before-verification invariant in
+user.md §2](../primitive/user.md#2-creation) holds at the
+implementation level because of this ordering.
+
+---
+
 ## Request Lifecycle: Feed Query
 
 A personalized feed splits across two locations: the central backend

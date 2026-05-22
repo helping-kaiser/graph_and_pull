@@ -86,6 +86,10 @@ listed under the most useful one.
 - [Edges attributed to a Collective carry no per-edge record of the acting member](edges.md#1-actor-edges)
   — accountability lives in the social contract, not in edge
   attribution. Deliberate non-feature.
+- [Bearer/self-claim validation is atomic](edges.md#bearer-binding)
+  — the check against the existing `:BEARER` edge and the
+  self-claim's commit ride one service-layer transaction;
+  mismatches never partially land.
 
 ## Ranking
 
@@ -112,6 +116,9 @@ listed under the most useful one.
 - [Hashtags do not participate in path products](../instances/hashtag.md#4-edges)
   — `:TAGGING` is pure topology for discovery, never traversed by
   feed ranking.
+- [The `bot-defense` Hashtag name is reserved](feed-ranking.md#383-community-bot-defense-posts--supplementary-evidence)
+  — seeded by the bootstrap migration; its semantic role is
+  platform-defined, not emergent from first use.
 
 ---
 

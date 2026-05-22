@@ -37,29 +37,42 @@ its own Network until then.
 
 ## 2. Creation
 
-The `:Network` singleton is brought into existence at **instance
-bootstrap** via two independent system writes — the only steps in
-the system that depend on out-of-graph authority (see the global
-invariant in
-[graph-model.md §1](graph-model.md#1-core-principles)). Every
-subsequent change to the singleton's parameters or to any user's
-role runs through governance.
+The `:Network` singleton is brought into existence by the
+**instance bootstrap migration** — a one-shot setup step that
+runs once when an instance is created, alongside the database
+schema migrations. The migration is the only path that writes
+the singleton. Every subsequent change to the singleton's
+parameters or to any user's role runs through governance.
 
-1. The API creates the `:Network` node with the default property
-   values listed in
+The migration writes three nodes in a single atomic transaction:
+
+1. The `:Network` singleton with the default property values
+   listed in
    [graph-data-model.md](../implementation/graph-data-model.md).
-2. Separately, the API layers `'moderator'` onto the configured
-   genesis user's `User.network_role`. The genesis user is
-   hardcoded in the instance configuration — for the central
-   instance run by the project it is the project owner; a
-   federated fork sets its own genesis.
+2. The genesis User node, with `network_role = 'moderator'` —
+   the bootstrap moderator (see §9). Identity (username,
+   credentials) is supplied to the migration at run time: the
+   central instance run by the project picks the project owner;
+   a federated fork sets its own genesis.
+3. The `bot-defense` Hashtag node, so its content-addressed
+   UUIDv5 (per
+   [data-model.md "Node identity strategies"](../implementation/data-model.md#node-identity-strategies))
+   is present from network birth and every frontend can resolve
+   it. See
+   [feed-ranking.md](feed-ranking.md).
 
-The two writes are not packaged into one atomic compound gesture:
-each is its own out-of-graph step. An observer reading the graph
-in between would see a Network with an empty moderator set; the
-window is operationally brief (single bootstrap path) and
-behaviorally inert (no Network-scope Proposal can cross the mod
-gate against an empty moderator set anyway — see §10).
+All three writes share one transaction; an observer never sees
+the singleton without its moderator or the `bot-defense`
+Hashtag. The migration is not a runtime flow — there is no
+"first user to register" detection, no genesis-flag column, no
+special branch in the registration endpoint. Subsequent Users
+register exclusively through invitation per
+[invitations.md](invitations.md).
+
+This migration is the only step in the system that depends on
+out-of-graph authority (see the global invariant in
+[graph-model.md §1](graph-model.md#1-core-principles)); the
+authority is confined to the migration.
 
 Bitcoin analogy: someone has to mine the genesis block. From
 there it is community-driven.
@@ -302,9 +315,28 @@ and in §11. Each gate of the multi-gate pair counters a distinct
 failure mode (sitting-mod coup vs community coordinated removal);
 both required = both failure modes blocked.
 
-Removal is symmetric to promotion: same Proposal mechanism with
-`proposed_value = 'member'`, same dual-gate rule. There is no
-privileged path that exempts mod removal from either gate.
+Removal mirrors promotion mechanically: same Proposal
+mechanism with `proposed_value = 'member'`, same dual-gate
+rule. Two structural constraints sit on top of the mechanism:
+
+- **Moderator floor.** The active moderator count cannot drop
+  below **1**. A removal Proposal that would push the count
+  below the floor is rejected at the dispatch check, regardless
+  of vote tally. Without at least one moderator the mod-gate
+  (§7,
+  [governance.md §7](governance.md#7-the-mod-gate))
+  cannot be opened, and every Network-scope Proposal would
+  silently stall.
+- **Bootstrap mod undemotable.** The genesis User installed by
+  the bootstrap migration (§2) carries an undemotable
+  `'moderator'` status: no Proposal can move them off
+  `network_role = 'moderator'`. The dispatch check rejects the
+  outcome write even on a passed tally. The exception exists
+  for bot-defense — if every other moderator is compromised or
+  removed, the bootstrap mod remains as the immovable floor of
+  the mod-gate, blocking a coordinated full-takeover. The
+  asymmetry is deliberate; this is the only mechanism in the
+  system that exempts a graph object from governance reach.
 
 ---
 

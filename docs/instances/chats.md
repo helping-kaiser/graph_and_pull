@@ -561,6 +561,22 @@ point.
 **Invariant:** Chat-key rotation on a membership change is
 automatic — `Chat.epoch` advances by `1` the moment the
 membership transition takes effect, without a separate vote.
+"Takes effect" is pinned by topology: a join is the moment a
+`:CLAIM` and matching `:APPROVAL` for the ChatMember are both
+present with positive top layers; a leave (including
+member-disavowal cascade) is the moment an active `:APPROVAL`
+gets a `dim1 < 0` layer. Pending claims with no matching
+approval, or expired junctions whose negative `:APPROVAL` was
+already counted, do not re-trigger.
+
+Concurrent membership transitions on the same Chat — two
+approvals or a join racing a leave — serialize per Chat via
+the same per-node lock primitive
+[governance.md §6 "Tally serialization"](../primitive/governance.md#6-when-outcomes-take-effect)
+uses for Proposal tallies. The first transition's `epoch`
+write commits; the second runs against the post-commit state
+and increments from there.
+
 Mid-epoch rotation (§ "Mid-epoch rotation via Proposal" below)
 is the only path that runs through governance; rotation
 triggered by joins, leaves, or member-disavowal passes never
@@ -625,6 +641,15 @@ themselves are the `Chat.rotate_key_quorum` and
 `Chat.rotate_key_threshold` properties (§3.1, §10 tables) and
 can be changed via Proposals targeting them — governance of
 governance applies all the way down.
+
+**At most one open mid-epoch rotation Proposal per Chat.** The
+service layer rejects a new rotation Proposal if an unresolved
+one already targets this Chat's `epoch`. The new Proposal's
+`proposed_value` is auto-set to the current `epoch + 1` rather
+than a user-supplied value — there is no "rotate to epoch X+3"
+gesture. Together the two rules close the collision where
+Proposal B opens for the next epoch while Proposal A is still
+counting votes: B can't open until A resolves.
 
 Mid-epoch rotation is forward protection only, not a privacy
 upgrade against prior leakage: messages already encrypted under

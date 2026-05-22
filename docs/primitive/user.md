@@ -56,11 +56,13 @@ Two paths produce a User node, both gated on email verification:
   per [invitations.md](invitations.md). The invitee is never an
   isolated node — they have outgoing reach from the moment they
   exist.
-- **First-user genesis.** A fresh instance has no accounts; the
-  first User self-registers without a token and is also installed
-  as the genesis moderator of the
-  [:Network singleton](network.md#2-creation). All subsequent
-  Users come in via invitation.
+- **Genesis bootstrap.** A fresh instance has its genesis User
+  created by the bootstrap migration that also writes the
+  [:Network singleton](network.md#2-creation) and the
+  `bot-defense` Hashtag — three nodes, one atomic step. The
+  migration runs once at instance creation; no self-registration
+  path produces the first User. All subsequent Users come in via
+  invitation.
 
 The credential and email-verification flow that wraps both paths
 lives in [auth.md](../implementation/auth.md). The graph-side

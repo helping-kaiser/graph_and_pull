@@ -55,9 +55,12 @@ and user-owned cryptographic material are distinct concerns.
 
 ## Account lifecycle
 
-Three paths reach the same end state — a User node plus the
-account's invitation edges in the graph and credentials in
-Postgres.
+Every User node visible to auth — every account this doc
+governs — arrives by invitation acceptance. The genesis User is
+the exception: it is created by the bootstrap migration that
+also writes the `:Network` singleton (see
+[network.md §2](../primitive/network.md#2-creation)) and never
+passes through any of the flows below.
 
 ### Invitation generation (inviter side)
 
@@ -99,25 +102,30 @@ record expires. No User node is created, no edges are written.
 The invitation row itself is unaffected — its lifecycle is
 independent of any one pending registration.
 
+**Reaper.** A periodic background job (cron-style sweep)
+deletes `auth_pending_registrations` rows where `expires_at <
+NOW()`. The reaper is the normal cleanup path; it does not run
+as part of any user-facing request.
+
+**Re-registration collision.** A UNIQUE constraint on `email`
+in the `auth_pending_registrations` table makes a second
+registration submit for an already-pending email fail with
+`ON CONFLICT DO NOTHING`; the API surfaces "registration in
+progress — check your email" to the submitter without touching
+the existing row. The reaper's sweep cadence sets the worst-
+case wait between an expired row clearing and a successful
+re-register; running the sweep frequently (every few minutes)
+keeps the wait imperceptible. No overwrite path exists — a
+stranger's submit cannot replace another person's pending row,
+even after expiry. The constraint and the conflict-handling
+live with the schema in [data-model.md](data-model.md).
+
 **Why no User node before verification:** because the primitive
 forbids it — the graph has no "unverified" or "pending" User
 state and no concept of partial actorhood. The invariant lives
 in [user.md §2](../primitive/user.md#2-creation); this section
 implements it via the off-graph pending-registration record
 described above.
-
-### First-user genesis bootstrap
-
-A fresh instance has no accounts. The first user creates
-themselves directly, without an invitation token. The server
-detects "first user" by the User table being empty (and no
-pending registrations holding it open). On verification, the
-created User is marked as the genesis moderator per
-[network.md](../primitive/network.md). Subsequent registrations
-require an invitation token.
-
-Email verification still applies — the pending-registration
-mechanism is the same.
 
 ### Self-service deletion (handoff out)
 
@@ -300,8 +308,9 @@ upgrade.
   primitive that registration consumes.
 - [account-deletion.md](../instances/account-deletion.md) —
   consumes session listing and email verification.
-- [network.md](../primitive/network.md) — first-user genesis
-  bootstrap; `network_role` read at action time.
+- [network.md](../primitive/network.md) — bootstrap migration
+  that produces the genesis User; `network_role` read at action
+  time.
 - [api-spec.md](api-spec.md) — outdated; the auth-stub line in
   §Authentication points here.
 - [open-questions.md Q15](../open-questions.md) — federation
