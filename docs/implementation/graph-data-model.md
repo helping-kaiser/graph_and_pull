@@ -331,6 +331,7 @@ for picking the right one live in
 | Label          | Endpoints                                                                | Source     |
 |---|---|---|
 | `:ACTOR`       | User \| Collective → any node                                            | Actor sets |
+| `:AUTHOR`      | User \| Collective → Post \| Comment \| Chat \| ChatMessage \| Item \| Proposal | Actor sets |
 | `:CLAIM`       | Junction → Parent (e.g. `ChatMember → Chat`)                             | System     |
 | `:APPROVAL`    | Parent → Junction (e.g. `Chat → ChatMember`)                             | System     |
 | `:BEARER`      | Junction → User \| Collective (e.g. `ChatMember → User`)                 | System     |
