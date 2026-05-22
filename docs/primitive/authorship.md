@@ -72,3 +72,25 @@ The graph (earliest incoming layer-1 edge) is the source of truth.
 The `:AUTHOR` label is itself derivable from that rule; the
 Postgres `author_id` is in turn derivable from the graph. If
 either disagrees with the source of truth, rebuild from the graph.
+
+**Economics does not read the Postgres cache.** Ad-revenue
+distribution, payouts, and any other value-bearing computation
+walk the graph directly. A stale Postgres `author_id` row affects
+display ordering at most; it does not change what the author is
+paid. The cache is allowed to drift briefly without correctness
+risk.
+
+**Rebuild trigger.** Stale cache entries self-heal opportunistically:
+when a viewing user's feed-ranking pass touches a post via a path
+that traverses the post's `:AUTHOR` edge, the ranking step has the
+authoritative author UUID in hand. If it disagrees with
+`posts.author_id` (or the equivalent column for the content type),
+the API enqueues a rebuild for that row. Rebuilds run out-of-band
+— the read that detected the drift never blocks on them.
+
+A user with no path that surfaces the post never triggers a
+rebuild, but also has no display query that depends on the
+column, so the drift is invisible until someone with a path looks
+at it. This is sufficient: any disagreement that matters to
+display gets corrected by someone who would have seen the wrong
+value.

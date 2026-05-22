@@ -44,9 +44,10 @@ points at a parent — see "Why parents point at attachments" below.
 -- below.
 --
 -- options carries display hints the frontend reads to lay out the
--- container before the media finishes loading: aspect ratio,
--- autoplay/mute/loop flags, captions config, etc. JSONB so it can
--- grow without migrations as new hints are needed.
+-- container before the media finishes loading. Validated in the
+-- service layer (not by a Postgres CHECK), so the shape can grow
+-- without DDL coordination. See "media_attachments.options shape"
+-- below for the v1 keys and the versioning convention.
 --
 -- author_id + author_type identifies the uploader. Unlike posts.author_id
 -- (which is a graph-derived cache), this column is Postgres-native source
@@ -72,10 +73,16 @@ CREATE INDEX media_attachments_author_idx
 ### Actors
 
 ```sql
--- Users: identity and profile display data
+-- Users: identity and profile display data.
+-- email and password_hash live here once the account is verified;
+-- before that, they sit on auth_pending_registrations and are moved
+-- across in the same transaction that creates this row
+-- (see auth.md §Account lifecycle and §First-user genesis bootstrap).
 CREATE TABLE users (
     id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     username      TEXT        NOT NULL UNIQUE,
+    email         TEXT        NOT NULL UNIQUE,
+    password_hash TEXT        NOT NULL,
     display_name  TEXT        NOT NULL,
     bio           TEXT,
     avatar_id     UUID        REFERENCES media_attachments(id),
@@ -269,7 +276,7 @@ designed.
 -- Used by the feed-ranking computation as an exclusion set
 -- (see feed-ranking.md §8).
 CREATE TABLE user_view_log (
-    user_id        UUID        NOT NULL,
+    user_id        UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content_id     UUID        NOT NULL,
     first_seen_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (user_id, content_id)
@@ -290,7 +297,7 @@ seen-list mechanism in
 -- hidden_type disambiguates which table the hidden_id refers to,
 -- same shape as author_type / target_type elsewhere.
 CREATE TABLE user_hidden_actors (
-    viewer_id   UUID        NOT NULL,
+    viewer_id   UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     hidden_id   UUID        NOT NULL,
     hidden_type TEXT        NOT NULL CHECK (hidden_type IN ('user', 'collective')),
     hidden_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -304,8 +311,8 @@ CREATE TABLE user_hidden_actors (
 -- row's most recent update IS last_read_at, so no separate
 -- updated_at column is needed.
 CREATE TABLE chat_read_state (
-    user_id      UUID        NOT NULL,
-    chat_id      UUID        NOT NULL,
+    user_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    chat_id      UUID        NOT NULL REFERENCES chats(id),
     last_read_at TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (user_id, chat_id)
 );
@@ -316,7 +323,7 @@ CREATE TABLE chat_read_state (
 -- event, not a stance). content_id can be any node UUID; a
 -- discriminator is intentionally not stored, mirroring user_view_log.
 CREATE TABLE user_bookmarks (
-    user_id       UUID        NOT NULL,
+    user_id       UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content_id    UUID        NOT NULL,
     bookmarked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (user_id, content_id)
@@ -347,7 +354,7 @@ means the central backend has to be the source of truth.
 -- Sensitive-content classification itself is community-moderated;
 -- the moderation mechanism lives in instances/moderation.md.
 CREATE TABLE user_preferences (
-    user_id                          UUID     PRIMARY KEY,
+    user_id                          UUID     PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     content_filtering_severity_level SMALLINT CHECK (
         content_filtering_severity_level IS NULL OR
         (content_filtering_severity_level BETWEEN 0 AND 10)
@@ -371,7 +378,7 @@ graph never requires a row here — see
 -- semantics live in auth.md §Tokens.
 CREATE TABLE auth_refresh_tokens (
     id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id       UUID         NOT NULL,
+    user_id       UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token_hash    BYTEA        NOT NULL UNIQUE,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     last_used_at  TIMESTAMPTZ,
@@ -386,19 +393,23 @@ CREATE INDEX auth_refresh_tokens_user_idx
 -- carries only the row id; the pre-committed inviter edge values,
 -- inviter identity, and time-gate live here. Time-gated and
 -- multi-use per invitations.md — many invitees can register
--- through the same row. Rows are append-only in spirit (no
--- updates to inviter_dim1 / inviter_dim2 / inviter_id after
+-- through the same row. Rows are append-only in spirit (no updates
+-- to inviter_dim1 / inviter_dim2 / inviter_id / inviter_type after
 -- creation); revocation sets revoked_at.
 --
--- inviter_id references the inviting User; same no-FK shape as
--- auth_refresh_tokens.user_id (different actor types are not
--- supported here today — only Users issue invitations).
--- inviter_dim1 / inviter_dim2 are the values that will be written
--- to the inviter's outgoing edge toward each accepting invitee
--- per invitations.md "Pre-committed inviter values."
+-- inviter_id + inviter_type identifies the inviting actor. Users
+-- and Collectives are symmetric actors in the primitive, so either
+-- can issue invitations (see invitations.md). Same polymorphic
+-- shape as author_id + author_type elsewhere — no SQL FK on
+-- inviter_id, integrity guaranteed by the cache-rebuild path on
+-- the graph side. inviter_dim1 / inviter_dim2 are the values that
+-- will be written to the inviter's outgoing edge toward each
+-- accepting invitee per invitations.md "Pre-committed inviter
+-- values."
 CREATE TABLE auth_invitations (
     id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     inviter_id   UUID         NOT NULL,
+    inviter_type TEXT         NOT NULL CHECK (inviter_type IN ('user', 'collective')),
     inviter_dim1 REAL         NOT NULL CHECK (inviter_dim1 BETWEEN -1.0 AND 1.0),
     inviter_dim2 REAL         NOT NULL CHECK (inviter_dim2 BETWEEN -1.0 AND 1.0),
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -406,7 +417,7 @@ CREATE TABLE auth_invitations (
     revoked_at   TIMESTAMPTZ
 );
 CREATE INDEX auth_invitations_inviter_idx
-    ON auth_invitations (inviter_id);
+    ON auth_invitations (inviter_type, inviter_id);
 
 -- Pending registrations: pre-User-node holding state. Created when
 -- a registration form is submitted and consumed when the email-
@@ -448,11 +459,21 @@ CREATE INDEX auth_pending_registrations_email_idx
 -- and "where are the patch notes for version X?". Append-only —
 -- each release adds a row; previous rows stay so past patch-note
 -- links remain resolvable.
+--
+-- released_by is an optional list of actor UUIDs the release credits
+-- (community contributors beyond what the upstream repo's commit
+-- history captures — e.g. designers, translators, testers). UUID[]
+-- carries Users and Collectives in the same array; the frontend
+-- resolves each id against both actor tables since there is no
+-- per-element type discriminator. Display-only, never an input to
+-- ranking or economics. NULL when nobody beyond the commit history
+-- is being credited.
 CREATE TABLE versions (
     component       TEXT        NOT NULL CHECK (component IN
                                 ('backend', 'ios', 'android', 'web')),
     version         TEXT        NOT NULL,
     patch_notes_url TEXT,
+    released_by     UUID[],
     released_at     TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (component, version)
 );
@@ -488,6 +509,51 @@ rebuild semantics.
 node, so there is no graph-side authorship derivation to cache. The
 column is Postgres-native source of truth. If it gets corrupted, the
 recovery path is object-storage ACLs / upload logs — not the graph.
+
+### media_attachments.options shape
+
+JSONB display-layout hints. Every row carries a top-level `v`
+integer naming the shape revision; service-layer migrations rev
+the value and readers fall back when they see a `v` they do not
+understand.
+
+**v1 keys** (all optional unless noted):
+
+| Key            | Type             | Purpose                                                  |
+|----------------|------------------|----------------------------------------------------------|
+| `v`            | integer (req'd)  | Shape revision. `1` for the current shape.               |
+| `aspect_ratio` | string `"W:H"`   | Container ratio so layout reserves space before load.    |
+| `duration_ms`  | integer          | Media duration in milliseconds (video/audio).            |
+
+Unknown keys are tolerated — a future v2 may add fields a v1 reader
+silently ignores. Removing or renaming a key is a `v` bump.
+
+Validation lives in the service layer that writes the row. A
+Postgres-side CHECK was rejected as too rigid for a field expected
+to evolve.
+
+**Deferred:** a per-asset cover field (video poster, music cover art)
+is a real need but not yet designed. The existing junction-side
+`is_cover` selects which attachment leads a multi-asset parent — a
+different concern from per-asset cover.
+
+### User-scoped FKs are defense-in-depth, not deletion mechanics
+
+Every user-scoped table (`auth_refresh_tokens`, `user_view_log`,
+`user_hidden_actors`, `chat_read_state`, `user_bookmarks`,
+`user_preferences`) carries `user_id REFERENCES users(id) ON DELETE
+CASCADE`. Account deletion does **not** remove the `users` row — PII
+is redacted in place per
+[account-deletion.md §1](../instances/account-deletion.md#1-two-redaction-levels)
+— so `ON DELETE CASCADE` does not fire in any normal flow. The FK
+exists to prevent orphans from buggy code paths and to give an
+operator running an explicit `DELETE` (e.g. emergency cleanup) a
+single command that takes the user's private state with them.
+
+The polymorphic-actor columns (`posts.author_id`,
+`comments.author_id`, `chat_messages.author_id`,
+`media_attachments.author_id`, `auth_invitations.inviter_id`) carry
+no FK by design — see the next two notes.
 
 ### author_id + author_type — discriminator, not foreign key
 
