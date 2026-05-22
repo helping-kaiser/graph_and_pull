@@ -46,10 +46,14 @@ target nodes as seen from `U`.
 
 Per-target metrics (§4) are computed by composing edge tensors
 along each **path from the viewing user `U` to the target `t`**.
-A path crosses one or more edge types in their stored direction
-and ends with an actor edge from a node `B` into `t`; that final
-`B → t` is the **reactor edge** and `B` is the **reactor** for
-that path. The path-internal hops are unconstrained by edge type
+A path crosses one or more edge types in their stored direction —
+actor edges, `:REFERENCES`, and the traversable structural edges
+of §3.5 — and ends with a **factor-contributing edge** into `t`:
+either an actor edge `B → t` (with `B` a User or Collective), or
+a `:REFERENCES` edge from a content carrier `C → t`. That final
+edge is the path's **reactor edge**. For an actor terminal edge,
+`B` is the path's **reactor** — the actor expressing a stance
+on `t`. The path-internal hops are unconstrained by edge type
 modulo the §3.5 traversal restrictions. The composition uses
 **parallel tracks**: `dim1` and `dim2` flow independently through
 the path product and only collapse to a scalar at sort time.
