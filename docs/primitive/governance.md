@@ -173,7 +173,7 @@ What tally triggers the outcome. Possible shapes:
   on the lower of (fraction × eligible) or absolute count.
   Used at Network scope where unbounded membership and bot
   inflation make a single percentage or single fixed count
-  insufficient. See [§4](#4-petition-style-tally-and-dual-quorum-network-scope).
+  insufficient. See [§3 "Petition-style tally and dual quorum"](#petition-style-tally-and-dual-quorum-network-scope-only).
 - **Multi-gate** — two or more independent eligibility groups
   voting on the same subject; each gate has its own threshold,
   and the outcome triggers only when **all** gates cross.
@@ -517,7 +517,9 @@ undo). Where exact mirror matters, the application is
 responsible for designing its cascade so the forward and
 reverse sequences compose to identity.
 
+---
 
+## 4. Append-only throughout
 
 - Votes are layers on their carrier edges. Never deleted.
 - Changing your vote = new layer (same edge, new dimension values).
