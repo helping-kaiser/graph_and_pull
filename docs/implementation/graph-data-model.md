@@ -42,9 +42,13 @@ fields.
 
 ## Node labels
 
-Memgraph is schemaless — properties don't need to be declared up front.
-The shapes below describe what each label carries and the
-constraints/indexes the application relies on.
+Memgraph allows ad-hoc properties without up-front declaration, but
+the protocol leans on declarative constraints (uniqueness, existence)
+to make the schema explicit at the storage layer wherever the rule
+admits one. The shapes below describe what each label carries and
+the constraints/indexes the application relies on; rules the
+storage layer can't directly express (e.g. forbidding a property by
+absence) are stated as ethos invariants and enforced in code tests.
 
 ### Actor nodes
 
@@ -177,7 +181,7 @@ CREATE INDEX ON :Item(id);
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUIDv5, content-addressed from `name`. See [data-model.md "Node identity strategies"](data-model.md#node-identity-strategies). |
-| `name`              | String | Canonical form: lowercase, no `#`. |
+| `name`              | String | Canonical form: lowercase, no `#`. Immutable except via the `'illegal'` redaction cascade — see [hashtag.md §5](../instances/hashtag.md#5-lifecycle). |
 | `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. `'sensitive'` is set by a passing classification Proposal; `'illegal'` is auto-flipped by the system when any field on the node receives a redaction marker — see [moderation.md](../instances/moderation.md). |
 
 ```cypher
@@ -191,8 +195,8 @@ CREATE INDEX ON :Hashtag(id);
 | Property          | Type    | Notes |
 |---|---|---|
 | `id`              | String  | UUID v4. |
-| `target_property` | String  | Name of the property on the target node, or one of the reserved values: the moderation directive `'full'` (every user-input field on the node, plus all attachments) — see [moderation.md §5](../instances/moderation.md#5-scope); or the whole-node sentinel `'node'` — see [nodes.md "Whole-node targeting"](../primitive/nodes.md#whole-node-targeting-the-node-sentinel). |
-| `proposed_value`  | Variant | The proposed new value (type matches `target_property`). Common patterns: (a) **Moderation classification.** `'sensitive'` Proposals set `target_property = 'moderation_status'` and `proposed_value ∈ {'sensitive', 'normal'}`; `'illegal'` Proposals set `target_property` to a specific user-input field name (or `'full'`) and `proposed_value = 'illegal'`. See [moderation.md §1](../instances/moderation.md#1-the-two-classification-paths). The cascade interprets `'illegal'` to write redaction markers and archive originals. (b) **Chat-internal disavowal.** `target_property = 'node'`, `proposed_value ∈ {'disavowed', 'normal'}`. The cascade writes a `dim1 < 0` (or `dim1 > 0` on reversal) layer on the relevant `:APPROVAL` edge per [chats.md §10](../instances/chats.md#10-moderation). (c) **Property amendments.** `proposed_value` is the new value of whatever graph property `target_property` names — a role string, a numeric threshold, etc. |
+| `target_property` | String  | Name of the property on the target node, or the reserved whole-node sentinel `'node'` — see [nodes.md "Whole-node targeting"](../primitive/nodes.md#whole-node-targeting-the-node-sentinel). The `'node'` sentinel covers both the moderation cascade (every user-input field plus all attachments — see [moderation.md §5](../instances/moderation.md#5-scope)) and chat-internal disavowal — see [chats.md §10](../instances/chats.md#10-moderation). |
+| `proposed_value`  | Variant | The proposed new value (type matches `target_property`). Common patterns: (a) **Moderation classification.** `'sensitive'` Proposals set `target_property = 'moderation_status'` and `proposed_value ∈ {'sensitive', 'normal'}`; `'illegal'` Proposals set `target_property` to a specific user-input field name (or the `'node'` sentinel for whole-node coverage) and `proposed_value = 'illegal'`. See [moderation.md §1](../instances/moderation.md#1-the-two-classification-paths). The cascade interprets `'illegal'` to write redaction markers and archive originals. (b) **Chat-internal disavowal.** `target_property = 'node'`, `proposed_value ∈ {'disavowed', 'normal'}`. The cascade writes a `dim1 < 0` (or `dim1 > 0` on reversal) layer on the relevant `:APPROVAL` edge per [chats.md §10](../instances/chats.md#10-moderation). (c) **Property amendments.** `proposed_value` is the new value of whatever graph property `target_property` names — a role string, a numeric threshold, etc. |
 
 The target node itself is reached via a `:TARGETS` structural edge
 (`Proposal → Target`), not a foreign-key property — see
@@ -263,6 +267,23 @@ CREATE CONSTRAINT ON (o:ItemOwnership) ASSERT o.id IS UNIQUE;
 CREATE INDEX ON :ItemOwnership(id);
 ```
 
+#### Junction state lives in topology, not in a property
+
+None of the three junction tables above declares a `status`
+property — by design. Junction state (pending / active / revoked)
+is derived from the two-edge approval pair's top-layer `dim1`
+values per
+[graph-model.md §5](../primitive/graph-model.md#5-junction-node-flows).
+A stored flag would be a second source of truth that could drift.
+
+The storage layer cannot directly forbid a property by absence —
+no Memgraph constraint expresses "this label MUST NOT carry
+property X." Enforcement is therefore ethos + test: the schema
+above is the canonical declaration of what junction labels carry,
+and an integration test asserts that no junction node ever
+materializes with a `status` (or equivalent) property. Service-
+layer write paths never write one.
+
 ### System nodes
 
 #### `:Network`
@@ -331,14 +352,60 @@ for picking the right one live in
 | Label          | Endpoints                                                                | Source     |
 |---|---|---|
 | `:ACTOR`       | User \| Collective → any node                                            | Actor sets |
+| `:AUTHOR`      | User \| Collective → Post \| Comment \| Chat \| ChatMessage \| Item \| Proposal | Actor sets |
 | `:CLAIM`       | Junction → Parent (e.g. `ChatMember → Chat`)                             | System     |
 | `:APPROVAL`    | Parent → Junction (e.g. `Chat → ChatMember`)                             | System     |
 | `:BEARER`      | Junction → User \| Collective (e.g. `ChatMember → User`)                 | System     |
 | `:CONTAINMENT` | Comment → Post / Comment / Chat / ChatMessage / Item; ChatMessage → Chat | System     |
 | `:TAGGING`     | Post → Hashtag, Comment → Hashtag, Item → Hashtag                        | System     |
 | `:TARGETS`     | Proposal → Target Node                                                   | System     |
-| `:REFERENCES`  | ChatMessage → any node                                                   | System     |
+| `:REFERENCES`  | ChatMessage → any node; Post → any node (except Hashtag); Comment → any node (except Hashtag) | System     |
 | `:STRUCTURAL`  | Any structural edge not in a sub-category above                          | System     |
+
+### Single-edge-label enforcement
+
+A `(source, target)` pair carries **at most one edge label** —
+actor or structural. Layers within that single label are how the
+pair accumulates history; a second label between the same
+endpoints is forbidden. See
+[edges.md §2](../primitive/edges.md#2-structural-edges) for the
+invariant, the rationale, and the cases this rule rules out
+(notably the `Post → Hashtag` `:TAGGING` / `:REFERENCES` carve-out
+and the parent-Collective `:APPROVAL` / `:ACTOR` collision).
+
+Two enforcement layers:
+
+1. **Service-layer transaction (primary).** Before any edge
+   insert, the service layer reads existing edges between the
+   same endpoints and rejects the write if any existing edge
+   carries a different label. Returns a meaningful error to the
+   caller. Same-label layerings (the normal append-only path)
+   pass through.
+2. **Memgraph trigger (backstop).** Detects writes that bypass
+   the service layer. Indicative shape — the exact abort
+   primitive depends on the Memgraph version and the
+   query-modules library available:
+
+   ```cypher
+   CREATE TRIGGER unique_edge_label_per_pair
+   ON --> CREATE
+   BEFORE COMMIT
+   EXECUTE
+     UNWIND createdEdges AS new_e
+     MATCH (startNode(new_e))-[other]->(endNode(new_e))
+     WHERE id(other) <> id(new_e)
+       AND type(other) <> type(new_e)
+     // Abort the transaction. The exact call depends on the
+     // procedure library — e.g. a custom mgps.assert(false, msg)
+     // or a write that fails (RAISE-equivalent) — but the
+     // matching condition above is the invariant's contract.
+     CALL custom.abort_transaction(
+       'multiple labels between same (source, target) pair forbidden')
+     YIELD * RETURN *;
+   ```
+
+   Same-label layers do not match the `type(other) <> type(new_e)`
+   filter and pass through unchanged.
 
 ## Edge properties
 
@@ -354,6 +421,30 @@ Every edge carries the same property shape, regardless of label:
 See [graph-model.md §4](../primitive/graph-model.md#4-edge-structure) for the edge
 structure and [graph-model.md §6](../primitive/graph-model.md#6-dimension-semantics) for the
 unified two-axis dimension grammar.
+
+### Tensor uniformity enforcement
+
+The [edge-tensor-uniformity invariant](../primitive/invariants.md#topology-and-visibility)
+— every edge carries `(dim1, dim2, timestamp, layer)` regardless of
+label — is enforced at the storage layer via per-label EXISTS
+constraints. Shown explicitly for `:ACTOR`; an identical block of
+four constraints applies to each remaining label in the table
+above (`:AUTHOR`, `:CLAIM`, `:APPROVAL`, `:BEARER`, `:CONTAINMENT`,
+`:TAGGING`, `:TARGETS`, `:REFERENCES`, `:STRUCTURAL`):
+
+```cypher
+CREATE CONSTRAINT ON ()-[r:ACTOR]-() ASSERT EXISTS (r.dim1);
+CREATE CONSTRAINT ON ()-[r:ACTOR]-() ASSERT EXISTS (r.dim2);
+CREATE CONSTRAINT ON ()-[r:ACTOR]-() ASSERT EXISTS (r.timestamp);
+CREATE CONSTRAINT ON ()-[r:ACTOR]-() ASSERT EXISTS (r.layer);
+```
+
+Range checks on `dim1` and `dim2` (`[-1.0, +1.0]`) are not
+expressible as a single existence constraint; the service layer
+clamps on write and a test suite asserts the invariant
+end-to-end. Memgraph's type-constraint family (where available
+in the deployed version) takes care of `dim1` / `dim2` being
+floats and `timestamp` / `layer` being the expected types.
 
 ---
 

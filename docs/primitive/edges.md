@@ -27,6 +27,9 @@ record of the acting member. The Collective IS the actor at the
 graph layer; member-level accountability lives in the Collective's
 social contract, not in edge attribution. Deliberate non-feature —
 not a gap to be filled by a future `acting_user` dimension.
+Enforcement is **by absence**: the schema does not declare such a
+property, and the service-layer write path never sets one. The
+"rule" is the omission itself, not an unenforced convention.
 
 Across every actor-edge type the two dimensions follow the same
 underlying grammar (see [graph-model.md §6](graph-model.md#6-dimension-semantics)):
@@ -95,11 +98,23 @@ For a matrix and diagram view of every structural edge in the
 catalog see [structural-edge-map.md](structural-edge-map.md).
 
 **Invariant:** A given `(source, target)` pair carries at most one
-structural edge. When a relationship between two specific nodes is
-already covered by one structural edge type (e.g. `Post → Hashtag`
-via `:TAGGING`), the same pair never gets a second structural edge
-of a different type (no parallel `Post → Hashtag` via `:REFERENCES`).
-This is what drives the `:TAGGING` / `:REFERENCES` carve-out below.
+edge **label**. Layers within that single label are how the pair
+accumulates history; a second label between the same endpoints —
+actor or structural — is forbidden. When a relationship is already
+covered by one label (e.g. `Post → Hashtag` via `:TAGGING`), the
+same pair never gets a second label of a different type (no
+parallel `Post → Hashtag` via `:REFERENCES`). This is what drives
+the `:TAGGING` / `:REFERENCES` carve-out below.
+
+The rule covers actor edges too: a Collective that is the parent
+of a CollectiveMember cannot carry both `:APPROVAL` and `:ACTOR`
+toward that member — `:APPROVAL` is sufficient and wins, since
+that pair already exists by the time any sentiment edge would be
+written. Cases where a `Collective → CollectiveMember` actor edge
+*is* legal — sub-Collective Shape A self-claim (the bearer's own
+edge), or sentiment from a third-party Collective — are
+different `(source, target)` pairs and unaffected. The catalog
+row in §1 stays, scoped by this rule.
 
 **Enforcement.** The rule has two pieces: *layers within the
 same label are fine; a second label on the same
@@ -110,18 +125,14 @@ label L' ≠ L.
 
 The service layer is the primary check: before inserting a new
 edge it queries existing edges between the same endpoints and
-rejects the write if their label differs. A Memgraph insert
-trigger that aborts on the same condition (reading
-`startNode(e), endNode(e), type(e)` and the existing
-`(A)-[*]->(B)` relationships) is a viable storage-level
+rejects the write if their label differs. A Memgraph trigger on
+edge create (reading `startNode(e), endNode(e), type(e)` and the
+existing `(A)-[*]->(B)` relationships) is the storage-level
 backstop for code paths that bypass the service layer. The
 service layer is the primary because it returns a meaningful
-error to the caller; the trigger is the safety net.
-
-The framing generalizes the
-[`:TAGGING` / `:REFERENCES` carve-out below](#reference) — the
-only label-collision case the current catalog actually
-produces, where the more specific label wins.
+error to the caller; the trigger is the safety net. See
+[graph-data-model.md "Single-edge-label enforcement"](../implementation/graph-data-model.md#single-edge-label-enforcement)
+for the Cypher.
 
 ### Containment / belonging
 

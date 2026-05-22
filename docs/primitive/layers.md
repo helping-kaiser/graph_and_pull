@@ -250,9 +250,10 @@ The two paths today use the level distinction differently:
 
 - **Illegal-content** redactions per
   [moderation](../instances/moderation.md) choose specific
-  fields (one named field, or the `'full'` shorthand). Whether
-  the result is identity-equivalent or content-equivalent
-  follows from the field set chosen.
+  fields (one named field, or the `'node'` sentinel covering
+  every user-input field plus attached media). Whether the
+  result is identity-equivalent or content-equivalent follows
+  from the field set chosen.
 - **Account deletion** per
   [account-deletion](../instances/account-deletion.md) defaults
   to identity-level and offers content-level as an explicit

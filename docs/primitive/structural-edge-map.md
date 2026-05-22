@@ -7,10 +7,13 @@ structural edge types could overlap.
 The catalog this doc visualizes lives in
 [edges.md §2](edges.md#2-structural-edges). The invariant the
 audit feeds into is
-[edges.md §2 "at most one structural edge per `(source, target)`
+[edges.md §2 "at most one edge label per `(source, target)`
 pair"](edges.md#2-structural-edges), surfaced in
 [invariants.md](invariants.md#topology-and-visibility). This doc
-adds no new mechanism — it makes the existing rules navigable.
+visualizes the structural slice of that rule; the actor edges
+covered by the same rule live in
+[edges.md §1](edges.md#1-actor-edges). This doc adds no new
+mechanism — it makes the existing rules navigable.
 
 For the conceptual model (categories, dimensions, append-only),
 see [graph-model.md](graph-model.md). For the per-node edge
@@ -82,6 +85,24 @@ application proposes changes to a Proposal's own properties (per
 `Proposal → Network` is `:TARGETS` (the `:Network` singleton is
 targeted by parameter-amendment Proposals per
 [network.md §11](network.md#11-amending-network-parameters)).
+
+`Proposal → Hashtag` is `:TARGETS` but only moderation
+classification Proposals reach Hashtag — `name` is immutable
+outside the redaction cascade
+([hashtag.md §5](../instances/hashtag.md#5-lifecycle)):
+
+- `'sensitive'` classification:
+  `target_property = 'moderation_status'`,
+  `proposed_value = 'sensitive'`. Flips the flag, no redaction.
+- `'illegal'` classification: `target_property ∈ {'name', 'node'}`
+  (the two are equivalent for hashtag because `name` is the only
+  user-input field — `'node'` is the whole-node sentinel per
+  [nodes.md "Whole-node targeting"](nodes.md#whole-node-targeting-the-node-sentinel)),
+  `proposed_value = 'illegal'`. Fires the redaction cascade per
+  [moderation.md §1](../instances/moderation.md#1-the-two-classification-paths).
+
+A property-amendment Proposal with `target_property = 'name'` and
+any other `proposed_value` is inadmissible.
 
 The three junction-to-Proposal `:STRUCTURAL` rows are Shape B
 vote edges to a Proposal whose subject the junction is eligible

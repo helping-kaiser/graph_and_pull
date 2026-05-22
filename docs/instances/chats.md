@@ -1120,7 +1120,7 @@ occurred.
 `'illegal'`-classification target fields on a Chat: `name`
 (graph-side layer redaction), `description` (Postgres tombstone
 version row), the chat image (media tombstone + asset removal,
-targeted via `image_id`), or the `'full'` shorthand per
+targeted via `image_id`), or the `'node'` sentinel per
 [moderation.md §5](moderation.md#5-scope). A passing Proposal
 fires the redaction cascade and auto-flips `moderation_status`
 to `'illegal'`. The cascade does **not** propagate to the
@@ -1142,7 +1142,7 @@ expression per
 
 `'illegal'`-classification target fields on a ChatMessage:
 `content` (Postgres tombstone version row), `attachments`
-(media tombstone + asset removal), or the `'full'` shorthand.
+(media tombstone + asset removal), or the `'node'` sentinel.
 The cascade applies regardless of whether the message is
 plaintext or encrypted; encrypted messages are classifiable
 once the relevant epoch key has been voluntarily disclosed per

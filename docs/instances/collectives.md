@@ -676,8 +676,8 @@ Two redaction triggers apply to a Collective today:
 - **Moderation: `'illegal'` classification.** A passing
   `'illegal'` Proposal targets one of the Collective's
   user-input fields — `name`, the Postgres-side `display_name` /
-  `description` / `website_url`, the `avatar`, or the literal
-  `'full'` shorthand per the per-node field list in
+  `description` / `website_url`, the `avatar`, or the `'node'`
+  sentinel covering all of those per the per-node field list in
   [moderation.md §5](moderation.md#5-scope) — and fires the
   redaction cascade per
   [moderation.md §1](moderation.md#1-the-two-classification-paths):

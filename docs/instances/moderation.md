@@ -61,8 +61,8 @@ back to `'normal'`.
 Illegal-content classification is per-field, not per-node. A
 passing `'illegal'` Proposal targets either (a) one specific
 user-input field of the content node (e.g., a Post's `content`,
-a User's `username`, a Chat's `name`), or (b) the literal
-`'full'` shorthand, which targets every user-input field plus
+a User's `username`, a Chat's `name`), or (b) the whole-node
+`'node'` sentinel, which targets every user-input field plus
 every attached media on that node. Threshold-cross fires the
 redaction cascade:
 
@@ -103,16 +103,16 @@ A user reporting content **is** the act of creating a Proposal:
     `proposed_value = 'sensitive'`.
   - `'illegal'` Proposal: `target_property` is a specific
     user-input field name on the target node (e.g., `'username'`,
-    `'bio'`, `'content'`, `'avatar'`) — or the literal `'full'`
-    to redact every user-input field plus every attached media on
-    the node. `proposed_value = 'illegal'`.
+    `'bio'`, `'content'`, `'avatar'`) — or the whole-node `'node'`
+    sentinel to redact every user-input field plus every attached
+    media on the node. `proposed_value = 'illegal'`.
 - **First reporter** authors the Proposal — the system reads the
   authoring as their +1 vote.
 - **Subsequent reporters** cast Shape A votes
   ([governance.md §3](../primitive/governance.md#3-the-two-vote-shapes)) on the existing
   Proposal rather than authoring duplicates. A reporter who
   wants a different target field on the same content node (e.g.,
-  one Proposal already targets `content`, they want `'full'`)
+  one Proposal already targets `content`, they want `'node'`)
   authors a separate Proposal — these are independent
   classifications, not duplicates.
 - **Threshold-cross** triggers the cascade described in §1.
@@ -197,7 +197,7 @@ Comment, ChatMessage, Chat, Item, Hashtag.
 **Illegal-classification target fields** — valid `target_property`
 values for an `'illegal'` Proposal:
 
-| Node | Targetable fields | `'full'` covers |
+| Node | Targetable fields | `'node'` covers |
 |---|---|---|
 | **User** | `username`, `display_name`, `bio`, `avatar`, `website_url` | all of the above |
 | **Collective** | `name`, `display_name`, `description`, `avatar`, `website_url` | all of the above |

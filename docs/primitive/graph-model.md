@@ -269,7 +269,9 @@ topology rules in §5 and the per-instance flows in
 **Invariant:** Every edge — actor or structural — carries exactly
 **2 dimensions plus system dimensions**. The shape is uniform across
 every edge type so the ranking algorithm never branches on edge
-category.
+category. Enforced at the storage layer via per-label EXISTS
+constraints — see
+[graph-data-model.md "Tensor uniformity enforcement"](../implementation/graph-data-model.md#tensor-uniformity-enforcement).
 
 Every edge, regardless of category, has the same shape:
 
@@ -338,7 +340,10 @@ two structural edges of its approval pair, not from a stored flag.
 Claim only = pending; claim + approval, both with `dim1 > 0` top
 layers = active; negative top layer on either = revoked. A status
 property on the junction would be a second source of truth that
-could drift; the topology IS the state.
+could drift; the topology IS the state. The storage layer cannot
+forbid a property by absence, so enforcement is ethos plus an
+integration test — see
+[graph-data-model.md "Junction state lives in topology"](../implementation/graph-data-model.md#junction-state-lives-in-topology-not-in-a-property).
 
 Alongside the claim edge, the system also writes a third
 structural edge — the `:BEARER` edge from the junction to the
