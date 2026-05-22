@@ -64,10 +64,12 @@ passes through any of the flows below.
 
 ### Invitation generation (inviter side)
 
-When an authenticated user generates an invite link, the server
-writes one row to `auth_invitations` (see [data-model.md](data-model.md))
-carrying the inviter's UUID, their pre-committed `(dim1, dim2)`
-edge values, and the link's expiry. The link URL itself carries
+When an authenticated actor (a User or a Collective acting via one
+of its members) generates an invite link, the server writes one
+row to `auth_invitations` (see [data-model.md](data-model.md))
+carrying the inviter's UUID, their actor type (`user` or
+`collective`), their pre-committed `(dim1, dim2)` edge values, and
+the link's expiry. The link URL itself carries
 only the row id; the pre-committed dim values stay server-side
 so they cannot be tampered with by relaying the link. Per
 [invitations.md](../primitive/invitations.md), links are

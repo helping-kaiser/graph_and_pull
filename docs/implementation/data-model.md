@@ -392,20 +392,23 @@ CREATE INDEX auth_refresh_tokens_user_idx
 -- carries only the row id; the pre-committed inviter edge values,
 -- inviter identity, and time-gate live here. Time-gated and
 -- multi-use per invitations.md — many invitees can register
--- through the same row. Rows are append-only in spirit (no
--- updates to inviter_dim1 / inviter_dim2 / inviter_id after
+-- through the same row. Rows are append-only in spirit (no updates
+-- to inviter_dim1 / inviter_dim2 / inviter_id / inviter_type after
 -- creation); revocation sets revoked_at.
 --
--- inviter_id references the inviting User (different actor types
--- are not supported here today — only Users issue invitations); no
--- FK is declared because future inviter-type support may make this
--- column polymorphic, same reason author_id columns carry no FK.
--- inviter_dim1 / inviter_dim2 are the values that will be written
--- to the inviter's outgoing edge toward each accepting invitee
--- per invitations.md "Pre-committed inviter values."
+-- inviter_id + inviter_type identifies the inviting actor. Users
+-- and Collectives are symmetric actors in the primitive, so either
+-- can issue invitations (see invitations.md). Same polymorphic
+-- shape as author_id + author_type elsewhere — no SQL FK on
+-- inviter_id, integrity guaranteed by the cache-rebuild path on
+-- the graph side. inviter_dim1 / inviter_dim2 are the values that
+-- will be written to the inviter's outgoing edge toward each
+-- accepting invitee per invitations.md "Pre-committed inviter
+-- values."
 CREATE TABLE auth_invitations (
     id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     inviter_id   UUID         NOT NULL,
+    inviter_type TEXT         NOT NULL CHECK (inviter_type IN ('user', 'collective')),
     inviter_dim1 REAL         NOT NULL CHECK (inviter_dim1 BETWEEN -1.0 AND 1.0),
     inviter_dim2 REAL         NOT NULL CHECK (inviter_dim2 BETWEEN -1.0 AND 1.0),
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -413,7 +416,7 @@ CREATE TABLE auth_invitations (
     revoked_at   TIMESTAMPTZ
 );
 CREATE INDEX auth_invitations_inviter_idx
-    ON auth_invitations (inviter_id);
+    ON auth_invitations (inviter_type, inviter_id);
 
 -- Pending registrations: pre-User-node holding state. Created when
 -- a registration form is submitted and consumed when the email-
