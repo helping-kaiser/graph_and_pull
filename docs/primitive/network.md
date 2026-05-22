@@ -207,10 +207,10 @@ Network-scope governance instances do **not** create new
 structural edges to the `:Network` node. Votes on Network-scope
 Proposals — moderator role changes (§9), content moderation
 classifications, and singleton parameter amendments (§11) — use
-the existing `User → Proposal` **actor edge** under the carrier
-relaxation described in
-[edges.md §2 "Voting (Shape B)"](edges.md#voting-shape-b) and
-[governance.md §3](governance.md#3-the-two-vote-shapes). The
+the existing `User → Proposal` **actor edge** as the Shape A
+vote (see
+[edges.md §1](edges.md#1-actor-edges) and
+[governance.md §3](governance.md#3-the-two-vote-shapes)). The
 Proposal itself targets the relevant subject (a User for role
 changes, the `:Network` singleton for parameter amendments);
 the votes themselves never carry an edge to or from the Network
