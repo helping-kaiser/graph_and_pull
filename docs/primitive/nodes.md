@@ -89,6 +89,20 @@ to redact and no Postgres-side display content either. The
 reason: pure configuration state with no user-input fields. See
 [network.md §3](network.md#3-graph-side-properties).
 
+**Distinct from chat-internal disavowal.** Moderation status —
+the `'normal'` / `'sensitive'` / `'illegal'` value set described
+above — is a Network-scope graph property (or per-field redaction
+state) maintained by the moderation flow in
+[moderation.md](../instances/moderation.md). Chat-internal
+disavowal is a **separate value system**: a Chat-scope
+Proposal-mediated state with the value set `'normal'` /
+`'disavowed'`, set on `:APPROVAL` edges (Level 2) or as the
+existence of a passed disavowal Proposal targeting a
+ChatMessage (Level 1) via the `'node'` sentinel below. The two
+share no values, no scope, and no graph property — see
+[moderation.md §"Vocabulary: moderation vs disavowal"](../instances/moderation.md#vocabulary-moderation-vs-disavowal)
+for the boundary.
+
 ---
 
 ## Whole-node targeting: the `'node'` sentinel
