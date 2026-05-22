@@ -182,6 +182,14 @@ them is done via a Proposal (see §2.1), voted on by the same
 eligibility rules. Defaults exist to bootstrap; they are not fixed
 rules.
 
+**Tally evaluation.** Whichever shape the threshold policy
+adopts, a tally is computed only when a new or updated vote
+layer is written on the subject — never on a clock, never as
+a background sweep. See
+[§6 "When outcomes take effect"](#6-when-outcomes-take-effect)
+for the trigger conditions and the per-subject serialization
+that orders concurrent vote writes.
+
 ### 2.5 Outcome
 
 What state change happens when the threshold is crossed. Always a
