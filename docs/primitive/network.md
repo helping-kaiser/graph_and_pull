@@ -358,17 +358,14 @@ consequences shared across all three:
 - **The eligibility carrier is the User node itself**, not a
   junction. Network membership has no separate gesture (§8), so
   there is no `ChatMember`-/`CollectiveMember`-style junction to
-  carry the vote. At the edge layer the vote IS the existing
-  `User → Proposal` actor edge from
+  carry the vote. This is the natural Shape A case: the vote
+  IS the existing `User → Proposal` actor edge from
   [edges.md §1](edges.md#1-actor-edges) — no separate structural
   edge is created. The actor edge keeps its normal `(sentiment,
   importance)` meaning; the tally reads `sign(sentiment)` for
-  the binary outcome. "Shape B" here is governance-conceptual
-  (eligibility from the User, not a junction), not
-  edge-mechanical. See
+  the binary outcome. See
   [governance.md §3](governance.md#3-the-two-vote-shapes)
-  "Carrier relaxation for Network-level governance" for the
-  full resolution.
+  "Shape A".
 - **Mod weight = member weight = 1; mod is a gate, not a
   weight.** Moderators do not outvote the community; the
   "≥1 mod positive vote" rule is a procedural gate, never a
