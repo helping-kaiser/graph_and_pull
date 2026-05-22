@@ -117,6 +117,21 @@ CREATE INDEX ON :Comment(id);
 | `epoch`                  | Integer | Current chat-key epoch. Default `1`. Advanced by `+1` on every membership transition that takes effect — `:CLAIM` and `:APPROVAL` both present with positive top layers (join), or active `:APPROVAL` flipped to `dim1 < 0` (leave / disavowal cascade) — and on every passing mid-epoch rotation Proposal. Concurrent transitions serialize per Chat. See [chats.md §9](../instances/chats.md#9-encryption-as-the-privacy-mechanism). |
 | `rotate_key_quorum`      | Float   | Quorum for mid-epoch rotation Proposals targeting `epoch`. Default `0.50`. Layered, amendable via Proposal. See [chats.md §9](../instances/chats.md#9-encryption-as-the-privacy-mechanism). |
 | `rotate_key_threshold`   | Float   | Pass-threshold for mid-epoch rotation Proposals. Default `0.667` (2/3). Layered, amendable via Proposal. See [chats.md §9](../instances/chats.md#9-encryption-as-the-privacy-mechanism). |
+| `weight_admin`           | Integer | Default voting weight for `ChatMember.role = 'admin'`. Default `5`. Layered. Overridden per-bearer by a non-null `ChatMember.voting_weight`. See [chats.md §10 "How roles fit in"](../instances/chats.md#how-roles-fit-in). |
+| `weight_chat_mod`        | Integer | Default voting weight for `ChatMember.role = 'chat_mod'`. Default `3`. Layered. |
+| `weight_member`          | Integer | Default voting weight for `ChatMember.role = 'member'`. Default `1`. Layered. |
+| `disavowal_l1_quorum`    | Float   | Quorum for Level 1 (ChatMessage) disavowal Proposals. Default `0.20`. Layered. See [chats.md §10](../instances/chats.md#10-moderation). |
+| `disavowal_l1_threshold` | Float   | Pass-threshold for Level 1 disavowal. Default `0.50`. Layered. |
+| `disavowal_l2_quorum`    | Float   | Quorum for Level 2 (ChatMember) disavowal Proposals. Default `0.40`. Layered. |
+| `disavowal_l2_threshold` | Float   | Pass-threshold for Level 2 disavowal. Default `0.667` (2/3). Layered. |
+| `role_change_quorum`     | Float   | Quorum for Proposals targeting `ChatMember.role`. Default `0.30`. Layered. The subject member is excluded from eligibility — see [chats.md §10 "Property and role changes via Proposals"](../instances/chats.md#property-and-role-changes-via-proposals). |
+| `role_change_threshold`  | Float   | Pass-threshold for role changes. Default `0.50`. Layered. |
+| `name_change_quorum`     | Float   | Quorum for Proposals targeting `Chat.name`. Default `0.10`. Layered. |
+| `name_change_threshold`  | Float   | Pass-threshold for name changes. Default `0.50`. Layered. |
+| `join_policy_change_quorum` | Float | Quorum for Proposals targeting `join_policy`, `invite_proposer_roles`, `entry_approval_required_count`, or `entry_approval_eligible_roles`. Default `0.30`. Layered. |
+| `join_policy_change_threshold` | Float | Pass-threshold for the join-policy family. Default `0.667` (2/3). Layered. |
+| `governance_amendment_quorum`  | Float | Quorum for Proposals targeting any of the governance fraction or weight properties listed above (the "governance of governance" case). Default `0.30`. Layered. |
+| `governance_amendment_threshold` | Float | Pass-threshold for governance amendments. Default `0.667` (2/3). Layered. |
 
 The `content_privacy` setting (plaintext vs E2EE) lives in Postgres,
 not on the graph — message bodies are always Postgres-side per
