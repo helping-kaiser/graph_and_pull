@@ -27,6 +27,9 @@ record of the acting member. The Collective IS the actor at the
 graph layer; member-level accountability lives in the Collective's
 social contract, not in edge attribution. Deliberate non-feature —
 not a gap to be filled by a future `acting_user` dimension.
+Enforcement is **by absence**: the schema does not declare such a
+property, and the service-layer write path never sets one. The
+"rule" is the omission itself, not an unenforced convention.
 
 Across every actor-edge type the two dimensions follow the same
 underlying grammar (see [graph-model.md §6](graph-model.md#6-dimension-semantics)):
