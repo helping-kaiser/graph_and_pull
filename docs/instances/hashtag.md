@@ -76,12 +76,13 @@ traverse, filter, and rank. There is no Postgres-side
 display content (§3).
 
 - **`name`** — the canonical tag string (lowercase, no
-  `#`). Authored, layered. The tag *is* the identifier in
-  the everyday sense, but the graph key is still the UUID;
-  `name` is mathematically redundant with the UUID by the
-  content-addressing rule (§1) yet is stored explicitly so
-  the graph can render the tag without a Postgres lookup
-  and so name-redaction (§5) has a field to act on.
+  `#`). Immutable except via the redaction cascade (§5).
+  The tag *is* the identifier in the everyday sense, but
+  the graph key is still the UUID; `name` is mathematically
+  redundant with the UUID by the content-addressing rule
+  (§1) yet is stored explicitly so the graph can render the
+  tag without a Postgres lookup and so name-redaction (§5)
+  has a field to act on.
 - **`moderation_status`** — `'normal'` / `'sensitive'` /
   `'illegal'`, default `'normal'`, layered. Universal
   across all user-input-bearing nodes; the per-node
@@ -226,6 +227,15 @@ moderation:
   classified illegal does not redact the Posts and Items
   that tag it, and vice versa; each node requires its own
   classification.
+
+**Invariant:** `:Hashtag.name` is immutable except via the
+redaction cascade. No property-amendment Proposal targeting
+`name` is admissible — the only mechanism that can write a
+new layer on `name` is the `'illegal'` moderation cascade
+above, which replaces the top layer with a redaction marker.
+The `'sensitive'` classification path doesn't touch `name`
+at all (it flips `moderation_status` only). Both moderation
+paths leave the UUID untouched.
 
 The Hashtag's UUID is stable across redaction. Crucially,
 because the UUID was derived from the *original* canonical

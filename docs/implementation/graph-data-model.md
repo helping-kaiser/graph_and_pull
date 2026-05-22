@@ -177,7 +177,7 @@ CREATE INDEX ON :Item(id);
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUIDv5, content-addressed from `name`. See [data-model.md "Node identity strategies"](data-model.md#node-identity-strategies). |
-| `name`              | String | Canonical form: lowercase, no `#`. |
+| `name`              | String | Canonical form: lowercase, no `#`. Immutable except via the `'illegal'` redaction cascade — see [hashtag.md §5](../instances/hashtag.md#5-lifecycle). |
 | `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. `'sensitive'` is set by a passing classification Proposal; `'illegal'` is auto-flipped by the system when any field on the node receives a redaction marker — see [moderation.md](../instances/moderation.md). |
 
 ```cypher

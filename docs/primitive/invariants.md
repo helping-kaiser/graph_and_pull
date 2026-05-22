@@ -60,6 +60,10 @@ listed under the most useful one.
   either exist with full standing or they don't.
 - [Every Collective has or has had ≥1 active member](../instances/collectives.md#9-lifecycle)
   — zero active members ≡ dissolved.
+- [`:Hashtag.name` is immutable except via redaction cascade](../instances/hashtag.md#5-lifecycle)
+  — no property-amendment Proposal path; only the `'illegal'`
+  moderation cascade can rewrite the top layer. UUIDv5 derived
+  from `(namespace, name)` stays stable across redaction.
 - [ItemOwnership forms an append-only chain](../instances/items.md#7-supersession-exactly-one-active-itemownership-per-item)
   — every past owner remains visible on the graph.
 - [At most one active ItemOwnership per Item](../instances/items.md#7-supersession-exactly-one-active-itemownership-per-item)
