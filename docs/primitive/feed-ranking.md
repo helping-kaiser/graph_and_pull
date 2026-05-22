@@ -1162,8 +1162,9 @@ R=2 path roughly matches ~15 strong R=3 paths' aggregate
 contribution — balancing direct signal with friend-of-friend buzz.
 
 A separate **time-decay** factor `f(Δt)` is applied alongside `d(R)`
-on the reactor edge of each path — see §7. Both are
-frontend-tunable.
+on the reactor edge of each path. `f(Δt)`'s canonical shape and
+parameters live in §7.3; §4.2 below just composes them into the
+metric sums. Both `d(R)` and `f(Δt)` are frontend-tunable.
 
 **Considered and rejected: single-transit-cap.** A rule capping
 any single intermediate's contribution to a given target — or
@@ -1223,8 +1224,9 @@ Each metric is a **2-tuple** (one component per dim track):
 factor-contributing edge of the path (typically an actor edge
 `B → t`; can also be a `:REFERENCES` edge `C → t` per §3.5
 rule 4); `j` and `k` sum over actor reactor edges `B → t`
-directly. See §7 for its definition and rationale. `Δt` is the
-elapsed time since the edge's top layer was added.
+directly. **§7.3 is the canonical home for `f(Δt)`'s shape and
+parameters;** §4.2 only composes it into the metric sums.
+`Δt` is the elapsed time since the edge's top layer was added.
 
 Reading:
 - `h` — personal opinion: trust- and connection-weighted opinion
