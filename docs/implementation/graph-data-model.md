@@ -42,9 +42,13 @@ fields.
 
 ## Node labels
 
-Memgraph is schemaless — properties don't need to be declared up front.
-The shapes below describe what each label carries and the
-constraints/indexes the application relies on.
+Memgraph allows ad-hoc properties without up-front declaration, but
+the protocol leans on declarative constraints (uniqueness, existence)
+to make the schema explicit at the storage layer wherever the rule
+admits one. The shapes below describe what each label carries and
+the constraints/indexes the application relies on; rules the
+storage layer can't directly express (e.g. forbidding a property by
+absence) are stated as ethos invariants and enforced in code tests.
 
 ### Actor nodes
 
@@ -400,6 +404,30 @@ Every edge carries the same property shape, regardless of label:
 See [graph-model.md §4](../primitive/graph-model.md#4-edge-structure) for the edge
 structure and [graph-model.md §6](../primitive/graph-model.md#6-dimension-semantics) for the
 unified two-axis dimension grammar.
+
+### Tensor uniformity enforcement
+
+The [edge-tensor-uniformity invariant](../primitive/invariants.md#topology-and-visibility)
+— every edge carries `(dim1, dim2, timestamp, layer)` regardless of
+label — is enforced at the storage layer via per-label EXISTS
+constraints. Shown explicitly for `:ACTOR`; an identical block of
+four constraints applies to each remaining label in the table
+above (`:AUTHOR`, `:CLAIM`, `:APPROVAL`, `:BEARER`, `:CONTAINMENT`,
+`:TAGGING`, `:TARGETS`, `:REFERENCES`, `:STRUCTURAL`):
+
+```cypher
+CREATE CONSTRAINT ON ()-[r:ACTOR]-() ASSERT EXISTS (r.dim1);
+CREATE CONSTRAINT ON ()-[r:ACTOR]-() ASSERT EXISTS (r.dim2);
+CREATE CONSTRAINT ON ()-[r:ACTOR]-() ASSERT EXISTS (r.timestamp);
+CREATE CONSTRAINT ON ()-[r:ACTOR]-() ASSERT EXISTS (r.layer);
+```
+
+Range checks on `dim1` and `dim2` (`[-1.0, +1.0]`) are not
+expressible as a single existence constraint; the service layer
+clamps on write and a test suite asserts the invariant
+end-to-end. Memgraph's type-constraint family (where available
+in the deployed version) takes care of `dim1` / `dim2` being
+floats and `timestamp` / `layer` being the expected types.
 
 ---
 

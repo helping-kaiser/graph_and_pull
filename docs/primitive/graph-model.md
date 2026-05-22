@@ -269,7 +269,9 @@ topology rules in §5 and the per-instance flows in
 **Invariant:** Every edge — actor or structural — carries exactly
 **2 dimensions plus system dimensions**. The shape is uniform across
 every edge type so the ranking algorithm never branches on edge
-category.
+category. Enforced at the storage layer via per-label EXISTS
+constraints — see
+[graph-data-model.md "Tensor uniformity enforcement"](../implementation/graph-data-model.md#tensor-uniformity-enforcement).
 
 Every edge, regardless of category, has the same shape:
 
