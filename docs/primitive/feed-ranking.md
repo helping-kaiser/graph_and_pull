@@ -483,19 +483,29 @@ single declaration.
 
 #### The severance edge is not the everyday signal
 
-`(0, 0)` is reserved for **deliberate severance** — a declaration
-that the target is outside the user's graph of relevance entirely.
-`(+, +)`, `(−, +)`, `(+, −)`, `(−, −)` and floats in between remain
-the normal vocabulary for affinity, distance, dislike, and
-avoidance, all of which leave path products live and feed back into
-`h(t)` via the ordinary math. A user who simply dislikes a target
-uses `(−, −)`, not `(0, 0)`.
+`(0, 0)` is the **intended primitive for deliberate severance** —
+a declaration that the target is outside the user's graph of
+relevance entirely. By convention it is reserved for that purpose;
+the math does not enforce it, and a frontend may surface `(0, 0)`
+for other reasons (rendering experiments, intent placeholders)
+without breaking anything. `(+, +)`, `(−, +)`, `(+, −)`, `(−, −)`
+and floats in between remain the normal vocabulary for affinity,
+distance, dislike, and avoidance, all of which leave path products
+live and feed back into `h(t)` via the ordinary math. A user who
+simply dislikes a target uses `(−, −)`, not `(0, 0)`.
 
 Severance is a stronger statement and has stronger consequences: it
 kills both dim chains on every path through the edge, removes the
 severing user as a transit node toward the severed account, and
 contributes to placing the severed account into zero-jail (§5) when
 the entry path-set is fully community-marked.
+
+`h(t) = 0` is not exclusive to severance: in sparse graphs or with
+`+1/0/-1` integer values, exact cancellation between positive and
+negative path contributions can also produce `h(t) = 0` with no
+severance edge anywhere. The sort rule (§5) treats both cases the
+same — "graph signal toward this target sums to neutral" is a
+reasonable bucket to push out of the default feed either way.
 
 #### Three layered defenses
 
