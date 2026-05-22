@@ -113,17 +113,25 @@ NOW()`. The reaper is the normal cleanup path; it does not run
 as part of any user-facing request.
 
 **Re-registration collision.** A UNIQUE constraint on `email`
-in the `auth_pending_registrations` table makes a second
-registration submit for an already-pending email fail with
-`ON CONFLICT DO NOTHING`; the API surfaces "registration in
-progress — check your email" to the submitter without touching
-the existing row. The reaper's sweep cadence sets the worst-
-case wait between an expired row clearing and a successful
-re-register; running the sweep frequently (every few minutes)
-keeps the wait imperceptible. No overwrite path exists — a
-stranger's submit cannot replace another person's pending row,
-even after expiry. The constraint and the conflict-handling
-live with the schema in [data-model.md](data-model.md).
+in the `auth_pending_registrations` table prevents two live
+pending rows for the same address. The conflict path is:
+
+- If the existing row is **still unexpired**, the submit is
+  rejected and the API surfaces "registration in progress —
+  check your email" to the submitter. The existing row is
+  untouched — a stranger's submit cannot displace another
+  person's live pending registration.
+- If the existing row is **expired but not yet swept**, the
+  submit overwrites it (`ON CONFLICT (email) DO UPDATE SET ...
+  WHERE auth_pending_registrations.expires_at < NOW()`). The
+  effect is identical to what would have happened had the
+  reaper run a moment earlier, so the user's experience does
+  not depend on the sweep schedule.
+
+The reaper still runs on its own cadence to bound the size of
+the table and to expire rows that nobody re-submits against.
+The constraint and the conflict-handling live with the schema in
+[data-model.md](data-model.md).
 
 **Why no User node before verification:** because the primitive
 forbids it — the graph has no "unverified" or "pending" User
