@@ -132,19 +132,23 @@ sets these two properties to the new version's values.
 carries the vote, same as moderation Proposals
 ([moderation.md §4](moderation.md#4-eligibility-weights-thresholds)).
 
-**Threshold.**
+**Tally.** Petition-style — only positive votes contribute. See
+[governance.md §3 "Petition-style tally and dual quorum"](../primitive/governance.md#petition-style-tally-and-dual-quorum-network-scope-only).
 
-| Action | Quorum property | Pass-threshold property | Mod gate |
+**Dual-quorum bars.** A guidelines-amendment Proposal passes when
+`positive_count ≥ min(P × |active members|, K)`:
+
+| Action | `P` (`*_quorum_fraction`) | `K` (`*_quorum_count`) | Mod gate |
 |---|---|---|---|
-| Amend guidelines | `Network.guidelines_change_quorum` (default 5%) | `Network.guidelines_change_threshold` (default ≥2/3) | ≥1 mod positive |
+| Amend guidelines | `Network.guidelines_change_quorum_fraction` (default `0.50`) | `Network.guidelines_change_quorum_count` (default `10000`) | ≥1 mod positive |
 
-The defaults are slightly higher than `illegal` classification
-(2% / ≥2/3) because guideline changes shift the normative frame
-for *all future* moderation, not a single piece of content. The
-`guidelines_change_*` thresholds themselves fall in the critical
+The defaults are tuned higher than single-content classification
+because guideline changes shift the normative frame for *all
+future* moderation, not a single piece of content. The
+`guidelines_change_*` parameters themselves fall in the critical
 bucket of [network.md §11](../primitive/network.md#11-amending-network-parameters) — amending
-them needs the supermajority that protects platform-wide
-governance.
+them requires the higher fractional / absolute pair that protects
+platform-wide governance.
 
 **Mod gate.** Same as moderation classifications — at least one
 moderator's positive vote is required. Same bot-defense

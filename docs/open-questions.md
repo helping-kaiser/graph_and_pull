@@ -26,6 +26,7 @@ within a phase, order is flexible.
 |:---:|:---:|:---:|---|
 | 1. Sort fallback | 1 | **Q16** | Derivation of `S(t)`, the intrinsic per-node scalar that breaks ties at the bottom of the sort cascade. Q2 settled the rest of the math but left S's inputs open. Pure ranking math; no external dependency. |
 | 2. Federation phase | 2 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
+| 3. Governance v1.x | 3 | **Q19** | Bot-resistant non-arbitrary quorum for Network-scope governance. PR-05 shipped dual-quorum (fractional bar + absolute floor) as the v1 compromise; the absolute floor itself is a static parameter and the fractional bar's denominator is still bot-inflatable. A self-calibrating mechanism that does not depend on identity verification or economic gating is unsolved. Defer until the network's bot-density evidence justifies replacing the parameter pair. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -196,3 +197,94 @@ question completes for the cross-instance case),
 [feed-ranking.md §3.7](primitive/feed-ranking.md#37-cascading-severance-and-redemption) (cluster
 severance — local to the severing community per principle, but
 federation could change this).
+
+---
+
+## Q19 — Bot-resistant non-arbitrary quorum for Network-scope governance
+
+**Where it shows up:**
+[governance.md §3 "Petition-style tally and dual quorum"](primitive/governance.md#petition-style-tally-and-dual-quorum-network-scope-only)
+(the "Known limitation" paragraph),
+[network.md §3](primitive/network.md#3-graph-side-properties)
+(the dual-quorum parameter pairs).
+**Status:** open
+
+### Context
+
+Network-scope governance uses a petition-style tally
+(positive votes only) under a dual-quorum gate:
+`positive_count ≥ min(P × |active members|, K)`. Both `P` and
+`K` are amendable `:Network` properties. The mechanism
+eliminates the passive-"no" veto (a real improvement over
+bidirectional tallies that bot-cast `no`-votes can lock
+indefinitely), but the underlying sybil problem is
+unresolved.
+
+### The question
+
+What is the right denominator-and-floor mechanism for
+Network-scope governance under unbounded membership and no
+identity verification?
+
+The two-bar v1 leaves two known holes:
+
+- **Denominator inflation.** A bot account that exists as an
+  active member (any outgoing actor edge inside
+  `active_threshold_days`) inflates the fractional bar's
+  denominator without ever needing to vote. At scale the
+  fractional bar becomes unreachable independently of how
+  many real positive votes accumulate.
+- **Static floor.** The absolute bar `K` is a fixed number
+  that needs periodic re-tuning as the network grows. It
+  bounds damage from inflation but does not eliminate it,
+  and its correct calibration over long horizons is
+  unsettled.
+
+### Constraints (from established principles)
+
+- **No identity verification.** Per CLAUDE.md ethos,
+  anyone can fork and self-host; identity-gated voting is
+  off the table.
+- **No AI in governance signal.** Per CLAUDE.md, the
+  graph's signal and the governance arithmetic must be
+  derivable from graph state, not from learned models.
+- **All numeric parameters are amendable.** Per
+  [governance.md §2.4](primitive/governance.md#24-threshold-policy),
+  any value used in the tally is itself a `:Network`
+  property amendable via the same primitive.
+- **Append-only.** Per [layers.md](primitive/layers.md),
+  no mechanism may delete graph structure to "expel" bot
+  accounts.
+
+### Options considered (none chosen)
+
+- **Vote-active denominator.** Denominator = Users with ≥1
+  positive Shape A vote in a recent window. Rejected
+  because a bot pays one yes-vote to enter the window and
+  then sits silent for the window duration, inflating the
+  denominator without contributing.
+- **Web-of-trust denominator.** Denominator = Users with
+  ≥M inbound actor edges from accounts older than D days.
+  Uses graph structure as the sybil filter. Promising but
+  introduces a recursive bootstrap question and a "voting
+  class" of trusted-enough accounts that newcomers must
+  earn into.
+- **Stake / token gating.** Defer to the economics layer;
+  out of scope for the governance primitive.
+- **Vote burn / quadratic cost.** Per-vote energy or
+  cooldown cost that grows with vote frequency. Introduces
+  a friction mechanism that punishes engaged real users
+  alongside bots.
+- **Sliding-window proportional.** Denominator = average
+  unique-voter count across recent proposals. Auto-
+  calibrates to engagement but is structurally similar to
+  the vote-active variant and shares its gaming.
+
+### Related
+
+[governance.md §3](primitive/governance.md#petition-style-tally-and-dual-quorum-network-scope-only)
+(the petition mechanism and dual-quorum v1),
+[feed-ranking.md §3.6](primitive/feed-ranking.md#36-bot-resistance-via-the-0-0-severance-edge)
+(severance as the existing graph-level bot defense; not
+directly applicable to governance tally but informs the
+"graph as sybil filter" candidates).

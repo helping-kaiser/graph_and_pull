@@ -158,8 +158,14 @@ the vote. Network membership has no per-member junction, so
 the User node is itself the eligibility carrier. The actor
 edge keeps its normal meaning: `dim1` is the voter's
 sentiment toward the change (positive = support, negative =
-oppose), `dim2` is importance / personal stake. The tally
-reads `sign(dim1)` for the binary outcome.
+oppose), `dim2` is importance / personal stake. Network-scope
+tally is petition-style: only `dim1 > 0` edges contribute
+(`+1 × voter_weight` each); `dim1 ≤ 0` edges are valid
+graph objects but contribute `0` to the tally. The pass
+condition is dual-quorum:
+`positive_count ≥ min(P × |active members|, K)` plus the
+mod-gate. See
+[governance.md §3 "Petition-style tally and dual quorum"](../primitive/governance.md#petition-style-tally-and-dual-quorum-network-scope-only).
 
 **Reference edges:**
 

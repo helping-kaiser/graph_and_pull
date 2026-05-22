@@ -159,27 +159,33 @@ voting body for moderation Proposals.
   junction (see [network.md §8](../primitive/network.md#8-membership-and-roles)),
   so the User node is itself the eligibility carrier. See
   [governance.md §3](../primitive/governance.md#3-the-two-vote-shapes).
-- **Thresholds (read from the `:Network` singleton — see
-  [graph-data-model.md](../implementation/graph-data-model.md)):**
+- **Tally:** petition-style — only positive votes contribute. See
+  [governance.md §3 "Petition-style tally and dual quorum"](../primitive/governance.md#petition-style-tally-and-dual-quorum-network-scope-only).
+- **Dual-quorum bars (read from the `:Network` singleton — see
+  [graph-data-model.md](../implementation/graph-data-model.md)).**
+  A Proposal passes when
+  `positive_count ≥ min(P × |active members|, K)`:
 
-  | Action | Quorum property | Pass-threshold property | Mod gate |
+  | Action | `P` (`*_quorum_fraction`) | `K` (`*_quorum_count`) | Mod gate |
   |---|---|---|---|
-  | Classify `sensitive`         | `Network.moderation_sensitive_quorum` (default 1%) | `Network.moderation_sensitive_threshold` (default >50%) | ≥1 mod positive |
-  | Classify `illegal`           | `Network.moderation_illegal_quorum` (default 2%) | `Network.moderation_illegal_threshold` (default ≥2/3) | ≥1 mod positive |
+  | Classify `sensitive`         | `Network.moderation_sensitive_quorum_fraction` (default `0.25`) | `Network.moderation_sensitive_quorum_count` (default `5000`) | ≥1 mod positive |
+  | Classify `illegal`           | `Network.moderation_illegal_quorum_fraction` (default `0.50`) | `Network.moderation_illegal_quorum_count` (default `10000`) | ≥1 mod positive |
   | Un-classify back to `normal` | symmetric to the original action | symmetric | ≥1 mod positive |
 
-Quorum percentages are deliberately low so decisions can actually
-finish — at network scale, even 1-2% participation in a specific
-decision is high. The mod gate carries the integrity guarantee;
-quorum just keeps a single mod from acting unilaterally.
+The fractional bar `P` governs while the network is small (a real
+majority of active members is required to pass). Once membership
+scales past `K / P` active members, the absolute bar `K` takes
+over (a fixed engagement-level positive-vote count is sufficient).
+The mod gate carries the integrity guarantee independently of
+either bar.
 
 Every number above is a property of the `:Network` singleton,
 amendable via the rules in
 [network.md §11](../primitive/network.md#11-amending-network-parameters) — the
-`moderation_illegal_*` thresholds fall in the critical bucket
-(higher quorum, supermajority threshold) because their abuse
-drives the redaction cascade; the `moderation_sensitive_*`
-thresholds fall in the baseline bucket. Defaults exist to
+`moderation_illegal_*` parameters fall in the critical bucket
+(higher fractional bar, larger absolute count) because their
+abuse drives the redaction cascade; the `moderation_sensitive_*`
+parameters fall in the baseline bucket. Defaults exist to
 bootstrap; they are not fixed rules.
 
 ## 5. Scope
@@ -327,8 +333,9 @@ on a moderation Proposal.
 The guidelines live in
 [platform-guidelines.md](platform-guidelines.md). They are
 amendable via the same Proposal primitive (eligibility = Network
-members; thresholds in `Network.guidelines_change_quorum` /
-`Network.guidelines_change_threshold`, tuned slightly higher than
+members; dual-quorum bars in
+`Network.guidelines_change_quorum_fraction` /
+`Network.guidelines_change_quorum_count`, tuned higher than
 single-content classification because an amendment shifts the
 normative frame for *all future* moderation). The current version
 is pinned on the graph by
