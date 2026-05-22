@@ -44,9 +44,10 @@ points at a parent — see "Why parents point at attachments" below.
 -- below.
 --
 -- options carries display hints the frontend reads to lay out the
--- container before the media finishes loading: aspect ratio,
--- autoplay/mute/loop flags, captions config, etc. JSONB so it can
--- grow without migrations as new hints are needed.
+-- container before the media finishes loading. Validated in the
+-- service layer (not by a Postgres CHECK), so the shape can grow
+-- without DDL coordination. See "media_attachments.options shape"
+-- below for the v1 keys and the versioning convention.
 --
 -- author_id + author_type identifies the uploader. Unlike posts.author_id
 -- (which is a graph-derived cache), this column is Postgres-native source
@@ -498,6 +499,33 @@ rebuild semantics.
 node, so there is no graph-side authorship derivation to cache. The
 column is Postgres-native source of truth. If it gets corrupted, the
 recovery path is object-storage ACLs / upload logs — not the graph.
+
+### media_attachments.options shape
+
+JSONB display-layout hints. Every row carries a top-level `v`
+integer naming the shape revision; service-layer migrations rev
+the value and readers fall back when they see a `v` they do not
+understand.
+
+**v1 keys** (all optional unless noted):
+
+| Key            | Type             | Purpose                                                  |
+|----------------|------------------|----------------------------------------------------------|
+| `v`            | integer (req'd)  | Shape revision. `1` for the current shape.               |
+| `aspect_ratio` | string `"W:H"`   | Container ratio so layout reserves space before load.    |
+| `duration_ms`  | integer          | Media duration in milliseconds (video/audio).            |
+
+Unknown keys are tolerated — a future v2 may add fields a v1 reader
+silently ignores. Removing or renaming a key is a `v` bump.
+
+Validation lives in the service layer that writes the row. A
+Postgres-side CHECK was rejected as too rigid for a field expected
+to evolve.
+
+**Deferred:** a per-asset cover field (video poster, music cover art)
+is a real need but not yet designed. The existing junction-side
+`is_cover` selects which attachment leads a multi-asset parent — a
+different concern from per-asset cover.
 
 ### User-scoped FKs are defense-in-depth, not deletion mechanics
 
