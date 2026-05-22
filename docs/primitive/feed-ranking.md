@@ -1219,10 +1219,12 @@ Each metric is a **2-tuple** (one component per dim track):
 | `j` | absolute opinion | `J_s = ∑_B f(Δt_B→t) · dim1(B → t)` over reactors `B` (signed) | `J_c = ∑_B f(Δt_B→t) · dim2(B → t)` over reactors (signed) |
 | `k` | absolute reach | `K_s = ∑_B f(Δt_B→t) · \|dim1(B → t)\|` over reactors | `K_c = ∑_B f(Δt_B→t) · \|dim2(B → t)\|` over reactors |
 
-`f(Δt)` is the time-decay factor on the reactor edge (the last
-actor edge in the path, or `B → t` directly for `j` and `k`); see
-§7 for its definition and rationale. `Δt` is the elapsed time
-since that edge's top layer was added.
+`f(Δt)` is the time-decay factor on the reactor edge — the last
+factor-contributing edge of the path (typically an actor edge
+`B → t`; can also be a `:REFERENCES` edge `C → t` per §3.5
+rule 4); `j` and `k` sum over actor reactor edges `B → t`
+directly. See §7 for its definition and rationale. `Δt` is the
+elapsed time since the edge's top layer was added.
 
 Reading:
 - `h` — personal opinion: trust- and connection-weighted opinion
@@ -1578,11 +1580,16 @@ Time decay closes this gap by attenuating contributions from
 
 ### 7.1 What decays — reactor-edge top-layer age
 
-Decay anchors on the **top-layer timestamp of the reactor edge**:
-the last actor edge in the path (`B → t`), the edge that
-expresses a stance toward the target. Per
-[layers.md](layers.md), every edge has a stack of timestamped
-layers; the top layer is the most recent stance expression.
+Decay anchors on the **top-layer timestamp of the reactor edge** —
+the last factor-contributing edge of the path. This is typically
+an actor edge `B → t` (with `B` a User or Collective expressing a
+stance toward `t`); it can also be a `:REFERENCES` edge `C → t`
+per §3.5 rule 4, with the carrier `C`'s reference timestamp
+driving the decay. The principle is uniform: time decay always
+applies to the last factor-contributing hop of the path, and
+intermediate hops do not decay. Per [layers.md](layers.md),
+every edge has a stack of timestamped layers; the top layer is
+the most recent expression.
 
 A new layer on the reactor edge — a friend re-liking,
 commenting again, updating their reaction — resets the age clock
