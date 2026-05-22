@@ -122,6 +122,27 @@ resolves to the redaction marker on display. This is intentional:
 editing other users' content to scrub a redacted user's name
 would itself be a deletion of someone else's record.
 
+### ChatMember junctions
+
+`ChatMember` junctions are never removed. They are graph topology
+(append-only per [layers.md](../primitive/layers.md)) and the
+historical record of who participated in which chat across time.
+Account deletion does not change that:
+
+- The junction node stays, and its `:BEARER` and approval edges
+  continue to point at the redacted User by UUID.
+- Any user-input fields on the junction (e.g., a chat-local
+  display-name override) follow the standard PII-redaction
+  rules.
+- Membership transitions — voluntary leave, member-disavowal pass,
+  re-add — continue to use the same approval-pair layer mechanic
+  defined in [chats.md §11](chats.md#11-joining-and-leaving-a-chat).
+  A redacted user is not auto-disjoined from chats; that is a
+  member-driven action.
+
+The shape mirrors the broader "graph nodes and edges stay; PII on
+them is redacted in place" principle of §2.
+
 ## 3. Retention archive
 
 Originals — the original `users` row, content body version rows
