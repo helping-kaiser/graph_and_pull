@@ -114,9 +114,14 @@ The Q14 resolution settled three identity strategies in the data
 model, with very different federation properties:
 
 - **Type 1 — canonical-string identity, content-addressed
-  UUIDv5** (Hashtag). Federates by construction. Same canonical
-  name produces the same UUID across any instance or fork. No
-  reconciliation needed.
+  UUIDv5** (Hashtag). Federates by construction when forks
+  intend to share the namespace: the same canonical name
+  produces the same UUID across any instance or fork. Forks
+  that intend to diverge implicitly create incompatible
+  hashtag IDs — the namespace UUID is committed forever the
+  moment the genesis migration runs, so a fork keeping it
+  inherits the shared namespace, and a fork rotating it
+  breaks compatibility for every existing tag.
 - **Type 2 — handle-based identity, random UUID + UNIQUE handle
   per instance** (User, Collective). Within an instance, the
   UNIQUE constraint prevents collision. Across separated
@@ -155,6 +160,32 @@ Specifically:
   each other, agree on synchronization scope, and handle
   disagreements (e.g. instance A says "Bob is a bot, severed,"
   instance B disagrees)?
+- **`:Network` singleton ID distribution.** Within an instance
+  the singleton's `id` is a one-query lookup, but every client
+  composing a Network-scope Proposal needs that UUID up front.
+  Across instances, each `:Network` has its own UUID; a
+  federation protocol has to decide whether singleton IDs are
+  discoverable, signed, or pinned to instance metadata. See
+  [network.md §2](primitive/network.md#2-creation) and
+  [graph-data-model.md](implementation/graph-data-model.md).
+- **First-user serialization across instances.** Within one
+  instance, the bootstrap migration is the only path that
+  writes the genesis User, so concurrent registration cannot
+  race ([network.md §2](primitive/network.md#2-creation),
+  [auth.md](implementation/auth.md)). Two separately-running
+  instances independently mint their own genesis users; if
+  they later federate, the federation protocol has to decide
+  what "the genesis user" means when both instances have one.
+- **Hashtag UUIDv5 backend integrity.** Hashtag IDs are
+  derived from a namespace UUID and the canonical name. The
+  derivation runs in the backend, with no per-row check that
+  `id == UUIDv5(namespace, name)`
+  ([data-model.md](implementation/data-model.md)). Within one
+  honest instance, backend discipline is sufficient. Federated
+  exchange of hashtag references requires deciding whether
+  instance B accepts instance A's hashtag IDs on trust, recomputes
+  them, or expects an attestation (binary hash, signed build, or
+  similar) that A computed the UUID the agreed way.
 
 ### Constraints (from established principles)
 
