@@ -413,7 +413,10 @@ pattern with one or more Shape B approver votes.
 Because edges are append-only, the approval edge created when a
 junction relationship becomes active cannot be removed. "No longer
 active" is therefore encoded as **new layers on the two structural
-edges of the approval pair** — not by deletion.
+edges of the approval pair** — not by deletion. The canonical
+definition of "Revoked" (and the aliases "inactive" / "superseded"
+used in older drafts) lives in
+[layers.md §2](layers.md#2-layers-on-edges).
 
 **Dimension semantics on state-bearing structural edges.** For the
 claim and approval edges of a junction approval pair, `dim1` carries
