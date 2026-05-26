@@ -10,14 +10,10 @@ specific property, not on the underlying node directly. When
 the tally crosses threshold, a cascade writes a new layer on
 the target property with the Proposal's `proposed_value`.
 
-This doc is the per-node catalog for the Proposal: how it is
-created, what it carries on the graph, what edges it can
-participate in, and how its lifecycle plays out as a graph
-object. The **governance mechanics** the Proposal hosts —
-eligibility, weight function, threshold policy, outcome
-semantics, multi-candidate decisions — stay in
-[governance.md](../primitive/governance.md). This doc
-describes the node; that doc describes the primitive.
+This doc describes the node; the **governance mechanics** it
+hosts — eligibility, weight function, threshold policy, outcome
+semantics, multi-candidate decisions — live in
+[governance.md](../primitive/governance.md).
 
 ---
 
@@ -185,11 +181,9 @@ is no separate personal-stance dimension to preserve apart
 from the vote. The same edge serves both roles, so the
 earliest-incoming-edge author derivation
 ([authorship.md](../primitive/authorship.md)) and the
-first-voter identity coincide. moderation.md states this
-directly for reports
-([moderation.md §2](moderation.md#2-reports--proposals-on-the-graph):
-"the system reads the authoring as their +1 vote"); the
-same shape applies to every Proposal application.
+first-voter identity coincide. See
+[moderation.md §2](moderation.md#2-reports--proposals-on-the-graph)
+for the worked example with reports.
 
 ---
 
