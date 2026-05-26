@@ -10,12 +10,6 @@ everything else this doc describes — creation is implicit on
 first use, idempotent across actors, and federation across
 instances requires no reconciliation.
 
-This doc is the per-node catalog for the Hashtag: how it is
-created, what it carries on the graph and (deliberately) not
-in Postgres, what edges it can participate in, and how it
-ends. The mechanics those topics depend on stay in their
-topical docs — this doc links rather than duplicates.
-
 ---
 
 ## 1. Creation
@@ -124,35 +118,29 @@ rather than just by convention.
 
 ### As source (outgoing)
 
-A Hashtag authors no edges and originates no structural
-edges either — it is a pure target. There are no outgoing
-edges of any kind. (Among content nodes, this is also the
-distinguishing shape vis-à-vis Post and Comment, both of
-which originate at least one outgoing structural edge.)
+A Hashtag is a pure target — no outgoing edges of any kind.
+This distinguishes it from Post and Comment, which originate
+at least one outgoing structural edge.
 
 ### As target (incoming)
 
 **Cosmetic-only — no actor edge to Hashtag.** A Hashtag
 receives no actor edges from anyone. The catalog has no
 `User → Hashtag` or `Collective → Hashtag` row
-([edges.md §1](../primitive/edges.md#1-actor-edges)), and the
-gesture of "liking a hashtag" simply doesn't exist as a graph
-operation. Hashtags are reachable via `:TAGGING` for
-discovery queries — the surface filters tagged content, ranks
-that content, and presents the result — but the Hashtag
-itself is never a ranking endpoint or a path participant.
-Combined with the no-outgoing-edges rule (§4 "As source"),
-any path that reaches a Hashtag terminates there without
-contributing further: there is no edge to continue the path
-through.
+([edges.md §1](../primitive/edges.md#1-actor-edges)); "liking
+a hashtag" is not a graph operation. Hashtags are reachable
+via `:TAGGING` for discovery queries — the surface filters
+tagged content, ranks that content, and presents the result
+— but the Hashtag itself is never a ranking endpoint or a
+path participant.
 
 **Invariant:** Hashtags do not participate in feed-ranking
 path products. `:TAGGING` is pure topology used for discovery
-filters, never traversed by the ranking math. The
-`ChatMessage → Hashtag` `:REFERENCES` edge below is on the
-same footing — a topology record that a message body
-mentioned the tag, mathematically inert because the path
-terminates at the Hashtag in exactly the same way.
+filters, never traversed by the ranking math. Combined with
+the no-outgoing-edges rule above, any path that reaches a
+Hashtag terminates there. The `ChatMessage → Hashtag`
+`:REFERENCES` edge below is on the same footing — recorded
+for topology, mathematically inert.
 
 The structural edges that do land at a Hashtag:
 
@@ -246,24 +234,18 @@ moderation:
 
 **Invariant:** `:Hashtag.name` is immutable except via the
 redaction cascade. No property-amendment Proposal targeting
-`name` is admissible — the only mechanism that can write a
+`name` is admissible; the only mechanism that can write a
 new layer on `name` is the `'illegal'` moderation cascade
-above, which replaces the top layer with a redaction marker.
-The `'sensitive'` classification path doesn't touch `name`
-at all (it flips `moderation_status` only). Both moderation
-paths leave the UUID untouched.
+above. Both moderation paths leave the UUID untouched.
 
-The Hashtag's UUID is stable across redaction. Crucially,
-because the UUID was derived from the *original* canonical
-name, a future post that tags the same name will compute
-the same UUID and resolve to the same — now-redacted —
-node. Content-addressed identity holds even after the
-public name is gone; the UUID is permanently bound to the
-original string by construction. Every incoming actor /
-`:TAGGING` / `:REFERENCES` / `:TARGETS` edge keeps pointing
-at the same node. A redacted Hashtag is a graph-resident
-content node with its `name` field gutted, not a removed
-one.
+The Hashtag's UUID is stable across redaction. Because the
+UUID was derived from the *original* canonical name, a
+future post that tags the same name computes the same UUID
+and resolves to the same — now-redacted — node. Content-
+addressed identity holds even after the public name is
+gone; the UUID is permanently bound to the original string
+by construction. A redacted Hashtag is a graph-resident
+content node with its `name` field gutted, not a removed one.
 
 ---
 
