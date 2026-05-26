@@ -1,8 +1,7 @@
 # Chats
 
 Chats on CoGra are **not** what they are on WhatsApp, Signal, or
-iMessage. This doc exists because assuming otherwise leads to
-wrong designs.
+iMessage. Assuming otherwise leads to wrong designs.
 
 This doc is the per-node catalog for three related nodes: the
 **Chat** container, the **ChatMessage** content node, and the
@@ -19,21 +18,18 @@ layer, via end-to-end encryption. The conversation effectively
 does not exist from the outside.
 
 In CoGra, a chat is a **public node on the graph**. Its
-existence, its member list, and its message count are visible to
-every actor on the graph (see the transparency principle in
-[graph-model.md §1](../primitive/graph-model.md#1-core-principles)).
-**Topology is always public**; what's private is the *content* of
-individual messages, if the chat chose to encrypt them.
+existence, member list, and message count are visible to every
+actor on the graph per the transparency principle in
+[graph-model.md §1](../primitive/graph-model.md#1-core-principles).
 
-**Invariant:** Chat topology — the existence of the Chat node, its
-member set, who-talks-to-whom — is always public. Only the **body**
-of individual ChatMessages is private, and only when
+**Invariant:** Chat topology — the Chat node, its member set,
+who-talks-to-whom — is always public. Only the **body** of
+individual ChatMessages is private, and only when
 `content_privacy = 'encrypted'` (§4.2). There is no "private chat"
 mode that hides membership or message metadata from the graph.
 
-Chats and ChatMessages are **first-class interactable nodes**.
-Users can like them, comment on them, and rank them in feeds —
-just like posts.
+Chats and ChatMessages are **first-class interactable nodes**:
+likeable, commentable, rankable in feeds — just like posts.
 
 This feels wrong if you map "chat" onto "group DM." It feels
 natural if you map "chat" onto "public discussion space that
@@ -44,19 +40,17 @@ encrypted content."
 
 ## 2. Creation
 
-Founding a Chat is a single compound gesture. ChatMessages and
-subsequent ChatMembers are created via the regular authoring and
-join-flow patterns once a chat exists; ChatMember creation in
-particular is covered in §11.
+Founding a Chat is a single compound gesture (§2.1). ChatMessages
+follow the regular authoring pattern (§2.2); subsequent
+ChatMembers follow the join flow in §11.
 
 ### 2.1 Chat
 
-A Chat is created by a single compound gesture from one actor —
-either a **User or a Collective**. Like a Collective or Item,
-Chat creation is **compound**: it brings the Chat AND the
-founder's first ChatMember into existence in one atomic step,
-with the founder as the inaugural admin. A Collective founding a
-Chat is the same gesture, initiated by an authorized member per
+A Chat is created by a **compound gesture** from one actor — a
+User or a Collective — that brings the Chat and the founder's
+first ChatMember into existence in one atomic step, with the
+founder as the inaugural admin. A Collective acts through an
+authorized member per
 [collectives.md §2](collectives.md#2-acting-through-the-collective).
 
 The gesture writes the following records atomically:
@@ -236,9 +230,6 @@ a new version row, no overwrite.
   `image_id` column referencing one `media_attachments` asset,
   owned by the same author as the Chat (anti-hijack rule per
   [data-model.md "Why parents point at attachments"](../implementation/data-model.md#why-parents-point-at-attachments)).
-  "Image" is the *concept* in chat docs; `image_id` is the SQL
-  column — the same `concept → column` pattern as User `avatar` /
-  `avatar_id`.
 
 `description` and the image are the two display fields an
 `'illegal'` Proposal can target; together with the graph-side
@@ -450,15 +441,14 @@ A ChatMember receives:
 ### 6.1 Chat
 
 A Chat is authored under the standard rule
-([authorship.md](../primitive/authorship.md)): the founder is
-the actor whose incoming actor edge has the earliest layer-1
-timestamp. The founder's `User/Collective → Chat` actor edge is
-written in the same compound gesture as the Chat node (§2.1);
-by construction it is the earliest, and it carries the
-`:AUTHOR` sub-label. **Unlike other authored nodes, the Chat
-does not cache its author Postgres-side** — no `author_id` is
-materialized on the `chats` row. This is a deliberate deviation
-from [authorship.md "Caching"](../primitive/authorship.md#caching):
+([authorship.md](../primitive/authorship.md)). The founder's
+`User/Collective → Chat` actor edge is written in the same
+compound gesture as the Chat node (§2.1) — earliest by
+construction — and carries the `:AUTHOR` sub-label.
+**Unlike other authored nodes, the Chat does not cache its
+author Postgres-side** — no `author_id` is materialized on the
+`chats` row. This is a deliberate deviation from
+[authorship.md "Caching"](../primitive/authorship.md#caching):
 a chat's meaningful identity is its membership set, not its
 founder, and the rare "who founded this?" query can scan the
 `:AUTHOR` edge on demand.
@@ -497,13 +487,11 @@ Recommending a chat to a friend is exactly the same graph
 operation as recommending a post: a positive outgoing edge that
 the ranking algorithm sees.
 
-**Users control what node types show up in their feed.** Every
-node type is different (Post, Comment, Chat, ChatMessage, Item,
-…), and users choose via their frontend of choice which ones
-appear. A user who only wants posts gets only posts; one who
-wants "posts + chats" gets both. This is a general feed-display
-feature, not a chat-specific one — chats simply participate in
-it alongside every other node type.
+**Users control which node types show up in their feed.** Every
+node type (Post, Comment, Chat, ChatMessage, Item, …) is
+selectable via the user's frontend of choice. This is a general
+feed-display feature, not a chat-specific one — chats simply
+participate alongside every other node type.
 
 ---
 
@@ -561,12 +549,9 @@ graph state — see
 
 ### Message edits
 
-Message bodies are **display content**: they live in Postgres
-(or a media server for attachments), not in the graph. Edits are
-append-only — a correction writes a new version into the
-Postgres row rather than overwriting the old one. Past versions
-remain readable. See [layers.md](../primitive/layers.md) for the
-project-wide append-only rule.
+Message bodies are **display content** living in Postgres (or a
+media server for attachments), not on the graph. Edits are
+append-only — see §4.2 and [layers.md](../primitive/layers.md).
 
 ---
 
@@ -630,11 +615,11 @@ does.
 
 This principle — *epoch advances automatically the moment the
 membership transition takes effect; only mid-epoch rotation
-runs through governance* — could conceivably generalize to any
+runs through governance* — could generalize to any
 junction-state-bearing node that wants topology-implied
 advancement of a sibling counter. Chat is the only consumer
-today, so it stays here as **instance-specific**: not promoted
-to primitive until a second consumer surfaces.
+today, so it stays **instance-specific** until a second consumer
+surfaces.
 
 Each encrypted ChatMessage's body row in Postgres carries an
 `epoch` index pointing at the key it was encrypted under
@@ -747,9 +732,8 @@ now.
 
 ## 10. Moderation
 
-Open public chats face an obvious question: without an admin,
-who stops a bad message from dominating? CoGra's answer reuses
-the no-push principle from
+Without an admin, who stops a bad message from dominating?
+CoGra's answer reuses the no-push principle from
 [graph-model.md §7](../primitive/graph-model.md#7-directionality-inbound-edges-dont-affect-your-graph):
 
 **The chat moves away from a message (or a member). It never
@@ -856,20 +840,17 @@ rules (see
 
 ### How roles fit in
 
-Roles (`admin`, `chat_mod`, `member`) are carried as the `role`
-property on the `ChatMember` junction node (§3.3). The role-weights
-table above is the default derivation; a `ChatMember` may also
-carry an optional `voting_weight` property that sets per-member
-weight directly, overriding the role-based derivation at tally
-time.
+Roles (`admin`, `chat_mod`, `member`) carry default weights via
+the table above; `ChatMember.voting_weight` overrides per-bearer
+at tally time (§3.3).
 
-An admin's disavowal weight is higher than a member's but it
-is never a veto — in any chat large enough that an admin's
-weight is a small fraction of the pool, an admin cannot
-single-handedly disavow. Multiple admins simply stack their
-weights under the same primitive; no separate M-of-N admin
-rule is needed. A community can override an admin by crossing
-the threshold without the admin's participation.
+An admin's disavowal weight is higher than a member's but it is
+never a veto — in any chat large enough that an admin's weight
+is a small fraction of the pool, an admin cannot single-handedly
+disavow. Multiple admins stack their weights under the same
+primitive; no separate M-of-N admin rule is needed. A community
+can override an admin by crossing the threshold without the
+admin's participation.
 
 ### Property and role changes via Proposals
 
@@ -1087,10 +1068,8 @@ more. The same node types, the same edges, the same flows.
 **Invariant:** No structural 1:1 chat uniqueness. Two users may
 have any number of parallel 1:1 chats; the graph imposes no
 uniqueness constraint over `(actor_a, actor_b)` member pairs.
-Uniformity over special-casing.
 
-In particular, CoGra **does not enforce** that two users can
-have at most one 1:1 chat with each other. Reasons:
+Reasons:
 
 - Enforcement adds a special case without preventing real abuse
   (three users can already have an unlimited number of group
