@@ -8,7 +8,7 @@ holders can additionally create edges, author nodes, vote in
 governance instances, and join junctions.
 
 This doc specifies what auth does. Concrete library choices and
-endpoint shapes belong with the implementation when it's written.
+endpoint shapes belong with the implementation.
 
 ---
 
@@ -43,24 +43,21 @@ Out of scope:
 
 ## Server-stored credentials vs. user-owned keys
 
-The server stores **password hashes** — credentials it can verify
-but not reverse. These are not "user secrets" in the
-cryptographic-key sense; they are server-managed access controls.
-The principle that CoGra does not hold user-owned keys (relevant
-for Q15 federation reconciliation, where users may eventually hold
-identity key pairs client-side) is preserved: hashed credentials
-and user-owned cryptographic material are distinct concerns.
+The server stores **password hashes** — credentials it can verify but not
+reverse. These are server-managed access controls, not user-owned secrets in
+the cryptographic-key sense. The principle that CoGra does not hold
+user-owned keys (relevant for Q15 federation reconciliation, where users
+may eventually hold identity key pairs client-side) is preserved.
 
 ---
 
 ## Account lifecycle
 
-Every User node visible to auth — every account this doc
-governs — arrives by invitation acceptance. The genesis User is
-the exception: it is created by the bootstrap migration that
+Every User node this doc governs arrives by invitation acceptance. The
+genesis User is the exception: it is created by the bootstrap migration that
 also writes the `:Network` singleton (see
-[network.md §2](../primitive/network.md#2-creation)) and never
-passes through any of the flows below.
+[network.md §2](../primitive/network.md#2-creation)) and never passes
+through any of the flows below.
 
 ### Invitation generation (inviter side)
 
@@ -128,17 +125,15 @@ pending rows for the same address. The conflict path is:
   reaper run a moment earlier, so the user's experience does
   not depend on the sweep schedule.
 
-The reaper still runs on its own cadence to bound the size of
-the table and to expire rows that nobody re-submits against.
-The constraint and the conflict-handling live with the schema in
-[data-model.md](data-model.md).
+The reaper still runs on its own cadence to bound table size and expire
+rows nobody re-submits against. The constraint and the conflict-handling
+live with the schema in [data-model.md](data-model.md).
 
-**Why no User node before verification:** because the primitive
-forbids it — the graph has no "unverified" or "pending" User
-state and no concept of partial actorhood. The invariant lives
-in [user.md §2](../primitive/user.md#2-creation); this section
-implements it via the off-graph pending-registration record
-described above.
+**Why no User node before verification:** the primitive forbids it — the
+graph has no "unverified" or "pending" User state and no concept of partial
+actorhood. The invariant lives in
+[user.md §2](../primitive/user.md#2-creation); this section implements it
+via the off-graph pending-registration record.
 
 ### Self-service deletion (handoff out)
 
@@ -286,9 +281,8 @@ thresholds are an implementation choice.
 - Verification-email resend — limited per pending-registration
   record.
 
-These match the operational-concern framing in
-[moderation.md](../instances/moderation.md): abuse mitigation
-lives at the API edge, not in the graph primitives.
+Abuse mitigation lives at the API edge, not in the graph primitives — same
+framing as [moderation.md](../instances/moderation.md).
 
 ---
 
@@ -299,22 +293,17 @@ standard floor for a community network and avoids the support
 burden of TOTP / WebAuthn / recovery-code mechanics during early
 operations.
 
-No schema reservation either: the `users` table carries no MFA
-column today. When MFA lands, a normal column-add migration
-covers the existing rows with `NULL` (the "not enrolled" state),
-so there is nothing to plan-around now.
+No schema reservation: the `users` table carries no MFA column today. When
+MFA lands, a normal column-add migration covers existing rows with `NULL`
+(the "not enrolled" state).
 
-When MFA is added, the natural shape is **TOTP as the second
-factor with a WebAuthn upgrade path**, plus single-use recovery
-codes (stored hashed) issued at enrollment. MFA becomes a
-User-level setting; sessions issued post-MFA-success carry an
-`mfa: true` claim that high-stakes mutations (e.g. the
-[account-deletion.md](../instances/account-deletion.md)
-confirmation, role changes per
-[network.md](../primitive/network.md)) can require.
-
-This is forward-looking only. Nothing in v1 should preclude this
-upgrade.
+When MFA is added, the natural shape is **TOTP as the second factor with a
+WebAuthn upgrade path**, plus single-use recovery codes (stored hashed)
+issued at enrollment. MFA becomes a User-level setting; sessions issued
+post-MFA-success carry an `mfa: true` claim that high-stakes mutations
+(e.g. the [account-deletion.md](../instances/account-deletion.md)
+confirmation, role changes per [network.md](../primitive/network.md)) can
+require.
 
 ---
 
