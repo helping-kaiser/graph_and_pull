@@ -76,10 +76,6 @@ The two non-default values reach the node by different paths:
 
 `'illegal'` is the strongest state — it isn't downgraded by a
 later `'sensitive'` Proposal while redacted fields remain.
-`'sensitive'` is reversible via a
-[counter-Proposal](governance.md#counter-proposals) back to
-`'normal'`; `'illegal'` is not, because the underlying redaction
-markers are append-only.
 
 The property applies to: **User, Collective, Post, Comment,
 ChatMessage, Chat, Item, Hashtag**. Junction nodes (`ChatMember`,
@@ -201,21 +197,3 @@ configuration** that doesn't fit actor / content / junction.
 |-----------|-------------|
 | **Network** | Singleton per instance. Carries Network-level configuration (moderation thresholds, role-change quorums, eligibility definitions). Targeted by Proposals when those parameters are changed. See [network.md](network.md). |
 
----
-
-## What this doc is not
-
-- **Not the conceptual model.** The four categories (actor,
-  content, junction, system) and why they matter are in
-  [graph-model.md §2](graph-model.md#2-node-categories).
-- **Not the per-node mechanics.** Creation flow, graph-side and
-  Postgres-side properties, edges, authorship, and lifecycle live
-  in each row's linked doc.
-- **Not the Memgraph schema.** Concrete property types,
-  constraints, and per-label indexes live in
-  [graph-data-model.md](../implementation/graph-data-model.md).
-- **Not the Postgres schema.** Actual column definitions, version
-  tables, and display-content shapes live in
-  [data-model.md](../implementation/data-model.md).
-- **Not the edge catalog.** For relationships between nodes, see
-  [edges.md](edges.md).
