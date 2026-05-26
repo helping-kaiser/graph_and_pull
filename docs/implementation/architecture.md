@@ -8,21 +8,19 @@ entirely by the social graph and explicit user interactions, not AI
 algorithms.
 
 The system uses a dual-database architecture. A social network has two
-fundamentally different data access patterns that map poorly to a single
-database:
+data access patterns that map poorly to a single database:
 
 1. **Traversal queries** — "what should I see next?", "how is this person
-   connected to me?", "what's happening in my part of the graph?" These are
-   graph problems. They perform well when the database understands
-   relationships natively.
+   connected to me?", "what's happening in my part of the graph?" Graph
+   problems; they perform well when the database understands relationships
+   natively.
 
 2. **Lookup queries** — "give me the profile for user X", "give me the
-   content of post Y". These are key-value / relational lookups. They perform
-   well in a traditional RDBMS.
+   content of post Y". Key-value / relational lookups; they perform well in
+   a traditional RDBMS.
 
-Storing everything in one database forces a compromise. Storing graph topology
-in a graph DB and display content in Postgres lets each database do what it
-was built for.
+Splitting topology into a graph DB and display content into Postgres lets
+each database do what it was built for.
 
 ### Vocabulary: display content vs metadata
 
@@ -38,8 +36,7 @@ the two categories overlap:
 
 A single value can be both — a `ChatMember.role` lives on the
 graph (where it weights governance tallies) and a UI may also
-display it next to the member's name. The labels say *what the
-value is used for*, not which database it sits in.
+display it next to the member's name.
 
 ---
 
@@ -85,10 +82,9 @@ everything needed to display content. See the
 
 **Invariant:** Memgraph owns graph topology; Postgres owns display
 content; UUIDs are the shared key. No content in Memgraph; no
-topology in Postgres.
-
-If a piece of data is needed to **navigate or weight** the graph, it goes in
-Memgraph. If it is needed to **display** something, it goes in Postgres.
+topology in Postgres. Decision rule: data needed to **navigate or
+weight** the graph goes in Memgraph; data needed to **display**
+goes in Postgres.
 
 | Data | Where | Why |
 |---|---|---|
@@ -104,10 +100,9 @@ specification.
 
 ### 2. UUIDs as the shared key
 
-Every entity gets a UUID at creation time. This UUID is stored in both
-databases and is the only way they reference each other. The graph engine
-never needs to know a username; the Postgres store never needs to know the
-graph topology.
+Every entity gets a UUID at creation time, stored in both databases as the
+only cross-reference. The graph engine never sees a username; the Postgres
+store never sees the topology.
 
 ### 3. All ranking comes from the graph
 
@@ -127,20 +122,17 @@ All graph state lives in edges. Edges are:
 - **Multi-dimensional** — 2 user dimensions + system dimensions
 - **Append-only** — new layers on top, never delete or overwrite
 - **Uniform in shape, not in meaning** — actor and structural
-  edges share the same tensor shape (so the ranking algorithm
-  never branches on edge category) but their dimensions carry
-  completely different semantics. Actor-edge dimensions are
-  signed valence and connection-weight a user expressed
-  toward a target; structural-edge dimensions are typically
-  `0` or carry approval-pair state. Same struct, different
-  reading. See [graph-model.md §3](../primitive/graph-model.md#3-edge-categories).
+  edges share the same tensor shape so the ranking algorithm
+  never branches on edge category. Semantics differ: actor-edge
+  dimensions are signed valence and connection-weight expressed
+  toward a target; structural-edge dimensions are typically `0`
+  or carry approval-pair state. See
+  [graph-model.md §3](../primitive/graph-model.md#3-edge-categories).
 
 There are no per-action relationship types like FOLLOWS, LIKED, or CREATED.
 Actor edges share one `:ACTOR` label and structural edges have a small fixed
-sub-label set (see [edges.md §3](../primitive/edges.md#3-edge-labels-at-the-graph-layer)). The meaning of any
-single edge is derived from the node types at each end and the dimension
-values, not from a per-action relationship name. See
-[Graph Model](../primitive/graph-model.md).
+sub-label set (see [edges.md §3](../primitive/edges.md#3-edge-labels-at-the-graph-layer)). Meaning derives
+from node types at each end and dimension values.
 
 ### 5. Writes are dual (content + topology)
 
@@ -158,7 +150,7 @@ When a user expresses a stance toward another user:
 - Memgraph: create/update actor edge from User to User with dim1/dim2 values
   (per [edges.md](../primitive/edges.md): sentiment + interest for this edge
   type)
-- Postgres: nothing (unless profile display data changes)
+- Postgres: nothing
 
 ---
 
@@ -211,9 +203,9 @@ logical unit.
 
 ### Partial-failure handling
 
-Two engines have two commit boundaries; an inter-commit window
-exists in which the first store has committed and the second
-has not. The pattern that closes the window is:
+Two engines have two commit boundaries; an inter-commit window exists in
+which the first store has committed and the second has not. The pattern that
+closes it:
 
 - **Hold both transactions open** through every write. Any
   error before either commit aborts both with a `ROLLBACK`; the
@@ -246,26 +238,20 @@ account deletion (graph redactions + Postgres row clears).
 
 ### Genesis bootstrap
 
-The instance bootstrap migration is the system's clearest example
-of the pattern. It writes three nodes — the `:Network` singleton,
-the genesis User, and the `bot-defense` Hashtag — and all three
-go in one transaction. See
-[network.md §2](../primitive/network.md#2-creation) for the
-primitive-side framing of what the migration produces.
+The bootstrap migration writes three nodes — the `:Network` singleton, the
+genesis User, and the `bot-defense` Hashtag — in one transaction. See
+[network.md §2](../primitive/network.md#2-creation) for the primitive-side
+framing.
 
-Because no graph exists until the transaction commits, no hostile
-Proposal can race the bootstrap: there is no target to file
-against, no Network singleton to scope to, no eligibility set to
-vote from. The pre-graph window is fully closed. After commit, the
-graph is in a complete state — singleton + bootstrap moderator +
-bot-defense Hashtag — and ordinary governance applies from there.
+Because no graph exists until the transaction commits, no hostile Proposal
+can race it: there is no target to file against, no Network singleton to
+scope to, no eligibility set to vote from. After commit, the graph is in a
+complete state — singleton + bootstrap moderator + bot-defense Hashtag — and
+ordinary governance applies from there.
 
-The migration is the **only** writer of these three nodes; no
-runtime path produces a second `:Network` or a second genesis
-User. It is also the only step in the system that escapes the
-actor-gesture-or-governance rule (per
-[graph-model.md §1](../primitive/graph-model.md#1-core-principles)),
-and that escape is confined to the migration.
+The migration is the **only** writer of these three nodes and the only step
+that escapes the actor-gesture-or-governance rule (per
+[graph-model.md §1](../primitive/graph-model.md#1-core-principles)).
 
 ### Cascade handler
 
@@ -284,11 +270,9 @@ mutations** (so a failed archive never leaves a redacted layer
 without an archive copy); any step failure **rolls back the
 whole transaction**, including the triggering write.
 
-The handler lives in `api/` (orchestration). It calls into
-`graph-engine` for the Cypher writes and `postgres-store` for
-the archive rows; per the code-style rules in CLAUDE.md, the
-cascade module sequences the calls but holds no DB-specific code
-itself.
+The handler lives in `api/` (orchestration). It calls into `graph-engine`
+for the Cypher writes and `postgres-store` for the archive rows; the cascade
+module sequences the calls but holds no DB-specific code itself.
 
 ### User registration (invitation acceptance)
 
@@ -369,11 +353,10 @@ Phase 3 — display-content fetch and render
    pause, app close). See feed-ranking.md §8.
 ```
 
-The central backend serves graph slices, seen-lists, and display
-content; it does **not** rank. Ranking and filtering live on the
-viewing user's side — client by default, an optional delegate "miner" in
-the future, both running the same algorithm (feed-ranking.md §9).
-That is what keeps per-actor compute off the central hot path.
+The central backend serves graph slices, seen-lists, and display content; it
+does **not** rank. Ranking and filtering run on the viewing user's side —
+client by default, an optional delegate "miner" in the future, both running
+the same algorithm (feed-ranking.md §9).
 
 ---
 
