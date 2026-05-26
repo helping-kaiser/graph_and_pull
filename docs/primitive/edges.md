@@ -31,13 +31,12 @@ Enforcement is **by absence**: the schema does not declare such a
 property, and the service-layer write path never sets one. The
 "rule" is the omission itself, not an unenforced convention.
 
-Across every actor-edge type the two dimensions follow the same
-underlying grammar (see [graph-model.md §6](graph-model.md#6-dimension-semantics)):
-`dim1` is **signed valence** (sentiment / approval / affirmation);
-`dim2` is **signed connection-weight** (interest / relevance /
-importance). The labels in the tables below differ to highlight the
-relevant aspect of each edge type, but the role each dimension plays
-in the math is uniform.
+Across every actor-edge type, `dim1` is signed valence and `dim2`
+is signed connection-weight — the labels in the tables below
+(sentiment, interest, relevance, importance) highlight the relevant
+aspect per edge type; the math role of each dimension is uniform.
+See [graph-model.md §6](graph-model.md#6-dimension-semantics) for
+the full grammar.
 
 ### User as actor
 
@@ -116,12 +115,9 @@ edge), or sentiment from a third-party Collective — are
 different `(source, target)` pairs and unaffected. The catalog
 row in §1 stays, scoped by this rule.
 
-**Enforcement.** The rule has two pieces: *layers within the
-same label are fine; a second label on the same
-`(source, target)` pair is not*. Phrased as a single insert-
-time check it reads — when writing an edge between `(A, B)`
-with label L, abort if any existing edge between `(A, B)` has
-label L' ≠ L.
+**Enforcement.** Phrased as a single insert-time check — when
+writing an edge between `(A, B)` with label L, abort if any
+existing edge between `(A, B)` has label L' ≠ L.
 
 The service layer is the primary check: before inserting a new
 edge it queries existing edges between the same endpoints and
@@ -129,8 +125,8 @@ rejects the write if their label differs. A Memgraph trigger on
 edge create (reading `startNode(e), endNode(e), type(e)` and the
 existing `(A)-[*]->(B)` relationships) is the storage-level
 backstop for code paths that bypass the service layer. The
-service layer is the primary because it returns a meaningful
-error to the caller; the trigger is the safety net. See
+service layer is primary because it returns a meaningful error to
+the caller; the trigger is the safety net. See
 [graph-data-model.md "Single-edge-label enforcement"](../implementation/graph-data-model.md#single-edge-label-enforcement)
 for the Cypher.
 
@@ -439,15 +435,3 @@ rejected for schema churn. A label change is a schema migration, so
 the bar to adding one is deliberately higher than adding new nodes
 or edge dimensions.
 
----
-
-## What this doc is not
-
-- **Not the conceptual model.** What edges are, their dimensions,
-  directionality, append-only rule — see
-  [graph-model.md](graph-model.md).
-- **Not the Memgraph schema.** Concrete edge-property types and
-  per-label declarations live in
-  [graph-data-model.md](../implementation/graph-data-model.md).
-- **Not a storage tuning guide.** Operational concerns for
-  performance live in a future storage/ops doc.
