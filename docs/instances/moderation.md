@@ -30,13 +30,10 @@ the act of flipping a node's `moderation_status` to `'sensitive'`
 or `'illegal'` via the governance flow in this doc. "Disavowal"
 is Chat-scope: a `dim1 < 0` layer landed (via the Level 1 / Level 2
 Proposals in [chats.md §10](chats.md#10-moderation)) on a
-ChatMessage- or ChatMember-targeting outcome. The two are
-mechanically and authorization-wise different — different
-eligibility (Network actives vs chat members), different cascade
-(redaction vs `:APPROVAL` edge layer), different reversibility.
-Older drafts used "moderation" loosely for both; sweep toward the
-scoped terms. In chat contexts, use "disavowal" — not "removal,"
-"kick," "fire," or "expel."
+ChatMessage- or ChatMember-targeting outcome. The two differ in
+eligibility (Network actives vs chat members), cascade (redaction
+vs `:APPROVAL` edge layer), and reversibility. In chat contexts,
+use "disavowal" — not "removal," "kick," "fire," or "expel."
 
 ## 1. The two classification paths
 
@@ -135,18 +132,15 @@ before the outcome can take effect.
 The primitive definition lives in
 [governance.md §7](../primitive/governance.md#7-the-mod-gate),
 which states the invariant "mod weight = member weight = 1; mod
-is a gate, not a weight," explains why the gate is needed in
-both directions, and names the failure modes each side of the
-multi-gate pattern closes off. The same component reappears in
-moderator role changes
+is a gate, not a weight," and names the failure modes each side
+of the multi-gate pattern closes off. The same component reappears
+in moderator role changes
 ([network.md §9](../primitive/network.md#9-mod-role-changes-via-multi-sig-proposal))
 and `:Network` parameter amendments
-([network.md §11](../primitive/network.md#11-amending-network-parameters));
-moderation classifications are one of those instances.
+([network.md §11](../primitive/network.md#11-amending-network-parameters)).
 
-The instance-specific arithmetic — `moderation_sensitive_*` and
-`moderation_illegal_*` quorum/threshold defaults — lives in §4
-below.
+Instance-specific arithmetic — `moderation_sensitive_*` and
+`moderation_illegal_*` quorum/threshold defaults — lives in §4.
 
 ## 4. Eligibility, weights, thresholds
 
@@ -258,43 +252,40 @@ surface the other's misbehavior.
 
 #### Why this is a norm, not a protocol gate
 
-The protocol does **not** block a Proposal from being authored
-against an opaque ciphertext, and does not block votes from being
-cast on it. The system is honest about this: technically, a bot
-swarm can vote `+1` on encrypted bodies all day, and a malicious
-moderator can cross the gate (§3) without reading anything. What
-prevents this is the role definition, not the code:
+The protocol does not block a Proposal authored against an opaque
+ciphertext, nor votes cast on it. A bot swarm can `+1` encrypted
+bodies all day, and a malicious moderator can cross the gate (§3)
+without reading anything. What prevents this is the role
+definition, not the code:
 
 - **Bot voting on ciphertext** is the same noise-vs-consistency
-  problem as any other bot voting (§7) — the mod gate is what
-  guarantees consistency, since no Proposal crosses without a
-  real moderator's positive vote.
+  problem as any other bot voting (§7) — the mod gate guarantees
+  consistency, since no Proposal crosses without a real
+  moderator's positive vote.
 - **A moderator voting on undisclosed ciphertext** is a
   mod-conduct violation. The remedy is the same Proposal
   primitive applied to that User's `network_role` — the Network
   votes the offender out of the moderator role
-  ([network.md](../primitive/network.md)). No special mechanism, just the same
-  governance the rest of the platform uses.
+  ([network.md](../primitive/network.md)).
 
-The integrity guarantee is therefore a **two-part claim**: the
-mod gate (§3) blocks the consistency attack; the de-mod-ing path
-addresses the moderator-misconduct attack. Together they make
-"moderate only after disclosure" a load-bearing norm rather than
-a protocol invariant — which is the most we can offer without
-graph-level guards that would be both too weak (off-graph
-disclosure exists, and the graph cannot detect it) and too strict
-(legitimate cases like contract disputes would be blocked).
+The integrity guarantee is a **two-part claim**: the mod gate (§3)
+blocks the consistency attack; the de-mod-ing path addresses
+moderator misconduct. Together they make "moderate only after
+disclosure" a load-bearing norm rather than a protocol invariant
+— the most we can offer without graph-level guards that would be
+both too weak (off-graph disclosure exists, and the graph cannot
+detect it) and too strict (legitimate cases like contract disputes
+would be blocked).
 
 **The cascade fires regardless of disclosure state.** If a
 Proposal targeting an encrypted ChatMessage crosses threshold —
 including the mod-gate `+1` — the redaction cascade in §1 runs
 whether or not any voter actually read the body. The protocol
-inspects the tally, not the readers' decryption state. This is
-**intentional**: a Network whose moderators wave through
-cascades on opaque ciphertext is already broken, and the remedy
-is the de-mod-ing path above (the Network votes the offending
-mod out), not protocol veto. The robustness guarantee rests on
-moderator judgment, not on the protocol second-guessing it.
+inspects the tally, not decryption state. A Network whose
+moderators wave through cascades on opaque ciphertext is already
+broken; the remedy is the de-mod-ing path above, not a protocol
+veto. The robustness guarantee rests on moderator judgment, not
+on the protocol second-guessing it.
 
 ## 6. Coexistence with chat-internal moderation
 
