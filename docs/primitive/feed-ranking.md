@@ -160,12 +160,6 @@ irreversibly. Zeros are real multiplicative factors, never skipped
 or treated as identity, and once a dim is zeroed on a path it
 cannot be revived downstream.
 
-A factor of `0` in either dim of any actor or `:REFERENCES` edge
-along the path zeros that dimension's path product. Zeros are
-**not** skipped or treated as multiplicative identity — they are
-real factors that, through ordinary multiplication, collapse the
-chain.
-
 ```
 if dim1(eᵢ) = 0 for any actor or :REFERENCES edge eᵢ in path  →  s_path = 0
 if dim2(eᵢ) = 0 for any actor or :REFERENCES edge eᵢ in path  →  c_path = 0
@@ -252,18 +246,13 @@ artifacts that don't reflect social reality.
 §3.1 establishes which edges contribute factors and which are
 state-bearing gates. The rules below restrict which edges
 **feed-ranking paths may traverse at all** — five edge-class
-restrictions on top of the gate-on-affirmation rule, closing
-specific bot-amplification gaps where structural topology
-would otherwise propagate a viewing user's interest weight onto a
-target the viewing user's network never expressed interest in.
-
-Each rule closes a concrete attack on the forward-only-traversal
-foundation (§3, "Invariant: forward-only traversal"). The
-attacks share a shape: trusted-network interest signal crosses a
-structural edge that carries no opinion — junction approval,
-bearer binding, proposal target, content reference — and lands
-on a bot-controlled node from which a path continues. Each
-restriction closes one such channel.
+restrictions on top of the gate-on-affirmation rule, each
+closing a concrete bot-amplification attack on the forward-only
+foundation. The attacks share a shape: trusted-network interest
+signal crosses a structural edge that carries no opinion —
+junction approval, bearer binding, proposal target, content
+reference — and lands on a bot-controlled node from which a
+path continues.
 
 The rules apply to **feed-ranking traversal only**. Other
 queries (governance lookups, integrity audits, debugging) cross
@@ -342,40 +331,13 @@ single author-hop mechanical to enforce.
 
 #### Rule 5 — `:REFERENCES` carries 2D weights with a fanout-budget constraint
 
-`:REFERENCES` becomes a state-bearing structural edge — joining
-junction approval pairs in this category. The edge carries a 2D
-tensor `(dim1, dim2)` in `[-1, +1]`, the same shape as actor
-edges, composed into `s_path` and `c_path` per the existing §3.3
-and §3.4 rules.
-
-**Fanout-budget constraint.** Across all outbound `:REFERENCES`
-edges from a single content node, the top-layer values must
-satisfy:
-
-```
-sum of |dim1| ≤ 1
-sum of |dim2| ≤ 1
-```
-
-independently on each dimension.
-
-**Default values** (no explicit setting): uniform `(1/N, 1/N)`
-on the top layer, where `N` is the source node's outbound
-`:REFERENCES` count.
-
-**Author-tunable.** The source node's author may set top-layer
-values explicitly, subject to the constraint, to lean toward
-more important references. Per-dimension independent — e.g.
-`(0.9, 0.5)` on one reference and `(0.1, 0.5)` on another is
-valid.
-
-**Top layers only.** Historical layers contribute nothing to
-ranking ([graph-model.md §8](graph-model.md#8-append-only-history-edges)).
-Updating one reference's weight may require re-balancing its
-siblings to stay within budget. A single weak reference at
-`(0.2, 0.1)` is valid — the budget need not be fully spent.
-Negative weights are allowed within the magnitude budget —
-useful for "I'm quoting this to disavow it" semantics.
+`:REFERENCES` carries a `(dim1, dim2)` tensor composed into
+`s_path` and `c_path` per §3.3 and §3.4. The fanout-budget
+constraint (sum of `|dim1|` and sum of `|dim2|` each `≤ 1`
+across outbound `:REFERENCES` from a single content node,
+including defaults and author tuning) is defined in
+[edges.md §2 "Reference"](edges.md#reference); rule 5 here
+states the feed-ranking consequence.
 
 **Why this works as a defense.** The river-delta-into-funnel
 attack — a content node with many outbound `:REFERENCES`
@@ -390,10 +352,6 @@ N paths × (1/N) × friend_interest × identity = friend_interest
 Same total amplification as a single legitimate reference. The
 attack is neutralized without a hard cap; legitimate references
 behave the same way (their budget just spreads).
-
-The fanout-budget itself is an edge-shape invariant captured in
-[edges.md §2 "Reference"](edges.md#reference); rule 5 here
-states the feed-ranking consequence.
 
 ---
 
@@ -1179,36 +1137,24 @@ parameters live in §7.3; §4.2 below just composes them into the
 metric sums. Both `d(R)` and `f(Δt)` are frontend-tunable.
 
 **Considered and rejected: single-transit-cap.** A rule capping
-any single intermediate's contribution to a given target — or
-discounting paths that share an intermediate with a shorter path
-— was considered. The motivating intuition: 100 paths at
-`R = 3` through transit node `B` outweigh one `R = 2` path from
-`B` himself, even though all 100 share the same `B → t` reactor
-edge; shouldn't `B`'s mediation be capped?
+any single intermediate's contribution — motivated by "100
+`R=3` paths through transit node `B` shouldn't outweigh one
+direct `R=2` path from `B`" — was considered. The multi-path
+sum already factors cleanly: for 100 paths `U → Aᵢ → B → t`,
+the per-track sentiment contribution is
+`d(3) · s(B → t) · Σᵢ s(U → Aᵢ) · s(Aᵢ → B)` — the well-defined
+product of "network-aggregate endorsement of `B`" and "`B`'s
+view of `t`," which is trust propagation working correctly.
 
-The multi-path sum already factors cleanly. For 100 paths
-`U → Aᵢ → B → t`, the per-track sentiment contribution is
-`d(3) · s(B → t) · Σᵢ s(U → Aᵢ) · s(Aᵢ → B)`. The trailing sum
-is structurally how strongly `U`'s network reaches `B`; `s(B → t)`
-is `B`'s single stance toward `t`. What looks like "`B` counted
-100 times" is the well-defined product of "network-aggregate
-endorsement of `B`" and "`B`'s view of `t`" — trust propagation
-working correctly.
-
-A cap also conflicts with the existing bot-bridge defense
-(§3.6–§3.8): the principled answer to "`B` is bridging a cluster"
-is severance and the delta-funnel auto-detection surface
-(§3.8.2), which differentiates legitimate hubs from bot bridges
-structurally.
-A blanket transit-cap would penalize both indiscriminately and
-erode the broad-network endorsement signal that multi-path
-summation is meant to capture. `d(R)` already calibrates direct-
-versus-indirect — the default is set so ~15 strong `R=3` paths
-match one strong `R=2` path — making the 100-paths case
-intentional, not pathological. The rule would also generalize
-from no other primitive in the spec; every other ranking input
-operates on edges (their dim values, their top-layer ages), not
-on transit-node identity.
+A cap also conflicts with the §3.6–§3.8 bot-bridge defense:
+severance and delta-funnel auto-detection (§3.8.2) differentiate
+legitimate hubs from bot bridges structurally, while a blanket
+transit-cap would penalize both and erode the broad-network
+endorsement signal. `d(R)` already calibrates direct- vs.
+indirect (~15 strong `R=3` paths match one strong `R=2` path),
+making the 100-paths case intentional. The rule would also
+generalize from no other primitive — every other ranking input
+operates on edges, not transit-node identity.
 
 ### 4.2 The four metrics
 
@@ -1324,31 +1270,17 @@ viewing user to be aware of, and the graph's transparency principle
 favors showing them over hiding. They sort below positives because
 the score itself is negative; that's it.
 
-**Exact `h(t) = 0` is the zero-jail.** Targets whose aggregate `h(t)`
-is exactly zero are banished from the feed — sorted below the
-negatives, into nothingness. This is the only sort position
-**immovable under unbounded internal cluster amplification**: a
-cluster with infinite internal nodes can tune its target's `h(t)`
-to any non-zero value (positive or negative) but cannot move it
-off exact zero once the §3.6 zero-jail predicate holds — i.e.,
-every path from `U` to `t` contains at least one severance edge
-`(0, 0)` along it. Zero-jail is the math-level realization of
-full community severance (see §3.6).
+**Exact `h(t) = 0` is the zero-jail.** Targets whose aggregate
+`h(t)` is exactly zero sort below the negatives, into
+nothingness. Exact zero is the only sort position immovable under
+unbounded internal cluster amplification — see §3.6 for the
+predicate and why an `[−ε, 0]` interval would not be defensible.
 
-Why exact, not an `[−ε, 0]` interval: bots facing an interval-jail
-simply tune their amplification to land at `−ε − δ` and re-enter
-the visible feed below the positives. Only the single point
-`h(t) = 0` is unreachable by bot tuning, and only when full
-severance is in place. The interval cut is not defensible; the
-point cut is.
-
-A target that produces `h(t) = 0` from cancellation of positive
-and negative path contributions (no severance involved) lands in
-the same bucket. With float math, exact cancellation is rare in
-practice; in sparse graphs or with `+1/0/-1` integer values where
-it can happen, the outcome — "the graph's signal toward this
-target sums to neutral" — is a reasonable thing to push out of the
-default feed.
+Cancellation-induced zeros (positive and negative path
+contributions summing to zero, no severance involved) land in
+the same bucket. With float math this is rare; in sparse graphs
+or under `+1/0/-1` integer values, "graph signal sums to neutral"
+is a reasonable thing to push out of the default feed.
 
 The cascade activates only on **strict equality** at each level.
 With float math, exact ties on `h` are rare; the cascade kicks in
@@ -1373,30 +1305,24 @@ etc.), see §9.
 ### 5.2 Frontend reordering: friend-authored fresh posts
 
 **Primitive vs frontend convention.** The primitive principle
-in this section is narrow: *the ranking math's output is not
-the final viewing order; frontends have latitude to reorder it
-for viewer-side intent that the math doesn't capture, and that
-latitude is not forced into postgres/graph/mediaserver.* The
-specific reorder rule below — boost direct-friend authored
-posts whose authorship edge is fresh — is the reference
-frontend's default convention. A different frontend can pick
-different defaults (different ring scope, different freshness
-threshold, opt out entirely) without violating the primitive.
+is narrow: *the ranking math's output is not the final viewing
+order; frontends may reorder it for viewer-side intent the math
+doesn't capture, without that latitude being forced into
+postgres/graph/mediaserver.* The specific reorder rule below is
+the reference frontend's default; other frontends can pick
+different defaults or opt out.
 
 The ranking math in §1–§5 produces a clean graph-signal-driven
-order. It does, however, have one practical consequence worth
-softening as a viewer-side overlay: a single fresh path from a
-close friend — e.g., a friend's brand-new post with no
-reactions yet — loses to any old post that has even modest
-currently-active multi-path signal. Per the §4.1 calibration,
-~15 strong R=3 paths beat one strong R=2 path; the worked
-example in §7.3 shows the same effect with realistic numbers.
-For most users — especially newer ones with sparse graphs —
-the more useful default is "see my friends' brand-new posts
-near the top, without waiting for them to accumulate signal."
-
-This is solved as a **frontend reordering layer**, not a
-change to the ranking math.
+order, but has one practical consequence worth softening: a
+single fresh path from a close friend — a brand-new post with
+no reactions yet — loses to any old post with modest
+currently-active multi-path signal (per the §4.1 calibration,
+~15 strong R=3 paths beat one strong R=2 path; §7.3 shows the
+same effect with realistic numbers). For most users — especially
+newer ones with sparse graphs — the more useful default is "see
+my friends' brand-new posts near the top, without waiting for
+them to accumulate signal." Solved as a **frontend reordering
+layer**, not a change to the ranking math.
 
 #### Mechanism
 
@@ -1405,12 +1331,8 @@ identifies posts whose **author is a direct R=2 friend** of U
 **and** whose **authorship edge is fresh** (top-layer age below
 a frontend-tunable threshold — e.g. 24h or 7d). These are
 reordered to surface near the top: interleaved with, or above,
-the regular feed depending on frontend choice.
-
-The ranking math itself is untouched. `h(t)` still reflects
-"what the graph says is most relevant." This layer is purely a
-viewer-side reorder that says "and also, surface
-just-from-friends content even if its `h` is modest."
+the regular feed depending on frontend choice. The ranking math
+itself is untouched.
 
 #### Detection
 
@@ -1731,15 +1653,12 @@ the seen-list mechanism (§8), not by reactor-edge decay.
 
 **Primitive vs frontend convention.** The primitive principle:
 *per-viewer "have I seen this?" state is a ranking input the
-viewing user owns — it is not forced into postgres, the graph,
-or any one storage tier. The calculator takes the list as a
-parameter; where the list lives is the viewing user's choice
-(backend table, local device, miner, nowhere at all).* The
-concrete defaults below — the reference frontend's
-"passes-through-viewport" rule, the 1-year compaction horizon,
-the storage choices for the central frontend — are frontend
-convention; another frontend can replace them. The boundary
-between the two is called out per subsection.
+viewing user owns — not forced into postgres, the graph, or any
+one storage tier. The calculator takes the list as a parameter;
+where the list lives is the viewing user's choice.* The defaults
+below (the "passes-through-viewport" rule, the 1-year compaction
+horizon, the central-frontend storage choices) are frontend
+convention; the boundary is called out per subsection.
 
 Once a viewing user has seen a content node, that **specific node**
 should not surface in their feed again. New activity on it (a
@@ -1855,30 +1774,13 @@ storage-constrained miners) or disable compaction entirely.
 
 ## 9. Where ranking and filtering live
 
-The ranking algorithm above produces a personalized view of the graph
-from one actor's perspective. It deliberately does not specify where
-that computation runs — and for good reason.
-
-### The graph itself cannot be sorted
-
-The graph is composed of actor actions: edges with dimensions, nodes
-with properties. "Sorted" only has meaning from a specific actor's
-perspective — there is no universal ordering. Every actor gets their
-own view based on their position and connections.
-
-### Central realtime ranking doesn't scale
-
-Every actor's view is personalized. If the backend had to compute
-every user's feed on demand, it would blow up with any real user
-count — per-actor compute multiplied by a live user base is not a
-manageable backend workload.
-
-### Resolution: compute closer to the viewing user
-
-Sorting, ordering, and filtering happen **off the hot path of the
-central backend**. The backend serves each actor their relevant
-subgraph (e.g. N hops deep); ranking runs on the viewing user's own device
-or on a chosen delegate.
+The graph has no universal ordering — "sorted" only has meaning
+from a specific actor's perspective, and central realtime ranking
+of every actor's personalized feed doesn't scale. Sorting,
+ordering, and filtering therefore happen **off the hot path of
+the central backend**: the backend serves each actor their
+relevant subgraph (e.g. N hops deep); ranking runs on the
+viewing user's own device or on a chosen delegate.
 
 - **Client-side (default).** The actor's device downloads its
   relevant subgraph and runs ranking locally. It already needs the
@@ -1904,13 +1806,6 @@ that lives in the frontend filter layer.
 The filter is user-controlled in the frontend. The ranking pipeline
 is indifferent to it; the filter decides what to render from the
 ranked output.
-
-### What this means for the algorithm spec
-
-The algorithm in §1–§5 describes **how** ranking works, not
-**where** it runs. Whether a client, a Rust worker, or a future
-miner implements it, the rules are the same. The spec stays
-unified; the deployment doesn't.
 
 ### What this is not
 
