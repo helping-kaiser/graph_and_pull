@@ -119,8 +119,6 @@ rather than just by convention.
 ### As source (outgoing)
 
 A Hashtag is a pure target — no outgoing edges of any kind.
-This distinguishes it from Post and Comment, which originate
-at least one outgoing structural edge.
 
 ### As target (incoming)
 
