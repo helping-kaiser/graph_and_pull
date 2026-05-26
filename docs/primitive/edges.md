@@ -328,7 +328,7 @@ oppose, intermediate values allowed), `dim2` is `0`.
 | Edge type | Meaning |
 |-----------|---------|
 | ChatMember → ChatMember | Admission (`dim1 > 0`) vote on another chat member's membership at join time. Stance flips on this edge happen only during the open admission period; disavowal of an active member routes through a Proposal — see [chats.md §10](../instances/chats.md#10-moderation) Level 2. |
-| ChatMember → Proposal | A chat-eligible vote on any Proposal targeting a chat-internal subject — chat property / role change, Level 1 message disavowal, or Level 2 member disavowal |
+| ChatMember → Proposal | A chat-eligible vote on any Proposal targeting a chat-internal subject — chat property / role change, Level 1 message disavowal, or Level 2 member disavowal (see [chats.md §10](../instances/chats.md#10-moderation) for the concrete Proposal shapes). |
 | CollectiveMember → CollectiveMember | Approval (`dim1 > 0`) or removal (`dim1 < 0`) vote on another collective member's membership |
 | CollectiveMember → Proposal | A collective-eligible vote on a proposed property/role change |
 | ItemOwnership → ItemOwnership | Current owner's approval vote on a transfer to a new ItemOwnership for the same Item |
