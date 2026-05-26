@@ -1,7 +1,5 @@
 # CoGra Docs
 
-Three layers of documentation, each in its own folder.
-
 ## Layers
 
 - **[`primitive/`](primitive/)** — what the graph IS and how it
@@ -19,24 +17,22 @@ span all three layers.
 
 ## Suggested reading order
 
-1. Start with [`primitive/graph-model.md`](primitive/graph-model.md)
-   for the foundation.
-2. Read any [`instances/`](instances/) doc to see the primitive
-   applied (chats and collectives are the most worked-out examples).
-3. Loop back into other [`primitive/`](primitive/) docs (governance,
-   edges, layers, …) as the need arises.
-4. Read [`implementation/`](implementation/) when you're getting
-   ready to write code.
+1. [`primitive/graph-model.md`](primitive/graph-model.md) for the
+   foundation.
+2. Any [`instances/`](instances/) doc to see the primitive applied
+   (chats and collectives are the most worked-out examples).
+3. Other [`primitive/`](primitive/) docs (governance, edges,
+   layers, …) as the need arises.
+4. [`implementation/`](implementation/) when getting ready to
+   write code.
 
 ## Layer rule
 
 When a new doc is added or content shifts, ask: **does this
 describe the graph itself, an application of it, or how it runs?**
-The answer puts it in exactly one folder.
-
-If you find yourself defining a new mechanism inside an
-`instances/` doc, that's a sign the mechanism belongs in
-`primitive/`. Move it.
+The answer puts it in exactly one folder. A new mechanism inside
+an `instances/` doc is a sign the mechanism belongs in
+`primitive/` — move it.
 
 ## Index
 
