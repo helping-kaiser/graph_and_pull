@@ -5,15 +5,12 @@ instance — the body that backs platform-wide governance: content
 moderation, dispute resolution, and anything that affects the
 whole instance rather than a specific chat or collective.
 
-This doc is the per-node catalog for the `:Network` singleton: how
-it is created, what it carries on the graph, what edges it
-participates in, and how its lifecycle plays out as a graph
-object. The governance applications the singleton hosts —
-membership-and-roles structure, moderator role changes,
-Network-wide governance, and parameter amendments — live in the
-topical appendices after the per-node skeleton (§§8-11). The
-governance primitive itself stays in
-[governance.md](governance.md).
+This doc is the per-node catalog for the `:Network` singleton:
+creation, graph-side state, edges, lifecycle. The governance
+applications the singleton hosts — membership and roles, mod
+role changes, Network-wide governance, parameter amendments —
+follow as topical appendices in §§8-11. The governance primitive
+itself stays in [governance.md](governance.md).
 
 ---
 
@@ -61,18 +58,17 @@ The migration writes three nodes in a single atomic transaction:
    it. See
    [feed-ranking.md](feed-ranking.md).
 
-All three writes share one transaction; an observer never sees
+All three writes share one transaction: an observer never sees
 the singleton without its moderator or the `bot-defense`
-Hashtag. The migration is not a runtime flow — there is no
-"first user to register" detection, no genesis-flag column, no
-special branch in the registration endpoint. Subsequent Users
-register exclusively through invitation per
-[invitations.md](invitations.md).
+Hashtag. The migration is not a runtime flow — no "first user to
+register" detection, no genesis-flag column, no special branch
+in the registration endpoint. Subsequent Users register through
+invitation per [invitations.md](invitations.md).
 
-This migration is the only step in the system that depends on
-out-of-graph authority (see the global invariant in
+The migration is the only step that depends on out-of-graph
+authority (per the global invariant in
 [graph-model.md §1](graph-model.md#1-core-principles)); the
-authority is confined to the migration.
+authority is confined to it.
 
 Bitcoin analogy: someone has to mine the genesis block. From
 there it is community-driven.
@@ -82,17 +78,20 @@ there it is community-driven.
 ## 3. Graph-side properties
 
 The `:Network` node carries the instance's configuration
-parameters. All properties are **layered** per
-[layers.md](layers.md), so every parameter change has a preserved
-history. Each is amendable via a standard Proposal targeting the
-property name (same primitive as everything else — see
-[governance.md §2.1](governance.md#21-subject)), gated by one of
-the amendment-rule pairs called out below.
+parameters. Properties are layered per [layers.md](layers.md),
+and each is amendable via a standard Proposal targeting the
+property name
+([governance.md §2.1](governance.md#21-subject)), gated by one
+of the amendment-rule pairs below. Concrete types and defaults
+live in
+[graph-data-model.md](../implementation/graph-data-model.md).
 
-Concrete property types and defaults live in
-[graph-data-model.md](../implementation/graph-data-model.md);
-this section names each parameter, its role, and which
-amendment-rule pair gates changes to it.
+Network-scope governance uses petition-style tally under a
+dual-quorum gate
+([governance.md §3](governance.md#petition-style-tally-and-dual-quorum-network-scope-only)).
+Each pair below carries a fractional bar (`P`, `*_quorum_fraction`)
+and an absolute bar (`K`, `*_quorum_count`); the operative bar
+at tally time is `min(P × |active|, K)`.
 
 ### Eligibility-definition
 
@@ -101,14 +100,6 @@ amendment-rule pair gates changes to it.
   with at least one outgoing actor edge within the last N days).
   Composes with tally-time eligibility per §10. Gating bucket:
   baseline (§11).
-
-Network-scope governance uses petition-style tally under a
-dual-quorum gate (see
-[governance.md §3](governance.md#petition-style-tally-and-dual-quorum-network-scope-only)).
-Each instance below carries a **pair** of parameters: a
-fractional bar (`P`, `*_quorum_fraction`) and an absolute bar
-(`K`, `*_quorum_count`). The operative bar at tally time is
-`min(P × |active|, K)`.
 
 ### Mod-role-change governance
 
@@ -168,9 +159,8 @@ dual-quorum pair:
   `guidelines_change_*`, and the critical pair itself).
 
 Each pair is self-amending: a baseline-pair amendment passes
-under baseline rules; a critical-pair amendment passes under
-critical rules. Defaults exist to bootstrap; they are not fixed
-rules.
+under baseline rules, a critical-pair amendment under critical
+rules. Defaults bootstrap; they are not fixed.
 
 The singleton carries **no `moderation_status` property**. Like
 junction nodes and the Proposal node, it has no user-input fields
@@ -179,9 +169,7 @@ to redact (see
 the lifecycle consequence is §7.
 
 The singleton exists so platform-wide governance has a graph
-node to target. Without it, statements like "Network parameters
-are amendable via Proposal" would be hand-waving — Proposals
-need a node.
+node to target. Proposals need a node.
 
 ---
 
@@ -243,44 +231,32 @@ node.
 
 ## 6. Authorship
 
-There is no authorship section for the `:Network` singleton — by
-§2 the Network is system-created at bootstrap and has no author
-in the [authorship.md](authorship.md) sense. The
-earliest-incoming-edge rule does not meaningfully apply: the
-first edge the singleton receives is typically a `:TARGETS`
-edge from a property-amendment Proposal or a `:REFERENCES`
-edge from a content node mentioning the network, but those
-edges' authors are authors of the *proposing* or *referencing*
-node, not of the singleton. The Network is a system concept,
-not authored content. (Same shape — though for a different
-reason — as the Hashtag exemption in
-[hashtag.md §5](../instances/hashtag.md#5-lifecycle).)
+The `:Network` is system-created at bootstrap (§2) and has no
+author in the [authorship.md](authorship.md) sense. The
+earliest-incoming-edge rule does not apply: that edge's author
+authors the proposing or referencing node, not the singleton.
+Same shape (different reason) as the Hashtag exemption in
+[hashtag.md §5](../instances/hashtag.md#5-lifecycle).
 
 ---
 
 ## 7. Lifecycle
 
-The `:Network` singleton is **never deleted**. The append-only
-rule applies as it does to every other node.
-
-There is no redaction path either. The singleton carries no
+The `:Network` singleton is **never deleted**. It carries no
 user-input fields, so neither
 [layers.md §5](layers.md#5-deletion-policy)'s in-place redaction
 nor [retention-archive.md](retention-archive.md)'s archive
-disposition has anything to act on. The node's UUID is stable
-across the entire lifetime of the instance.
+disposition has anything to act on. The UUID is stable for the
+lifetime of the instance.
 
-The singleton's **state changes** are exclusively parameter
-amendments — passing Proposals targeting one of the layered
-properties from §3, gated by the amendment-rule pair that §3
-assigns. The full mechanism, threshold defaults, mod gate, and
-the rationale for two stakes-tiered buckets live in §11. There
-are no other lifecycle events the singleton has: no membership
-changes (its eligibility set lives on User nodes, §8), no
-transfer, no merge, no archive.
+Its only state changes are parameter amendments — passing
+Proposals targeting one of the layered properties from §3,
+gated by that property's amendment-rule pair. Full mechanism,
+defaults, and rationale in §11. No other lifecycle events apply:
+no membership changes (its eligibility set lives on User nodes,
+§8), no transfer, merge, or archive.
 
-Federation across instances — whether two instances' singletons
-can be reconciled — is the forward question already flagged in
+Federation across instances is the forward question flagged in
 §1, deferred to
 [open-questions.md Q15](../open-questions.md).
 
@@ -290,23 +266,17 @@ can be reconciled — is the forward question already flagged in
 
 Every User has a `network_role` graph property:
 
-- **`member`** — every registered user, automatically. The
-  default.
-- **`moderator`** — a small set of users who gate platform-wide
-  governance actions (see
-  [moderation.md](../instances/moderation.md) for the gating
-  rule on content moderation; §9 below for the gating rule on
-  mod role changes themselves).
+- **`member`** — every registered user, automatically. Default.
+- **`moderator`** — a small set who gate platform-wide governance
+  actions (see [moderation.md](../instances/moderation.md) for
+  content-moderation gating; §9 below for mod-role-change gating).
 
-`network_role` is a graph-side property on the User node,
-layered per [layers.md](layers.md) — promotion and demotion
-preserve full history. It is **not** a property on the Network
-singleton, and the singleton has no incoming structural edge
-representing membership: Network membership has no separate
-gesture, so there is no `ChatMember`-/`CollectiveMember`-style
-junction to bind a User to the Network. The eligibility-set is
-"every User node on the graph," filtered by the recency window
-from §3 (`active_threshold_days`).
+`network_role` is layered per [layers.md](layers.md) — promotion
+and demotion preserve full history. It lives on the User, not on
+the singleton: Network membership has no separate gesture, so
+there is no `ChatMember`-/`CollectiveMember`-style junction. The
+eligibility set is "every User on the graph," filtered by
+`active_threshold_days` (§3).
 
 Whether Collectives can be Network members or moderators is
 deferred. For now, only Users carry `network_role`.
@@ -330,15 +300,14 @@ mechanism
   petition-style (positive votes only) per
   [governance.md §3](governance.md#petition-style-tally-and-dual-quorum-network-scope-only).
 
-The two gates implement a **separation of powers** — see
-[governance.md §2.4](governance.md#24-threshold-policy)
-"Multi-gate decisions". The mod-gate side of the pair —
-"≥1 mod positive vote; mod weight = member weight = 1" — is
-defined as a primitive in
-[governance.md §7](governance.md#7-the-mod-gate) and reused here
-and in §11. Each gate of the multi-gate pair counters a distinct
-failure mode (sitting-mod coup vs community coordinated removal);
-both required = both failure modes blocked.
+The two gates implement a **separation of powers**
+([governance.md §2.4](governance.md#24-threshold-policy),
+"Multi-gate decisions"). The mod-gate side — "≥1 mod positive
+vote; mod weight = member weight = 1" — is the primitive defined
+in [governance.md §7](governance.md#7-the-mod-gate) and reused
+here and in §11. Each gate counters a distinct failure mode
+(sitting-mod coup vs. coordinated community removal); both
+required, both modes blocked.
 
 Removal mirrors promotion mechanically: same Proposal
 mechanism with `proposed_value = 'member'`, same dual-gate
@@ -376,54 +345,35 @@ platform-scoped governance instance:
 - Tuning the `:Network` singleton's parameters themselves
   (governance of governance) — see §11.
 
-Each runs as a Network-scope governance instance per
-[governance.md §3](governance.md#3-the-two-vote-shapes). Two
+Each runs as a Network-scope governance instance
+([governance.md §3](governance.md#3-the-two-vote-shapes)). Two
 consequences shared across all three:
 
-- **The eligibility carrier is the User node itself**, not a
+- **Eligibility carrier is the User node itself**, not a
   junction. Network membership has no separate gesture (§8), so
-  there is no `ChatMember`-/`CollectiveMember`-style junction to
-  carry the vote. This is the natural Shape A case: the vote
-  IS the existing `User → Proposal` actor edge from
-  [edges.md §1](edges.md#1-actor-edges) — no separate structural
-  edge is created. The actor edge keeps its normal `(sentiment,
-  importance)` meaning; the tally reads `sign(sentiment)` for
-  the binary outcome. See
-  [governance.md §3](governance.md#3-the-two-vote-shapes)
-  "Shape A".
+  this is the natural Shape A case: the vote IS the existing
+  `User → Proposal` actor edge
+  ([edges.md §1](edges.md#1-actor-edges)) — no new structural
+  edge. The actor edge keeps its `(sentiment, importance)`
+  meaning; the tally reads `sign(sentiment)`.
 - **Mod weight = member weight = 1; mod is a gate, not a
-  weight.** Moderators do not outvote the community; the
-  "≥1 mod positive vote" rule is a procedural gate, never a
-  weighting. The rule is defined as a primitive in
-  [governance.md §7](governance.md#7-the-mod-gate); it applies
-  uniformly to every Network-scope Proposal (mod role changes,
-  classifications, parameter amendments).
+  weight.** The "≥1 mod positive vote" rule is the primitive
+  from [governance.md §7](governance.md#7-the-mod-gate), applied
+  uniformly to every Network-scope Proposal.
 
-The `active_threshold_days` recency window from §3 composes
-naturally with tally-time eligibility per
-[governance.md §2.2](governance.md#22-eligibility): at the
-moment a new or updated vote layer triggers a tally, the
-eligible set is "Users with at least one outgoing actor edge
-whose timestamp falls within the last
-`Network.active_threshold_days` days as of *that* tally." A
-voter whose latest activity has dropped out of the window
-drops from the tally; a voter who becomes active again counts
-the next time their renewed activity puts them back inside.
-The window slides; eligibility is evaluated at a single point
+The `active_threshold_days` window composes with tally-time
+eligibility per
+[governance.md §2.2](governance.md#22-eligibility): at each
+tally, the eligible set is Users with at least one outgoing
+actor edge inside the last `Network.active_threshold_days` days
+*as of that tally*. The window slides; eligibility is evaluated
 per tally, not snapshotted at vote time.
 
 No carve-out is needed for first-time voters or long-inactive
-moderators. The Shape A vote is itself an outgoing
-`User → Proposal` actor edge per
-[edges.md §1](edges.md#1-actor-edges); the act of casting it
-places that user inside `active_threshold_days` at the tally
-that the vote triggers. A first-time voter who has never
-otherwise interacted with the graph becomes active *by voting*,
-in time to be counted. A moderator whose previous edges have
-all aged out re-enters the window the same way the moment they
-cast or update their gate-opening vote. Eligibility tracks
-participation directly: the only way to be excluded is to not
-participate.
+moderators. The Shape A vote is itself an outgoing actor edge,
+so casting it places the user inside the window for the tally
+that vote triggers. Eligibility tracks participation directly:
+the only way to be excluded is to not participate.
 
 ---
 
@@ -449,25 +399,24 @@ instance (`guidelines_change_*`, see
 The critical bucket holds parameters whose abuse has destructive
 or platform-wide reach: stripping moderators, triggering the
 redaction cascade, or shifting the normative frame for *all
-future* moderation. Those amendments earn a supermajority. Soft
-flags and eligibility windows move under the lighter baseline
-pair so routine tuning isn't paralyzed.
+future* moderation. Those earn a supermajority. Soft flags and
+eligibility windows move under the lighter baseline pair so
+routine tuning isn't paralyzed.
 
 A single uniform pair would lose the stakes split; a per-property
-pair for each amendable property would double the singleton's
-property count without adding meaningful differentiation. Two
-buckets capture the gradient that matters in practice.
+pair would double the singleton's property count without adding
+meaningful differentiation. Two buckets capture the gradient
+that matters.
 
 The mod gate uses the same bot-defense reasoning as content
 moderation (§10,
-[governance.md §7](governance.md#7-the-mod-gate)).
-Without it, a coordinated push could drag a baseline-pair
-threshold to trivially low values and weaponize the loosened
-parameter.
+[governance.md §7](governance.md#7-the-mod-gate)): without it, a
+coordinated push could drag a baseline-pair threshold to
+trivially low values and weaponize the loosened parameter.
 
-Both pairs are **self-amending**: each bucket's own thresholds
-are governed by that bucket's rule. Defaults exist to bootstrap;
-they are not fixed rules.
+Both pairs are **self-amending**: each bucket's thresholds are
+governed by that bucket's rule. Defaults bootstrap; they are not
+fixed.
 
 ---
 

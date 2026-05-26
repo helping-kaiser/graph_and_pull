@@ -6,11 +6,8 @@ platform. It is one of two actor node types — the other is
 outgoing-edge catalog and the same authorship mechanics; the
 distinction lives in what stands behind each (§1).
 
-This doc is the per-node catalog for the User: how it is created,
-what it carries on the graph and in Postgres, what edges it can
-participate in, and how it ends. The mechanics those topics depend
-on stay in their topical docs — this doc links rather than
-duplicates.
+This doc is the per-node catalog for the User: creation,
+graph-side and Postgres-side state, edges, lifecycle.
 
 ---
 
@@ -18,30 +15,26 @@ duplicates.
 
 Both User and Collective are actor nodes
 ([nodes.md §1](nodes.md#1-actor-nodes)) and the graph treats them
-identically as actors: same outgoing actor-edge catalog
+identically: same outgoing actor-edge catalog
 ([edges.md §1](edges.md#1-actor-edges)), same authorship rule
 ([authorship.md](authorship.md)), same ability to author content
 and participate in junctions. The distinction is what stands
 behind each on the off-graph side.
 
-- A **User** is a person. The User holds off-graph credentials
+- A **User** is a person. They hold off-graph credentials
   (password hash, verified email, refresh-token sessions — see
   [auth.md](../implementation/auth.md)) that authenticate the API
   requests originating their edges.
 - A **Collective** is a group acting through a single graph
-  identity. A Collective has no credentials of its own; its
-  actions originate from one or more Users authenticated through
-  their own sessions, mediated by membership in the Collective
-  via [CollectiveMember](../instances/collectives.md#3-graph-side-properties).
-  A Collective can itself be a CollectiveMember of another
-  Collective, so the chain may be nested.
+  identity. It has no credentials of its own; its actions
+  originate from one or more authenticated Users, mediated by
+  [CollectiveMember](../instances/collectives.md#3-graph-side-properties).
+  Collectives can nest as CollectiveMembers of other Collectives,
+  so the chain may be deep.
 
-**Every Collective acts on behalf of one or more Users.** A
-Collective is not itself a User; it is a graph-side persona whose
-actions trace, possibly through nested CollectiveMember chains,
-back to Users. The graph records the action as the Collective's
-own; the off-graph authentication that produced it belongs to a
-User.
+Every Collective ultimately acts on behalf of one or more Users:
+the graph records the action as the Collective's own; the
+authentication that produced it belongs to a User.
 
 ---
 
@@ -68,46 +61,37 @@ The credential and email-verification flow that wraps both paths
 lives in [auth.md](../implementation/auth.md). The graph-side
 edge-creation pattern is in [invitations.md](invitations.md).
 
-**Invariant: no User node before verification.** The graph has
-no "unverified" or "pending" User state and no concept of
-partial actorhood. A User node either exists with full standing
-or it does not exist. This is the no-half-state spirit of
-[layers.md](layers.md) applied at the node-existence level: an
-"unverified" holding state would add semantics no other
-primitive uses, and the ranking math
-([feed-ranking.md](feed-ranking.md)) is not designed for actors
-whose actor-edges have provisional weight. Pre-verification
-state is held off-graph (a pending-registration record in
-auth's storage); on email verification, the User node and its
-invitation edges are written atomically. See
-[auth.md "Account lifecycle"](../implementation/auth.md#account-lifecycle)
-for the implementation.
+**Invariant: no User node before verification.** A User node
+either exists with full standing or does not exist — no
+"unverified" or "pending" partial actorhood. An interim state
+would add semantics no other primitive uses, and the ranking
+math ([feed-ranking.md](feed-ranking.md)) is not designed for
+actor-edges with provisional weight. Pre-verification state is
+held off-graph (a pending-registration record in auth's
+storage); on verification, the User node and its invitation
+edges are written atomically. See
+[auth.md "Account lifecycle"](../implementation/auth.md#account-lifecycle).
 
 ---
 
 ## 3. Graph-side properties
 
 Every authored property on the User node is layered per
-[layers.md §3](layers.md#3-layers-on-nodes); changes append a new
-layer rather than overwriting.
+[layers.md §3](layers.md#3-layers-on-nodes).
 
 - **`username`** — the handle used for mentions and lookups.
-  Layered, so name-change history is preserved.
 - **`network_role`** — `member` (default) / `moderator`. Backs
   platform-wide governance per
-  [network.md §8](network.md#8-membership-and-roles); promotion
-  and demotion run through the multi-sig Proposal pattern in
+  [network.md §8](network.md#8-membership-and-roles); changes run
+  through the multi-sig Proposal pattern in
   [network.md §9](network.md#9-mod-role-changes-via-multi-sig-proposal).
 - **`moderation_status`** — `normal` / `sensitive` / `illegal`,
-  default `normal`. Universal across all nodes that carry
-  user-authored content; the per-node mechanics (set by Proposal,
-  auto-flipped by redaction) are described in
+  default `normal`. Universal mechanics in
   [nodes.md "Universal: moderation_status"](nodes.md#universal-moderation_status).
 
 Additional authored properties (display-name fields, verified
-flags, etc.) can be added later — each would layer independently
-under the append-only rule. Concrete property types,
-constraints, and indexes live in
+flags, etc.) can be added later, each layering independently.
+Concrete types, constraints, and indexes live in
 [graph-data-model.md](../implementation/graph-data-model.md).
 
 ---
@@ -116,10 +100,10 @@ constraints, and indexes live in
 
 The User's display material — `display_name`, `bio`, `avatar`,
 cover image, `website_url`, and any other profile content — lives
-in Postgres and is linked to the graph User node by UUID. Like
-graph-side properties, edits to display content are append-only
-per [layers.md §4](layers.md#4-layers-on-postgres-side-display-content):
-new version rows, no overwrite. Concrete schema lives in
+in Postgres, linked to the graph User node by UUID. Edits are
+append-only per
+[layers.md §4](layers.md#4-layers-on-postgres-side-display-content):
+new version rows, no overwrite. Concrete schema in
 [data-model.md](../implementation/data-model.md).
 
 ---
@@ -185,10 +169,8 @@ junction (identity, written at junction creation). See
 ## 6. Authorship
 
 A User is the author of any node whose earliest incoming actor
-edge originates from them. Authorship is derived from the graph
-(earliest incoming layer-1 timestamp), cached on the node and in
-Postgres metadata for query efficiency. The graph is the source
-of truth; caches are rebuildable. See
+edge originates from them. The graph is the source of truth;
+caches on the node and in Postgres are rebuildable. See
 [authorship.md](authorship.md).
 
 ---
@@ -196,64 +178,53 @@ of truth; caches are rebuildable. See
 ## 7. Network membership
 
 Every registered User is automatically a member of the
-[Network](network.md) — no approval gate, no separate junction
-node. Their `network_role` graph property carries the role.
+[Network](network.md) — no approval gate, no junction. The
+`network_role` property carries the role; the User node itself
+is the eligibility carrier for Network-scope votes (Shape A,
+see [network.md §10](network.md#10-network-wide-governance)).
 
-The User node serves as the eligibility carrier for
-network-wide governance directly. Network membership has no
-per-member junction, so Network-scope votes use the Shape A
-`User → Proposal` actor edge from
-[edges.md §1](edges.md#1-actor-edges) — the natural Shape A
-case from [governance.md §3](governance.md#3-the-two-vote-shapes).
-See [network.md §10](network.md#10-network-wide-governance).
-
-Whether Collectives can carry `network_role` (i.e. participate
-in platform-wide governance as actors in their own right) is
-deferred per [network.md §8](network.md#8-membership-and-roles).
-Today only Users do.
+Whether Collectives can carry `network_role` is deferred per
+[network.md §8](network.md#8-membership-and-roles). Today only
+Users do.
 
 ---
 
 ## 8. Lifecycle
 
-User nodes are **never deleted**. Per
-[layers.md §5](layers.md#5-deletion-policy), the only permitted
-"removal" on the graph is in-place layer redaction, which
-preserves the layer's timestamp, layer number, and position
-while replacing the value with a marker.
+User nodes are **never deleted**. The only permitted "removal"
+is in-place layer redaction per
+[layers.md §5](layers.md#5-deletion-policy).
 
 Three triggers can produce a redaction on a User today; more are
 planned:
 
 - **Account deletion (user-initiated).** The User requests
-  redaction of their own PII. Two redaction levels —
-  identity-only by default, content-level on opt-in — with a
-  7-day grace period before execution. Originals go to the
-  [retention archive](retention-archive.md) under per-row legal
-  hold. Full mechanism in
+  redaction of their own PII. Two levels — identity-only by
+  default, content-level on opt-in — with a 7-day grace period.
+  Originals go to the [retention archive](retention-archive.md)
+  under per-row legal hold. Full mechanism in
   [account-deletion.md](../instances/account-deletion.md).
 - **Moderation redaction of authored content.** Network
   governance can classify a Post, Comment, ChatMessage, or other
   content node authored by the User as `'illegal'`, triggering
-  per-field redaction on the offending node and auto-flipping
-  its `moderation_status`. The User node itself is unaffected
-  unless the same Proposal targets a User-node property. See
+  per-field redaction and auto-flipping that node's
+  `moderation_status`. The User node itself is unaffected unless
+  the same Proposal targets a User-node property. See
   [moderation.md](../instances/moderation.md).
 - **Moderation redaction of a User-node property.** The same
-  Proposal mechanism can target a User's own user-input property
+  Proposal mechanism can target a User's user-input property
   (e.g. `username`). The redaction marker is written to the
   affected layer; surrounding layers stay.
 
 Future triggers — court order, next-of-kin under applicable
 inheritance law, network-admin emergency action — are listed in
 [account-deletion.md](../instances/account-deletion.md) as
-planned reusers of the same redaction mechanism with their own
+planned reusers of the same mechanism with their own
 authorization rules.
 
-The User's UUID is stable across every redaction. Authorship
-caches keyed on UUID stay valid; outgoing and incoming edges
-keep pointing at the same node. A redacted User is an
-anonymized but still-graph-resident actor, not a removed one.
+The User's UUID is stable across every redaction; authorship
+caches and edges keep pointing at the same node. A redacted User
+is anonymized but still graph-resident, not removed.
 
 ---
 

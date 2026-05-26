@@ -2,8 +2,8 @@
 
 How a new User joins the graph and gets their first edges.
 Invitations are the User onboarding mechanism that prevents new
-Users from starting as isolated nodes with no path to any other
-part of the graph.
+Users from starting as isolated nodes with no path to the rest
+of the graph.
 
 Collectives are not invited — they come into existence through a
 different mechanism. See
@@ -19,12 +19,11 @@ Inviter   -[sentiment: +0.5, interest: +0.5]-> New Actor   (layer 1: "I invited 
 New Actor -[sentiment: +0.5, interest: +0.5]-> Inviter    (layer 1: "they invited me")
 ```
 
-Both are normal actor edges (see
-[edges.md](edges.md) for the edge catalog).
-Neither is special-cased in the graph model.
+Both are normal actor edges (see [edges.md](edges.md)). Neither
+is special-cased in the graph model.
 
-The `(+0.5, +0.5)` shown here is the **default** — see
-"Default values and customization" below.
+The `(+0.5, +0.5)` shown here is the **default** — see "Default
+values and customization" below.
 
 ## Why two edges
 
@@ -43,15 +42,13 @@ Both directions are needed because edges are strictly directional (see
 
 ## Default values and customization
 
-Both edges carry an initial `(dim1, dim2)` tensor — the layer 1
-written when the invite is accepted. The defaults are
-`(+0.5, +0.5)` on each direction.
+Both edges carry an initial `(dim1, dim2)` tensor — layer 1,
+written when the invite is accepted. Defaults are `(+0.5, +0.5)`
+on each direction.
 
-**Both parties choose their own edge.** The inviter and the invitee
-each pick the values on their own outgoing edge during the
-invitation flow. The defaults exist as a fallback for users who
-skip the choice; they are *not* the recommended values. The two
-sides matter in different ways.
+**Both parties choose their own edge** during the invitation
+flow. The defaults are a fallback for users who skip the choice,
+*not* the recommended values. The two sides matter differently.
 
 ### Inviter side: shaping the new actor's reach
 
@@ -120,18 +117,12 @@ multi-use**. Both modes are time-gated.
   typically posted over messenger or social channels, where the
   inviter does **not know in advance who will accept**.
 
-The remaining subsections describe mechanics common to both
-modes; the bot-cluster trade-off applies specifically to
-multi-use links shared publicly.
-
 ### Pre-committed inviter values
 
 The inviter's outgoing edge values are **pre-committed when the
-link is generated**, not chosen per invitee — the same mechanic
-applies to both single-use and multi-use links. Whoever accepts
-inherits the values the inviter set on the link. The invitee
-still chooses their own outgoing edge during registration, per
-"Default values and customization" above.
+link is generated**, not per invitee — same mechanic for both
+modes. Whoever accepts inherits those values. The invitee still
+chooses their own outgoing edge at registration.
 
 ### Revocation and abandonment
 
@@ -145,23 +136,21 @@ in [auth.md](../implementation/auth.md).
 ### The bot-cluster trade-off
 
 Multi-use links shared publicly create an attack surface: a bot
-cluster can join through an influencer's public link and turn
-the influencer into a **bridge node into the cluster**. The same
-mechanic that gives the inviter reach also concentrates the cost
-of mis-vouching onto them. (Single-use links sidestep this by
-construction — at most one accidental join, no cluster bridge.)
+cluster joining through an influencer's link turns the
+influencer into a **bridge node into the cluster**. The same
+mechanic that gives the inviter reach concentrates the cost of
+mis-vouching onto them. (Single-use links sidestep this by
+construction — at most one accidental join.)
 
-The system tolerates this deliberately for the multi-use case.
-Public-facing multi-use links are necessary for high-reach
-onboarding — public communities and influencers cannot effectively
-invite their audiences without them — and the abuse case is
-self-correcting: the inviter's network
-can sever the bridge through the cascading-severance mechanism
-described in
-[feed-ranking.md §3.6–§3.7](feed-ranking.md#36-bot-resistance-via-the-0-0-severance-edge), at which point the
-entire cluster reachable through that bridge is zero-jailed from
-the network's perspective. Inviters who learn this lesson become
-more selective with where they post their links.
+The system tolerates this for the multi-use case because public
+multi-use links are necessary for high-reach onboarding —
+communities and influencers can't onboard their audiences
+otherwise — and the abuse is self-correcting: the inviter's
+network can sever the bridge through cascading severance
+([feed-ranking.md §3.6–§3.7](feed-ranking.md#36-bot-resistance-via-the-0-0-severance-edge)),
+at which point the entire cluster reachable through that bridge
+is zero-jailed. Inviters learn to be more selective with where
+they post their links.
 
 The trade-off is intentional: restricting the mechanism would
 deprive legitimate high-reach actors of a critical onboarding
