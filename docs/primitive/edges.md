@@ -51,7 +51,7 @@ in the math is uniform.
 | User → ChatMessage | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
 | User → ChatMember | **Sentiment** (endorse to reject) | **Importance** (how important is this membership to me) |
 | User → CollectiveMember | **Sentiment** (endorse to reject) | **Importance** (how important is this membership to me) |
-| User → ItemOwnership | **Sentiment** (endorse to reject) | **Importance** (how important is this transfer to me) |
+| User → ItemOwnership | **Sentiment** (endorse to reject) | **Importance** (for the initial owner, how important holding this item is; for transfer recipients, how important receiving the transfer is) |
 | User → Item | **Sentiment** (like to dislike) | **Relevance** (how interesting to me) |
 | User → Proposal | **Sentiment** (support to oppose) | **Importance** (how strongly I want this change) |
 
@@ -67,7 +67,7 @@ in the math is uniform.
 | Collective → ChatMessage | **Sentiment** | **Relevance** |
 | Collective → ChatMember | **Sentiment** (endorse to reject) | **Importance** |
 | Collective → CollectiveMember | **Sentiment** (endorse to reject) | **Importance** |
-| Collective → ItemOwnership | **Sentiment** (endorse to reject) | **Importance** |
+| Collective → ItemOwnership | **Sentiment** (endorse to reject) | **Importance** (for the initial owner, how important holding this item is; for transfer recipients, how important receiving the transfer is) |
 | Collective → Item | **Sentiment** | **Relevance** (how important is this product) |
 | Collective → Proposal | **Sentiment** (support to oppose) | **Importance** (how strongly the collective wants this change) |
 
