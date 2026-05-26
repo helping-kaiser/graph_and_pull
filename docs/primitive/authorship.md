@@ -6,13 +6,12 @@ layer 1 timestamp. A node cannot exist without someone creating it, so
 the very first edge ever created toward a node identifies the author.
 
 **"Creator" is a synonym for "author"; "author" is canonical.**
-Wherever older drafts say a User or Collective "creates" or is
-the "creator" of a node — Item, Chat, Collective, Post, Comment,
-Proposal — the on-graph fact is the same: they hold the
-earliest-layer-1 incoming edge, the `:AUTHOR` label, and the
-rights/obligations that authorship carries. "Founder" is *not* a
-synonym for author — it is the CollectiveMember **role string**
-used inside a Collective (see
+Wherever a User or Collective is described as "creating" a node
+— Item, Chat, Collective, Post, Comment, Proposal — the on-graph
+fact is the same: they hold the earliest-layer-1 incoming edge,
+the `:AUTHOR` label, and the rights and obligations that
+authorship carries. "Founder" is *not* a synonym — it is the
+CollectiveMember **role string** used inside a Collective (see
 [graph-model.md §5 "Bootstrap"](graph-model.md#5-junction-node-flows)
 and [collectives.md §1](../instances/collectives.md#1-creation)).
 
@@ -68,29 +67,27 @@ lookup, so `author_id` is cached on the Postgres `posts`,
 `comments`, and `chat_messages` rows — see
 [data-model.md](../implementation/data-model.md).
 
-The graph (earliest incoming layer-1 edge) is the source of truth.
-The `:AUTHOR` label is itself derivable from that rule; the
-Postgres `author_id` is in turn derivable from the graph. If
-either disagrees with the source of truth, rebuild from the graph.
+The graph is the source of truth. The `:AUTHOR` label is
+derivable from the earliest-layer-1 rule; the Postgres
+`author_id` is derivable from the graph. If either disagrees,
+rebuild from the graph.
 
 **Economics does not read the Postgres cache.** Ad-revenue
-distribution, payouts, and any other value-bearing computation
-walk the graph directly. A stale Postgres `author_id` row affects
-display ordering at most; it does not change what the author is
-paid. The cache is allowed to drift briefly without correctness
-risk.
+distribution, payouts, and any value-bearing computation walk
+the graph directly. A stale `author_id` affects display ordering
+at most; it never changes what the author is paid. The cache may
+drift briefly without correctness risk.
 
-**Rebuild trigger.** Stale cache entries self-heal opportunistically:
-when a viewing user's feed-ranking pass touches a post via a path
-that traverses the post's `:AUTHOR` edge, the ranking step has the
-authoritative author UUID in hand. If it disagrees with
-`posts.author_id` (or the equivalent column for the content type),
-the API enqueues a rebuild for that row. Rebuilds run out-of-band
-— the read that detected the drift never blocks on them.
+**Rebuild trigger.** Stale cache entries self-heal
+opportunistically: when a viewing user's feed-ranking pass
+touches a post via a path that traverses its `:AUTHOR` edge, the
+ranking step has the authoritative author UUID. If it disagrees
+with `posts.author_id` (or the equivalent column), the API
+enqueues a rebuild for that row. Rebuilds run out-of-band — the
+read that detected the drift never blocks.
 
-A user with no path that surfaces the post never triggers a
-rebuild, but also has no display query that depends on the
-column, so the drift is invisible until someone with a path looks
-at it. This is sufficient: any disagreement that matters to
-display gets corrected by someone who would have seen the wrong
-value.
+A user with no path to the post never triggers a rebuild, but
+also has no display query depending on the column — so the
+drift is invisible until someone with a path looks. Any
+disagreement that matters to display gets corrected by someone
+who would have seen the wrong value.
