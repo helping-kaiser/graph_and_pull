@@ -412,6 +412,19 @@ the next time their renewed activity puts them back inside.
 The window slides; eligibility is evaluated at a single point
 per tally, not snapshotted at vote time.
 
+No carve-out is needed for first-time voters or long-inactive
+moderators. The Shape A vote is itself an outgoing
+`User → Proposal` actor edge per
+[edges.md §1](edges.md#1-actor-edges); the act of casting it
+places that user inside `active_threshold_days` at the tally
+that the vote triggers. A first-time voter who has never
+otherwise interacted with the graph becomes active *by voting*,
+in time to be counted. A moderator whose previous edges have
+all aged out re-enters the window the same way the moment they
+cast or update their gate-opening vote. Eligibility tracks
+participation directly: the only way to be excluded is to not
+participate.
+
 ---
 
 ## 11. Amending `:Network` parameters

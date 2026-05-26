@@ -24,9 +24,10 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Sort fallback | 1 | **Q16** | Derivation of `S(t)`, the intrinsic per-node scalar that breaks ties at the bottom of the sort cascade. Q2 settled the rest of the math but left S's inputs open. Pure ranking math; no external dependency. |
-| 2. Federation phase | 2 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol. Deferred until federation becomes concrete. |
-| 3. Governance v1.x | 3 | **Q19** | Bot-resistant non-arbitrary quorum for Network-scope governance. PR-05 shipped dual-quorum (fractional bar + absolute floor) as the v1 compromise; the absolute floor itself is a static parameter and the fractional bar's denominator is still bot-inflatable. A self-calibrating mechanism that does not depend on identity verification or economic gating is unsolved. Defer until the network's bot-density evidence justifies replacing the parameter pair. |
+| 1. Economics workstream | 1 | **Q20** | Economics primitive — ad-revenue distribution mechanism, the ledger database home, and the "pull marketing" vocabulary anchor. The dedicated post-audit workstream. Settling it may also supply inputs to Q16 (S's derivation) and reopen the stake-gating option rejected for Q19. |
+| 2. Sort fallback | 2 | **Q16** | Derivation of `S(t)`, the intrinsic per-node scalar that breaks ties at the bottom of the sort cascade. Q2 settled the rest of the math but left S's inputs open. The user has flagged S's inputs as part of economics, so this phase is naturally informed by Q20. |
+| 3. Federation phase | 3 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol; cross-instance bootstrap and integrity raise further sub-questions. Deferred until federation becomes concrete. |
+| 4. Governance v1.x | 4 | **Q19** | Bot-resistant non-arbitrary quorum for Network-scope governance. PR-05 shipped dual-quorum (fractional bar + absolute floor) as the v1 compromise; the absolute floor itself is a static parameter and the fractional bar's denominator is still bot-inflatable. A self-calibrating mechanism that does not depend on identity verification or economic gating is unsolved. Defer until the network's bot-density evidence justifies replacing the parameter pair. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -113,9 +114,14 @@ The Q14 resolution settled three identity strategies in the data
 model, with very different federation properties:
 
 - **Type 1 — canonical-string identity, content-addressed
-  UUIDv5** (Hashtag). Federates by construction. Same canonical
-  name produces the same UUID across any instance or fork. No
-  reconciliation needed.
+  UUIDv5** (Hashtag). Federates by construction when forks
+  intend to share the namespace: the same canonical name
+  produces the same UUID across any instance or fork. Forks
+  that intend to diverge implicitly create incompatible
+  hashtag IDs — the namespace UUID is committed forever the
+  moment the genesis migration runs, so a fork keeping it
+  inherits the shared namespace, and a fork rotating it
+  breaks compatibility for every existing tag.
 - **Type 2 — handle-based identity, random UUID + UNIQUE handle
   per instance** (User, Collective). Within an instance, the
   UNIQUE constraint prevents collision. Across separated
@@ -154,6 +160,32 @@ Specifically:
   each other, agree on synchronization scope, and handle
   disagreements (e.g. instance A says "Bob is a bot, severed,"
   instance B disagrees)?
+- **`:Network` singleton ID distribution.** Within an instance
+  the singleton's `id` is a one-query lookup, but every client
+  composing a Network-scope Proposal needs that UUID up front.
+  Across instances, each `:Network` has its own UUID; a
+  federation protocol has to decide whether singleton IDs are
+  discoverable, signed, or pinned to instance metadata. See
+  [network.md §2](primitive/network.md#2-creation) and
+  [graph-data-model.md](implementation/graph-data-model.md).
+- **First-user serialization across instances.** Within one
+  instance, the bootstrap migration is the only path that
+  writes the genesis User, so concurrent registration cannot
+  race ([network.md §2](primitive/network.md#2-creation),
+  [auth.md](implementation/auth.md)). Two separately-running
+  instances independently mint their own genesis users; if
+  they later federate, the federation protocol has to decide
+  what "the genesis user" means when both instances have one.
+- **Hashtag UUIDv5 backend integrity.** Hashtag IDs are
+  derived from a namespace UUID and the canonical name. The
+  derivation runs in the backend, with no per-row check that
+  `id == UUIDv5(namespace, name)`
+  ([data-model.md](implementation/data-model.md)). Within one
+  honest instance, backend discipline is sufficient. Federated
+  exchange of hashtag references requires deciding whether
+  instance B accepts instance A's hashtag IDs on trust, recomputes
+  them, or expects an attestation (binary hash, signed build, or
+  similar) that A computed the UUID the agreed way.
 
 ### Constraints (from established principles)
 
@@ -288,3 +320,86 @@ The two-bar v1 leaves two known holes:
 (severance as the existing graph-level bot defense; not
 directly applicable to governance tally but informs the
 "graph as sybil filter" candidates).
+
+---
+
+## Q20 — Economics primitive: distribution, ledger home, vocabulary anchor
+
+**Where it shows up:**
+[README.md "Fair economics"](../README.md) and the equivalent
+section of [CONTRIBUTING.md](../CONTRIBUTING.md) (ad-revenue
+claim with no primitive landing),
+[CLAUDE.md](../CLAUDE.md) (dual-database never-rule with no slot
+for transactions or payouts).
+**Status:** open (post-audit dedicated workstream)
+
+### Context
+
+The meta documents promise a graph-driven economics: ad revenue
+distributes across the network according to the graph and its
+weights; bot clusters earn nothing. No primitive or
+implementation doc yet says how. This block bundles the
+sub-questions that the upcoming economics workstream will need
+to answer together; tackling them in isolation risks a design
+that satisfies one and breaks another.
+
+### The questions
+
+#### Q20.1 — Ad-revenue distribution mechanism
+
+Who computes the distribution and when (per-impression,
+per-tally, per-epoch); how revenue ingress is modeled (advertiser
+deposit, escrow, immediate pass-through); which graph quantity
+maps to payout (`h(t)` aggregated, path-products, authorship,
+some new derived quantity). The audit identifies this as the
+single largest pre-economics gap.
+
+#### Q20.2 — Economics ledger database home
+
+The dual-database rule in CLAUDE.md splits topology
+(Memgraph) from display content (Postgres). Transactions, ledger
+entries, and payout records fit neither cleanly. Options:
+co-locate in Postgres as a third schema, introduce a third store
+purpose-built for ledger semantics, or absorb into the graph as
+edges with monetary semantics. Each option has cascading
+consequences for the dual-database invariant.
+
+#### Q20.3 — "Pull marketing" vocabulary anchor
+
+"Pull marketing, not push marketing" appears only in meta docs
+([README.md](../README.md), [CONTRIBUTING.md](../CONTRIBUTING.md))
+with no anchor in a primitive or implementation doc. Either the
+phrase is canonical for the economics primitive and needs a
+landing pad once the mechanism is designed, or it is meta-only
+framing that should be tightened. Resolved together with Q20.1
+once the distribution shape is decided.
+
+### Constraints (from established principles)
+
+- **No AI in economics.** Per [CLAUDE.md](../CLAUDE.md), the
+  graph and its weights drive distribution; learned models are
+  out.
+- **No central authority.** Anyone can fork and self-host; the
+  economics mechanism must work without a privileged operator.
+- **Append-only.** Per [layers.md](primitive/layers.md), no
+  economics flow rewrites graph history. New layers, new edges,
+  and new node types may be added; old ones stay.
+- **Dual-database split.** Per [CLAUDE.md](../CLAUDE.md),
+  topology lives in Memgraph and display content in Postgres.
+  Q20.2 is the explicit question of whether the ledger extends
+  this split or breaks it.
+
+### Options considered
+
+None worked out yet — this is the workstream that will produce
+them.
+
+### Related
+
+[Q16](#q16--derivation-of-st-the-intrinsic-node-scalar) (`S(t)`
+inputs are flagged by the user as "part of economics" — Q20 may
+supply them),
+[Q19](#q19--bot-resistant-non-arbitrary-quorum-for-network-scope-governance)
+(the rejected "stake / token gating" option was deferred to the
+economics layer; once Q20 settles, that option can be
+re-evaluated).
