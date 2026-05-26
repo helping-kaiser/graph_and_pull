@@ -11,12 +11,6 @@ be liked, disliked, replied to, embedded, and moderated, with
 their own authored opinion edges and their own
 `moderation_status`.
 
-This doc is the per-node catalog for the Comment: how it is
-created, what it carries on the graph and in Postgres, what
-edges it can participate in, and how it ends. The mechanics
-those topics depend on stay in their topical docs — this doc
-links rather than duplicates.
-
 ---
 
 ## 1. Creation
@@ -32,10 +26,7 @@ The valid target set — **Post, Comment, Chat, ChatMessage, or
 Item** — is the most distinctive thing about Comments: they are
 the platform's universal threading primitive, not a Post-only
 concept. The canonical per-target list with edge meanings lives
-in [edges.md §2 "Containment / belonging"](../primitive/edges.md#containment--belonging);
-this doc and [nodes.md §2](../primitive/nodes.md#2-content-nodes)
-link there rather than mirror, so a future addition to the
-target set lands in one place.
+in [edges.md §2 "Containment / belonging"](../primitive/edges.md#containment--belonging).
 
 The gesture writes four records atomically:
 
@@ -187,20 +178,16 @@ A Comment receives:
 A Comment's author is the actor whose incoming actor edge has
 the earliest layer-1 timestamp — the same rule that derives
 authorship for every node type
-([authorship.md](../primitive/authorship.md)). Because a
-Comment has no existence before its creation, the author's
-edge is always the earliest incoming edge by construction.
-
-The author's `(dim1, dim2)` on the authorship edge is just a
-normal opinion edge — not a special "author" tag — typically
-carrying high positive sentiment and relevance toward the
-content the author just created.
+([authorship.md](../primitive/authorship.md)). The author's edge
+is always the earliest incoming edge by construction. The
+author's `(dim1, dim2)` on that edge is just a normal opinion
+edge, not a special "author" tag.
 
 On the graph, the authoring edge carries the `:AUTHOR`
-sub-label — that is the only representation of authorship on the
-graph side. For Postgres-side display queries,
-`comments.author_id` is cached on the row. Both are rebuildable
-from the graph; the graph wins in any disagreement. See
+sub-label — the only representation of authorship on the graph
+side. For Postgres-side display queries, `comments.author_id`
+is cached on the row. Both are rebuildable from the graph; the
+graph wins in any disagreement. See
 [authorship.md "Caching"](../primitive/authorship.md#caching).
 
 ---
