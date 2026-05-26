@@ -218,7 +218,9 @@ weight changes — see §8).
   `'worker'`, `'band member'`, `'subsidiary'`, `'partner'`,
   `'member'`, etc. Open-ended per the social contract; the role
   vocabulary is **Collective-specific**, not a global enum.
-  Layered.
+  Layered. *How the role catalog is introduced, scoped, and bound
+  to powers is an open design question — see
+  [open-questions.md Q21](../open-questions.md#q21--collective-role-catalog-how-role-strings-are-introduced-scoped-and-bound-to-powers).*
 - **`ownership_pct`** — when the role implies a stake (e.g.
   shareholder). Layered when present.
 - **`voting_weight`** — optional direct weight override for
