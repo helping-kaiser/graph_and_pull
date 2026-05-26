@@ -24,15 +24,13 @@ Both current authorization paths use it:
   pinned to any one country.
 
 The archive's hard-delete-on-hold-expiry is the **only point in
-the system where data is genuinely removed** (not the only
-mechanism — the redaction itself is the mechanism, see
-[layers.md §5](layers.md#5-deletion-policy); the archive entry's eventual
-hard-delete is the post-redaction statutory end state).
-[layers.md §5](layers.md#5-deletion-policy)'s "no silent deletion" rule still
-holds: the redaction leaves an auditable mark on public surfaces
-that does not change at hard-delete time; the archive entry's
-existence and its destruction are both private and never visible
-on public surfaces.
+the system where data is genuinely removed**. The redaction
+itself is the mechanism (see
+[layers.md §5](layers.md#5-deletion-policy)); the archive
+entry's eventual hard-delete is its statutory end state. The
+"no silent deletion" rule still holds: the redaction's public
+mark does not change at hard-delete time, and the archive
+entry's existence and destruction are both private.
 
 ## 1. Polymorphic shape
 
@@ -89,70 +87,64 @@ destroyed depends on the per-row deadline.
 
 A scheduled job hard-deletes rows where
 `legal_hold_until < now()` and no other statute extends the hold.
-
-This is the **only path in the system where data is genuinely
-removed**. [layers.md §5](layers.md#5-deletion-policy) declares "no silent deletion,
-ever"; this is the explicit, statutorily required exception.
+This is the explicit, statutorily required exception to
+[layers.md §5](layers.md#5-deletion-policy)'s "no silent
+deletion, ever".
 
 The exception is honest because:
 
-- The redaction itself leaves a public mark (in-place layer
-  marker, Postgres tombstone version row) that does not change at
+- The redaction leaves a public mark (in-place layer marker,
+  Postgres tombstone version row) that does not change at
   hard-delete time.
-- The archive entry's existence is private — its destruction does
-  not erase any public-facing history.
+- The archive entry's existence is private — its destruction
+  erases no public-facing history.
 - DSGVO Art. 5(1)(e) (storage minimization) and similar
   provisions actively *require* destruction once the obligation
   expires; keeping retained PII indefinitely would itself be a
   violation.
 
 The graph and public Postgres surfaces never see the deletion —
-they have shown the redaction marker since the redaction itself.
+they have shown the redaction marker since the redaction.
 
 ## 4. Access path
 
 The archive is **not** a graph-visible surface. It plays no role
 in feed ranking, traversal, or any normal API path.
 
-`legal_admin` is a **person on the host's operations team**, not
-a graph role, not a `network_role` value, and not something the
-graph or governance flow appoints. We use the name as shorthand
-for the human(s) whose job is to act on cases the moderation flow
-has already removed from the network: case review, setting per-row
-hold values per the relevant law, reporting illegal content to
-authorities, surfacing archive contents under compulsion (court
-order, prosecutor request, tax-audit subpoena), and scheduling
-statutory hard-delete.
+`legal_admin` is a **person on the host's operations team** —
+not a graph role, not a `network_role`, not appointed by
+governance. The name is shorthand for the human(s) whose job is
+to act on cases the moderation flow has already removed: case
+review, setting per-row hold values per the relevant law,
+reporting illegal content to authorities, surfacing archive
+contents under compulsion (court order, prosecutor request,
+tax-audit subpoena), and scheduling statutory hard-delete.
 
 The work is **post-redaction**. By the time `legal_admin`
-touches a case, the redaction cascade has already removed the
-content from the live graph and public Postgres surfaces;
-`legal_admin` has no path back into the live graph and no part
-in deciding what gets redacted in the first place.
+touches a case, the cascade has already removed the content from
+the live graph and public Postgres surfaces; `legal_admin` has
+no path back in and no role in deciding what gets redacted.
 
 The invariants are deliberately narrow:
 
-- **No graph reach.** `legal_admin` cannot author Proposals,
-  classify content, or otherwise act on the live graph.
-- **No moderation authority.** The graph's "no admin override"
-  rule still holds — illegal-content classification runs through
-  the [moderation](../instances/moderation.md) flow before
-  `legal_admin` ever sees the case.
-- **No write access to the archive itself.** Archive rows are
-  inserted by the redaction cascade; `legal_admin` only reads
-  them (and triggers the per-row hard-delete on hold expiry).
-- **No power to set arbitrary hold values.** Per-row holds are
-  determined by the relevant law per case, not by `legal_admin`
-  preference.
+- **No graph reach.** Cannot author Proposals, classify content,
+  or otherwise act on the live graph.
+- **No moderation authority.** Illegal-content classification
+  runs through the [moderation](../instances/moderation.md) flow
+  before `legal_admin` ever sees the case; the "no admin
+  override" rule holds.
+- **No write access to the archive itself.** Rows are inserted
+  by the redaction cascade; `legal_admin` only reads them (and
+  triggers per-row hard-delete on hold expiry).
+- **No arbitrary hold values.** Per-row holds are determined by
+  the relevant law per case, not by `legal_admin` preference.
 
 Widening this access would turn a compliance store into a
 surveillance surface. Concrete access-control mechanics,
-audit-logging, and the authentication shape under which an
-operations-team member reaches the archive belong in
-[data-model.md](../implementation/data-model.md) — whatever shape
-that takes (Postgres role, off-instance tooling, a dedicated
-admin app), it is a host-operations concern and the graph and
-public Postgres surfaces never see it.
+audit-logging, and authentication shape belong in
+[data-model.md](../implementation/data-model.md); whatever form
+that takes (Postgres role, off-instance tooling, dedicated admin
+app), the graph and public Postgres surfaces never see it.
 
 ## What this doc is not
 
