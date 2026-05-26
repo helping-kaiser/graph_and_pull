@@ -398,10 +398,12 @@ A CollectiveMember receives:
 A Collective is the on-graph author of any node whose earliest
 incoming actor edge originates from it — the same
 earliest-incoming-edge rule that derives authorship for every
-node type ([authorship.md](../primitive/authorship.md)). The
-gesture is initiated off-graph by an authorized CollectiveMember
-(§§2, 8), but the acting member is not recorded — querying "who
-authored this?" returns the Collective. See
+node type ([authorship.md](../primitive/authorship.md)). On the
+graph that edge carries the `:AUTHOR` sub-label and originates at
+the Collective node itself. The gesture is initiated off-graph by
+an authorized CollectiveMember (§§2, 8), but the acting member is
+not recorded — querying "who authored this?" returns the
+Collective. See
 [authorship.md "Collective-authored content"](../primitive/authorship.md#collective-authored-content);
 the omission is the deliberate non-feature from §2.
 
