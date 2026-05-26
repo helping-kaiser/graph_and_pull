@@ -21,12 +21,11 @@ entity; neither database stores the other's fields.
 
 ## PostgreSQL Schema
 
-Postgres holds all human-readable display content (plus a few
-operational-metadata tables — seen-list, retention archive
+Postgres holds all human-readable display content plus a few
+operational-metadata tables (seen-list, retention archive
 bookkeeping). It knows nothing about the social graph, edge
-weights, or feed ranking. Every display-content table here
-exists to answer the question: "given a UUID, what do I render
-on screen?"
+weights, or feed ranking. Each display-content table answers
+the question: "given a UUID, what do I render on screen?"
 
 ### Foundation
 
@@ -268,8 +267,7 @@ Instances below: the seen-list (`user_view_log`), the hidden-actors
 list (`user_hidden_actors`, frontend-side "don't show me Bob's
 content" — see [feed-ranking.md §3.6](../primitive/feed-ranking.md#36-bot-resistance-via-the-0-0-severance-edge)),
 the chat-read pointer (`chat_read_state`), and bookmarks
-(`user_bookmarks`). Further per-viewer state slots in here as it's
-designed.
+(`user_bookmarks`).
 
 ```sql
 -- View log: per-viewer record of which content nodes have been seen.
@@ -658,9 +656,7 @@ declarations, see [graph-data-model.md](graph-data-model.md).
 
 Different node types have different *kinds* of identity. The data model
 uses three strategies, chosen per type based on what the node
-fundamentally *is*. Stating the strategies explicitly here so future node
-types are designed against a conscious choice rather than schema
-intuition.
+fundamentally *is*.
 
 ### Type 1 — Identity is a canonical string
 
@@ -675,9 +671,8 @@ For these types, the UUID is **content-addressed**: derived
 deterministically from the canonical string via
 `UUIDv5(HASHTAG_NAMESPACE, canonical_name)` with a fixed project-scoped
 namespace UUID. Same name → same UUID *across any instance or fork*. The
-UUID is mathematically redundant with the name (both encode the same
-identity), but the UUID is still the database key and the bridge between
-Postgres and Memgraph (per "The Boundary Rule" earlier in this doc).
+UUID is mathematically redundant with the name, but it remains the database
+key and the bridge between Postgres and Memgraph.
 
 The canonical-name normalization (currently for hashtags: lowercase, no
 `#`) is **load-bearing**: it determines what counts as "the same"
@@ -690,11 +685,9 @@ Changing it would break every previously-derived hashtag UUID.
 Implementation MUST commit the namespace value to source so all
 instances and forks compute identical UUIDs.
 
-The Postgres `hashtags` table carries a `CHECK (id = uuid_generate_v5(
-namespace, name))` constraint (per the Hashtag registry block earlier
-in this doc) so the derivation is enforced at the schema layer too —
-defense-in-depth against a buggy service layer that ever computes the
-wrong id. The constraint requires the `uuid-ossp` extension and the
+The Postgres `hashtags` table enforces the derivation at the schema layer
+via `CHECK (id = uuid_generate_v5(namespace, name))` — defense-in-depth
+against a buggy service layer. Requires the `uuid-ossp` extension and the
 same namespace literal as the source-committed value.
 
 Federation across separated instances of these types requires **no

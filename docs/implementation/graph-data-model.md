@@ -24,31 +24,34 @@ For the Postgres side, see [data-model.md](data-model.md).
 
 ## ID strategy
 
-UUIDs are the shared key between Memgraph and Postgres. Both databases
-store the same ID for the same entity; neither stores the other's
-fields.
-
-1. UUIDs are generated in the **API layer** (Rust), not by the database.
-2. The same UUID is written to both databases in the same request.
-3. Memgraph nodes store the UUID as a `String` property named `id`.
-4. Most node types use random UUIDs (v4). Hashtags use a content-
-   addressed UUID (UUIDv5 of the canonical name with a fixed
-   project-scoped namespace) so independent creations of the same
-   hashtag converge on one node — see
-   [data-model.md "Node identity strategies"](data-model.md#node-identity-strategies) for the
-   three identity strategies and their federation properties.
+UUIDs are the shared key between Memgraph and Postgres (see
+[architecture.md §2](architecture.md#2-uuids-as-the-shared-key)).
+Memgraph nodes store the UUID as a `String` property named `id`. Most
+node types use random UUIDs (v4); Hashtags use a content-addressed UUIDv5
+so independent creations of the same hashtag converge on one node — see
+[data-model.md "Node identity strategies"](data-model.md#node-identity-strategies).
 
 ---
 
 ## Node labels
 
-Memgraph allows ad-hoc properties without up-front declaration, but
-the protocol leans on declarative constraints (uniqueness, existence)
-to make the schema explicit at the storage layer wherever the rule
-admits one. The shapes below describe what each label carries and
-the constraints/indexes the application relies on; rules the
-storage layer can't directly express (e.g. forbidding a property by
-absence) are stated as ethos invariants and enforced in code tests.
+Memgraph allows ad-hoc properties, but the protocol leans on declarative
+constraints (uniqueness, existence) wherever the rule admits one. The shapes
+below describe what each label carries and the constraints/indexes the
+application relies on; rules the storage layer can't directly express
+(e.g. forbidding a property by absence) are stated as ethos invariants and
+enforced in code tests.
+
+### Shared property: `moderation_status`
+
+Every content-bearing node carries a `moderation_status` property. The shape
+is identical wherever it appears: `String`, layered, default `'normal'`,
+values `'normal'` / `'sensitive'` / `'illegal'`. `'sensitive'` is set by a
+passing classification Proposal; `'illegal'` is auto-flipped by the system
+when any field on the node receives a redaction marker. See
+[nodes.md "Universal: moderation_status"](../primitive/nodes.md#universal-moderation_status)
+and [moderation.md](../instances/moderation.md). The tables below list the
+property with a short "per intro" note rather than repeating the shape.
 
 ### Actor nodes
 
@@ -59,7 +62,7 @@ absence) are stated as ethos invariants and enforced in code tests.
 | `id`                | String | UUID v4. Always set by the API. |
 | `username`          | String | Handle for mentions/lookups. Layered per [layers.md](../primitive/layers.md). |
 | `network_role`      | String | `'member'` or `'moderator'`. Layered. Backs platform-wide governance — see [network.md](../primitive/network.md). |
-| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. `'sensitive'` is set by a passing classification Proposal; `'illegal'` is auto-flipped by the system when any field on the node receives a redaction marker — see [moderation.md](../instances/moderation.md). |
+| `moderation_status` | String | Per intro. |
 
 ```cypher
 CREATE CONSTRAINT ON (u:User) ASSERT u.id IS UNIQUE;
@@ -83,7 +86,7 @@ of redactions without requiring layer-aware constraint logic.
 |---|---|---|
 | `id`                | String | UUID v4. |
 | `name`              | String | Handle, analogous to `User.username`. Layered. |
-| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. `'sensitive'` is set by a passing classification Proposal; `'illegal'` is auto-flipped by the system when any field on the node receives a redaction marker — see [moderation.md](../instances/moderation.md). |
+| `moderation_status` | String | Per intro. |
 
 ```cypher
 CREATE CONSTRAINT ON (c:Collective) ASSERT c.id IS UNIQUE;
@@ -98,7 +101,7 @@ CREATE INDEX ON :Collective(id);
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUID v4. |
-| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. `'sensitive'` is set by a passing classification Proposal; `'illegal'` is auto-flipped by the system when any field on the node receives a redaction marker — see [moderation.md](../instances/moderation.md). |
+| `moderation_status` | String | Per intro. |
 
 ```cypher
 CREATE CONSTRAINT ON (p:Post) ASSERT p.id IS UNIQUE;
@@ -107,10 +110,7 @@ CREATE INDEX ON :Post(id);
 
 #### `:Comment`
 
-Same shape as `:Post`: `id` and `moderation_status` (`'normal'` /
-`'sensitive'` / `'illegal'`, layered, default `'normal'`,
-auto-flipped to `'illegal'` on field redaction — see
-[moderation.md](../instances/moderation.md)).
+Same shape as `:Post`: `id` and `moderation_status` (per intro).
 
 ```cypher
 CREATE CONSTRAINT ON (c:Comment) ASSERT c.id IS UNIQUE;
@@ -127,7 +127,7 @@ CREATE INDEX ON :Comment(id);
 | `invite_proposer_roles`  | String[] | `ChatMember.role` values whose bearers may propose a new ChatMember under `'invite-only'`. Default `['chat_mod','admin']`. Inapplicable to `'open'` and `'request-entry'`. Layered. See [chats.md §3.1, §11](../instances/chats.md#31-chat). |
 | `entry_approval_required_count` | Integer | Number of qualifying Shape B approver votes the new ChatMember's junction must collect before activation. `0` under `'open'`; default `1` otherwise; higher values produce the multi-sig configuration shape. Layered. See [chats.md §11](../instances/chats.md#11-joining-and-leaving-a-chat). |
 | `entry_approval_eligible_roles` | String[] | `ChatMember.role` values whose bearers' Shape B votes count toward `entry_approval_required_count`. Default `['chat_mod','admin']`. Inapplicable to `'open'`. Layered. See [chats.md §3.1, §11](../instances/chats.md#31-chat). |
-| `moderation_status`      | String  | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. `'sensitive'` is set by a passing classification Proposal; `'illegal'` is auto-flipped by the system when any field on the node receives a redaction marker — see [moderation.md](../instances/moderation.md). |
+| `moderation_status`      | String  | Per intro. |
 | `epoch`                  | Integer | Current chat-key epoch. Default `1`. Advanced by `+1` on every membership transition that takes effect — `:CLAIM` and `:APPROVAL` both present with positive top layers (join), or active `:APPROVAL` flipped to `dim1 < 0` (leave / disavowal cascade) — and on every passing mid-epoch rotation Proposal. Concurrent transitions serialize per Chat. See [chats.md §9](../instances/chats.md#9-encryption-as-the-privacy-mechanism). |
 | `rotate_key_quorum`      | Float   | Quorum for mid-epoch rotation Proposals targeting `epoch`. Default `0.50`. Layered, amendable via Proposal. See [chats.md §9](../instances/chats.md#9-encryption-as-the-privacy-mechanism). |
 | `rotate_key_threshold`   | Float   | Pass-threshold for mid-epoch rotation Proposals. Default `0.667` (2/3). Layered, amendable via Proposal. See [chats.md §9](../instances/chats.md#9-encryption-as-the-privacy-mechanism). |
@@ -162,7 +162,7 @@ CREATE INDEX ON :Chat(id);
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUID v4. |
-| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. `'sensitive'` is set by a passing classification Proposal; `'illegal'` is auto-flipped by the system when any field on the node receives a redaction marker — see [moderation.md](../instances/moderation.md). The protocol does not gate classification on disclosure of the chat key; "moderate only after reading" is a normative requirement on moderators, not a protocol invariant — see [moderation.md §5](../instances/moderation.md#5-scope). |
+| `moderation_status` | String | Per intro. The protocol does not gate classification on disclosure of the chat key; "moderate only after reading" is a normative requirement on moderators, not a protocol invariant — see [moderation.md §5](../instances/moderation.md#5-scope). |
 
 ```cypher
 CREATE CONSTRAINT ON (m:ChatMessage) ASSERT m.id IS UNIQUE;
@@ -179,7 +179,7 @@ so the graph never reads it. See [data-model.md](data-model.md).
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUID v4. |
-| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. `'sensitive'` is set by a passing classification Proposal; `'illegal'` is auto-flipped by the system when any field on the node receives a redaction marker — see [moderation.md](../instances/moderation.md). |
+| `moderation_status` | String | Per intro. |
 
 ```cypher
 CREATE CONSTRAINT ON (i:Item) ASSERT i.id IS UNIQUE;
@@ -192,7 +192,7 @@ CREATE INDEX ON :Item(id);
 |---|---|---|
 | `id`                | String | UUIDv5, content-addressed from `name`. See [data-model.md "Node identity strategies"](data-model.md#node-identity-strategies). |
 | `name`              | String | Canonical form: lowercase, no `#`. Immutable except via the `'illegal'` redaction cascade — see [hashtag.md §5](../instances/hashtag.md#5-lifecycle). |
-| `moderation_status` | String | `'normal'` / `'sensitive'` / `'illegal'`. Layered. Default `'normal'`. `'sensitive'` is set by a passing classification Proposal; `'illegal'` is auto-flipped by the system when any field on the node receives a redaction marker — see [moderation.md](../instances/moderation.md). |
+| `moderation_status` | String | Per intro. |
 
 ```cypher
 CREATE CONSTRAINT ON (h:Hashtag) ASSERT h.id IS UNIQUE;
@@ -279,20 +279,17 @@ CREATE INDEX ON :ItemOwnership(id);
 
 #### Junction state lives in topology, not in a property
 
-None of the three junction tables above declares a `status`
-property — by design. Junction state (pending / active / revoked)
-is derived from the two-edge approval pair's top-layer `dim1`
-values per
-[graph-model.md §5](../primitive/graph-model.md#5-junction-node-flows).
-A stored flag would be a second source of truth that could drift.
+None of the three junction tables declares a `status` property — by design.
+Junction state (pending / active / revoked) is derived from the two-edge
+approval pair's top-layer `dim1` values per
+[graph-model.md §5](../primitive/graph-model.md#5-junction-node-flows). A
+stored flag would be a second source of truth that could drift.
 
-The storage layer cannot directly forbid a property by absence —
-no Memgraph constraint expresses "this label MUST NOT carry
-property X." Enforcement is therefore ethos + test: the schema
-above is the canonical declaration of what junction labels carry,
-and an integration test asserts that no junction node ever
-materializes with a `status` (or equivalent) property. Service-
-layer write paths never write one.
+Memgraph can't directly forbid a property by absence, so enforcement is
+ethos + test: the schema above is the canonical declaration of what
+junction labels carry, an integration test asserts no junction ever
+materializes with a `status` property, and service-layer write paths never
+write one.
 
 ### System nodes
 
@@ -336,20 +333,15 @@ CREATE INDEX ON :Network(id);
 There is exactly **one** `:Network` node per CoGra instance.
 Singleton enforcement combines two mechanisms:
 
-- **Graph-side constraint.** The `singleton_marker` property
-  carries a fixed value (`'singleton'`); the existence +
-  uniqueness constraints together refuse any second insert. A
-  second `:Network` either omits the property (fails the
-  existence constraint) or carries the only legal value (fails
-  the uniqueness constraint).
+- **Graph-side constraint.** `singleton_marker` carries a fixed value
+  (`'singleton'`); the existence + uniqueness constraints together refuse
+  any second insert. A second `:Network` either omits the property (fails
+  existence) or carries the only legal value (fails uniqueness).
 - **Application discipline.** The bootstrap migration
-  ([network.md §2](../primitive/network.md#2-creation)) is the
-  only writer; ordinary code paths never attempt a second
-  `:Network`.
+  ([network.md §2](../primitive/network.md#2-creation)) is the only writer;
+  ordinary code paths never attempt a second `:Network`.
 
-Belt-and-suspenders: discipline keeps the wrong code from
-running; the constraint catches it if discipline fails. The
-instance configuration knows the singleton's `id`.
+The instance configuration knows the singleton's `id`.
 
 ---
 

@@ -7,7 +7,7 @@
 
 ## Context
 
-This project requires a database to store and traverse the social graph: a node catalog (User, Collective, Post, ChatMessage, Item, Hashtag, junction nodes, …) connected by uniform tensor edges (2 user dimensions + system dimensions, with per-category labels — see [edges.md](../primitive/edges.md)). The choice of graph database affects the query language, Rust driver ecosystem, operational complexity, and learning value of the project.
+This project requires a database to store and traverse the social graph: a node catalog connected by uniform tensor edges (2 user dimensions + system dimensions, with per-category labels — see [edges.md](../primitive/edges.md)).
 
 The primary goals are:
 1. **Expressiveness** — graph traversal queries should be readable and maintainable

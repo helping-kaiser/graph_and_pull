@@ -88,7 +88,7 @@ Available at http://localhost:3000 when services are running. Lets you:
 - Visualize the graph with a node/edge explorer
 - Inspect schema and indexes
 
-Useful queries to get started:
+Starter queries:
 ```cypher
 -- See all nodes
 MATCH (n) RETURN n LIMIT 50;
