@@ -5,14 +5,11 @@ repo. **The rules below are operative, not background reading.**
 Re-read this file at the start of every task.
 
 **Audience split.** CLAUDE.md is AI-facing;
-[CONTRIBUTING.md](CONTRIBUTING.md) is human-facing. Rules that
-apply to both audiences are kept in both files — the shared
-subset is mission, core principles, hard design rules, and
-workflow basics. Rules that apply to only one audience (e.g.
-"Never make design decisions autonomously," "Never deviate
-silently," and the Commit + Push + PR cycle below are AI-facing
-only) live in just that audience's file. Drift between the two
-is caught by author vigilance, not tooling.
+[CONTRIBUTING.md](CONTRIBUTING.md) is human-facing. Shared rules
+(mission, core principles, hard design rules, workflow basics)
+live in both; audience-specific rules (session hygiene, the
+Commit + Push + PR cycle, autonomous-decision guardrails) live in
+just one. Drift is caught by author vigilance, not tooling.
 
 ---
 
@@ -61,14 +58,9 @@ Crates:
 
 Docs are layered:
 
-- **`docs/primitive/`** — what the graph IS and how it BEHAVES
-  (graph-model, nodes, edges, layers, retention-archive,
-  governance, authorship, feed-ranking, invitations, network).
-- **`docs/instances/`** — concrete applications of the primitive
-  (chats, collectives, items, moderation, account-deletion).
-- **`docs/implementation/`** — system and code-level concerns
-  (architecture, data-model, graph-data-model, development,
-  api-spec, graph-db-options).
+- **`docs/primitive/`** — what the graph IS and how it BEHAVES.
+- **`docs/instances/`** — concrete applications of the primitive.
+- **`docs/implementation/`** — system and code-level concerns.
 
 See [docs/README.md](docs/README.md) for the full index.
 Cross-cutting design questions live in
