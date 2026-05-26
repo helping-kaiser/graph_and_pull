@@ -19,23 +19,15 @@ Voting recurs across the project. Instead of inventing a mechanism
 per context, CoGra commits to one conceptual shape every governance
 decision reuses:
 
-- **One mental model.** Every governance flow is understandable as
-  an instance of the same primitive.
+- **One mental model.** Every governance flow is an instance of
+  the same primitive.
 - **Consistent append-only semantics.** Votes are layers; outcomes
   are state transitions on structural edges. No special storage, no
-  special hidden logic.
+  hidden logic.
 - **No per-case re-invention.** A new governance need specifies
-  four things (subject, eligibility, weights, threshold) and plugs
-  into the primitive.
-
-**Each application is a parameterization, not a new mechanism.**
-Junction approval, chat-message disavowal, network moderator role
-changes, content moderation, and `:Network` parameter amendments
-all run on the same primitive — they differ only in the values
-they pick for the components in §2 (subject, eligibility, weights,
-threshold) and the carrier shape in §3. If a new governance need
-arises, it gets parameters and slots in here, not its own
-mechanism. The full list of current applications is in §8.
+  the components in §2 (subject, eligibility, weights, threshold)
+  and a carrier shape from §3, and slots in. The full list of
+  current applications is in §8.
 
 ---
 
@@ -146,15 +138,12 @@ role-derived rule above applies. The override is the escape
 hatch for instances whose intended weight does not fall out
 naturally from role + ownership — e.g. a small collective with
 per-member negotiated weights, or a chat that wants to deviate
-from the role-weight table for a specific bearer. Schema
-declaration for the property itself lives on the junction node:
-ChatMember carries it nullable (see
-[chats.md §3.3](../instances/chats.md#33-chatmember));
-CollectiveMember carries it nullable (see
-[collectives.md](../instances/collectives.md)); future junctions
-follow the same pattern. See
+from the role-weight table for a specific bearer. Declared
+nullable on each junction node — see
 [nodes.md §3](nodes.md#3-junction-nodes) for the cross-junction
-property declaration.
+declaration, [chats.md §3.3](../instances/chats.md#33-chatmember)
+and [collectives.md](../instances/collectives.md) for the
+per-junction specs.
 
 For Network-scope every active member's weight is `1`; no
 `voting_weight` override applies because Network membership has
@@ -205,13 +194,11 @@ them is done via a Proposal (see §2.1), voted on by the same
 eligibility rules. Defaults exist to bootstrap; they are not fixed
 rules.
 
-**Tally evaluation.** Whichever shape the threshold policy
-adopts, a tally is computed only when a new or updated vote
-layer is written on the subject — never on a clock, never as
-a background sweep. See
+**Tally evaluation.** A tally is computed only when a new or
+updated vote layer is written on the subject — never on a
+clock, never as a background sweep. See
 [§6 "When outcomes take effect"](#6-when-outcomes-take-effect)
-for the trigger conditions and the per-subject serialization
-that orders concurrent vote writes.
+for trigger conditions and per-subject serialization.
 
 ### 2.5 Outcome
 
@@ -232,10 +219,8 @@ in carrier.
 Used when the voter has **no eligibility junction** to vote
 through. The voter creates an actor edge from their `User` (or
 `Collective`) node directly to the subject; `dim1` carries the
-position (positive = support, negative = oppose).
-
-Two cases use Shape A, both because the voter has no junction
-to vote through:
+position (positive = support, negative = oppose). Two cases use
+Shape A:
 
 **Would-be bearer's self-claim to a new junction.** The bearer
 of a new ChatMember / CollectiveMember / ItemOwnership has no
@@ -319,14 +304,11 @@ In all cases:
 
 ### Choosing between A and B
 
-Mechanically: use **Shape A** when the voter has no junction to
-vote through (bearer self-claim to a new junction, Network-scope
-governance); use **Shape B** when the voter has an existing
-junction (every chat-/collective-internal vote, including the
-approver votes that admit and later remove a junction holder).
-
-A future case that doesn't fit either shape is a signal to add a
-third shape to this doc, not to hack an existing one.
+The voter's junction situation decides: **Shape A** when no
+junction exists yet (bearer self-claim, Network-scope governance),
+**Shape B** when an existing eligibility junction carries the
+vote. A future case that fits neither is a signal to add a third
+shape here, not to hack an existing one.
 
 ### Petition-style tally and dual quorum (Network-scope only)
 
@@ -392,29 +374,26 @@ moderator's positive vote. The mod-gate and the dual-quorum
 bar are independent checks evaluated on the same set of
 vote layers.
 
-**Why two bars.** A fractional bar alone is unbounded above:
-a 50%-of-active rule becomes unreachable as membership
-scales. An absolute bar alone is unbounded below: in a small
-network, a low `K` could let a tiny faction pass things over
-a silent majority. The pair is bounded on both ends — the
-fractional bar dominates while `P × |active_members| < K`
-(at small membership a real majority is required), the
-absolute bar dominates once `P × |active_members| ≥ K` (at
-large membership a fixed real-vote count is sufficient).
-Both `P` and `K` are properties on the `:Network` singleton,
+**Why two bars.** A fractional bar alone becomes unreachable
+as membership scales; an absolute bar alone could let a tiny
+faction pass things over a silent majority in a small network.
+The pair is bounded on both ends: the fractional bar dominates
+while `P × |active_members| < K` (small membership, real
+majority required); the absolute bar dominates once
+`P × |active_members| ≥ K` (large membership, fixed real-vote
+count sufficient). Both `P` and `K` are `:Network` properties
 amendable through the same primitive, so the operative bar
-self-corrects as the network grows and as conditions shift.
+self-corrects as conditions shift.
 
-**Why petition (positive-only).** A counted "no" vote
-operates as a perpetual veto: bot accounts that cast it
-never expire, so they hold a Proposal blocked indefinitely
-against any later turnout. Restricting tally contributions
-to positive votes removes the passive-veto vector.
-Opposition retains an explicit structural path — author a
-**counter-Proposal** (see [§3 "Counter-Proposals"](#counter-proposals)
-for the definition). The graph still records negative-
-`dim1` actor edges as personal sentiment; the tally simply
-does not aggregate them.
+**Why petition (positive-only).** A counted "no" vote operates
+as a perpetual veto: bot accounts that cast it never expire,
+holding a Proposal blocked indefinitely against any later
+turnout. Restricting tally contributions to positive votes
+removes the passive-veto vector. Opposition retains an
+explicit structural path — author a **counter-Proposal** (see
+[§3 "Counter-Proposals"](#counter-proposals)). Negative-`dim1`
+actor edges are still recorded as personal sentiment; the
+tally simply does not aggregate them.
 
 **Known limitation.** Bot accounts can still inflate the
 fractional-bar denominator by existing as active members
@@ -490,14 +469,12 @@ cascade dispatch, and the outcome rules apply identically.
 
 A counter-Proposal is the structural opposition path under
 petition-style tally (§3 "Petition-style tally and dual
-quorum"): voters who oppose a change have no way to register
-the opposition inside the original Proposal's tally, so they
-author or vote on a counter-Proposal that proposes the
-reverse. The same pattern is the only reversal path under
-bidirectional tally as well — an outcome is sticky (§6
-"Why outcomes are sticky"), so a previously-passed change
-does not flip back when later votes shift sentiment; a new
-Proposal must explicitly carry the reverse.
+quorum"), where opposition cannot register inside the original
+Proposal's tally. It is also the only reversal path under
+bidirectional tally: outcomes are sticky (§6 "Why outcomes are
+sticky"), so a passed change does not flip back when later
+votes shift sentiment; a new Proposal must explicitly carry
+the reverse.
 
 **Re-cascade on reversal.** A counter-Proposal that passes
 fires the cascade machinery a second time, symmetrically. If
@@ -697,23 +674,15 @@ present in the tally before the outcome can take effect. The
 mod-gate is a procedural validator, not a weighting.
 
 **Invariant: mod weight = member weight = 1; mod is a gate, not
-a weight.** A moderator's vote contributes exactly one
-member's worth of weight to the tally — the same as every other
-voter. The mod-gate sits *alongside* the member-weighted tally,
-not on top of it.
-
-**A moderator's positive vote contributes once to (a) the
+a weight.** A moderator's positive vote contributes once to (a)
 mod-gate satisfaction and once to (b) the member-tally
-arithmetic. The two are independent checks evaluated on the
-same vote layer.** The mod casts `+1` once; that same vote
-opens the gate *and* contributes its weight of `1` to the
-count tallied against the threshold policy of the instance —
-for Network-scope Proposals, the dual-quorum bar from
-[§3 "Petition-style tally and dual quorum"](#petition-style-tally-and-dual-quorum-network-scope-only).
-The "mod weight = 1" rule means the moderator's contribution
-to the member arithmetic is exactly one member's worth —
-nothing more — even though the same vote also opened the
-gate.
+arithmetic — two independent checks on the same vote layer.
+The mod casts `+1` once; that vote opens the gate *and*
+contributes its weight of `1` to the threshold policy of the
+instance (for Network-scope Proposals, the dual-quorum bar from
+[§3 "Petition-style tally and dual quorum"](#petition-style-tally-and-dual-quorum-network-scope-only)).
+The mod-gate sits *alongside* the member-weighted tally, never
+on top of it.
 
 The gate applies symmetrically in both directions of any
 classification — setting `sensitive` or `illegal`, and
@@ -739,11 +708,9 @@ Either gate alone leaves a hole:
 - **Community alone** can be coordinated against honest mods —
   flooded removal.
 
-Both gates together close both failure modes. The full list of
-Network-scope instances that share the mod-gate component is in
-§8 — content moderation classifications, moderator role
-changes, and `:Network` parameter amendments.
-
+The full list of Network-scope instances that share the mod-gate
+component is in §8 — content moderation classifications,
+moderator role changes, and `:Network` parameter amendments.
 Substantive arithmetic (quorums, supermajority thresholds, the
 exact pairs per instance) lives with each instance, not here.
 
@@ -813,22 +780,19 @@ community.
   `CollectiveMember → CollectiveMember / Proposal` for all
   internal votes.
 - **Network moderator role changes** — [network.md §9](network.md#9-mod-role-changes-via-multi-sig-proposal).
-  Shape A from the User node directly (no per-member Network
-  junction exists). Multi-sig: ≥1 existing moderator's positive
-  vote plus a community-quorum threshold. Two dispatch
-  exceptions — the **moderator floor** of 1 and the
-  **undemotable bootstrap mod** — refuse the outcome write even
-  on a passed tally.
+  Shape A. Multi-sig: ≥1 existing moderator's positive vote
+  plus a community-quorum threshold. Two dispatch exceptions —
+  the **moderator floor** of 1 and the **undemotable bootstrap
+  mod** — refuse the outcome write even on a passed tally.
 - **Content moderation classifications** — [moderation.md](../instances/moderation.md).
-  Shape A from the User node directly. Mod-vote-required gate
-  on every classification change (`sensitive` / `illegal` and
-  un-classification back to `normal`); mod weight = member
-  weight = 1.
+  Shape A. Mod-gate (§7) on every classification change
+  (`sensitive` / `illegal` and un-classification back to
+  `normal`).
 - **`:Network` parameter amendments** — [network.md §11](network.md#11-amending-network-parameters).
-  Shape A from the User node directly. Two amendment-rule pairs
-  on the `:Network` singleton — a baseline pair for low-stakes
-  parameters and a critical pair for parameters with destructive
-  or platform-wide reach. Mod gate required for both.
+  Shape A. Two amendment-rule pairs on the `:Network` singleton —
+  a baseline pair for low-stakes parameters and a critical pair
+  for parameters with destructive or platform-wide reach.
+  Mod-gate (§7) required for both.
 
 Future cases get added here as they're designed.
 
@@ -837,11 +801,8 @@ Future cases get added here as they're designed.
 ## 9. Coexistence: multiple governance instances on a shared subject
 
 A single node can be the subject of several governance instances
-at once — each parameterized by its own eligibility, weight
-function, threshold policy, and outcome. The instances act
-independently, write to different state, and produce different
-outcomes; they do not conflict because they aren't operating on
-the same state.
+at once — each with its own eligibility, weight function,
+threshold policy, and outcome.
 
 The principle: **scope determines what the outcome writes.** A
 chat-scope instance writes to chat-side state (a `Chat →
@@ -850,8 +811,8 @@ disavowal Proposal that the chat treats as its stance). A
 Network-scope instance writes to node-level state (a
 `moderation_status` property layer, or per-field redaction
 markers under [layers.md §5](layers.md#5-deletion-policy)). The
-two cannot conflict because the targets are different graph
-objects even when the *node* is the same.
+targets are different graph objects even when the *node* is the
+same, so the writes never collide.
 
 The canonical worked example is **chat-internal disavowal
 alongside platform moderation**, both of which can apply to a
@@ -883,13 +844,11 @@ Both can pass independently, neither overrides the other:
   redacted at the platform level *and* disavowed at the chat
   level. No collision; the writes go to different places.
 
-A similar pattern holds for any future instance that operates on
-a node already governed by another scope (e.g. a Collective
-governing a member's `CollectiveMember` while the Network
-classifies that member's profile — separate state, independent
-outcomes). The shape generalizes: scope decides the state
-written, so instances at different scopes never compete for the
-same write.
+The shape generalizes: any future instance operating on a node
+already governed by another scope (e.g. a Collective governing a
+member's `CollectiveMember` while the Network classifies that
+member's profile) writes to its own scope's state, so instances
+at different scopes never compete for the same write.
 
 ---
 
