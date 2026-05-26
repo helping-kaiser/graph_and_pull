@@ -330,6 +330,19 @@ current owner is therefore a single-edge query — "find the
 ItemOwnership whose `Item → ItemOwnership` top layer has
 `dim1 > 0`" — with no timestamp comparisons required.
 
+Concurrent transfer attempts are prevented at the transaction
+level rather than by a separate lock. Only the current owner can
+cast the Shape B approval vote (§6); the same service-layer
+transaction that writes that vote also writes the new
+`Item → ItemOwnership` approval edge and the supersession layer
+on the previous one. Once the transaction commits, the casting
+ItemOwnership is no longer the active one and so can no longer
+cast a second Shape B vote — the authority required to initiate
+a transfer is consumed by the transfer it initiates. A
+concurrent second transfer attempt by the same owner is
+serialized behind the first by the transaction and fails the
+current-owner check when it runs.
+
 The cascade is why this works under append-only: the old approval
 edge isn't removed, it just has a newer layer that flips its
 state to revoked. Together the chain of ItemOwnership nodes forms
