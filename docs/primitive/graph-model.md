@@ -9,26 +9,27 @@ operates on.
 ## 1. Core Principles
 
 Every edge in the graph is:
-- **Directional** — `A → B` and `B → A` are separate edges. A friendship is
-  two edges. A follow with no follow-back is one edge.
-- **Multi-dimensional** — every edge carries exactly **2 dimensions** plus
-  **system dimensions**. The meaning of those 2 dimensions depends on the edge
-  type (see [edges.md](edges.md) for the full catalog).
-- **Append-only** — interactions add layers; they never overwrite. You cannot
-  hide that you disliked someone in the past. Your current feelings are the
-  top layer, but the full history is preserved. Append-only is a project-wide
-  rule that extends beyond edges to node properties and Postgres-side display
-  content — see [layers.md](layers.md) for the general principle.
+- **Directional** — `A → B` and `B → A` are separate edges; one does
+  not imply the other. A friendship is two edges; an unreciprocated
+  follow is one.
+- **Multi-dimensional** — every edge carries exactly **2 dimensions**
+  plus **system dimensions**. The meaning of the 2 dimensions depends
+  on the edge type (see [edges.md](edges.md) for the full catalog).
+- **Append-only** — interactions add layers; they never overwrite.
+  The current state is the top layer; the full history is preserved.
+  Append-only extends beyond edges to node properties and
+  Postgres-side display content — see [layers.md](layers.md) for the
+  project-wide principle.
 
 And the graph itself is:
-- **Fully transparent** — every node and every edge in the graph is visible,
-  and visibility is not gated on holding an account: a frontend can compute
-  any actor's view of the graph for any reader. Accounts gate
-  **participation** (creating actor edges, authoring nodes, voting in
-  governance, joining junctions), not viewing. The only way to be invisible
-  is to not be on the graph (a disconnected, self-hosted instance is
-  possible but unreachable from anywhere else). Privacy of *content* is
-  achieved through end-to-end encryption; topology itself is always public.
+- **Fully transparent** — every node and every edge is visible
+  without an account, so a frontend can compute any actor's view for
+  any reader. Accounts gate **participation** (creating actor edges,
+  authoring nodes, voting in governance, joining junctions), not
+  viewing. The only way to be invisible is to not be on the graph (a
+  disconnected, self-hosted instance is possible but unreachable from
+  anywhere else). Privacy of *content* is achieved through end-to-end
+  encryption; topology itself is always public.
 
 **Invariant:** Edges are directional. `A → B` and `B → A` are
 independent edges; one does not imply the other.
@@ -273,8 +274,6 @@ category. Enforced at the storage layer via per-label EXISTS
 constraints — see
 [graph-data-model.md "Tensor uniformity enforcement"](../implementation/graph-data-model.md#tensor-uniformity-enforcement).
 
-Every edge, regardless of category, has the same shape:
-
 ```
 Edge {
     // --- 2 dimensions (meaning varies by edge type) ---
@@ -289,16 +288,12 @@ Edge {
 }
 ```
 
-**Range is uniform.** Both dimensions are `f64` in `[-1.0, +1.0]` for every
-actor edge, regardless of what the dimension represents. Uniformity is a
-first-class design goal: the ranking algorithm never branches on dimension
-type, and the math stays consistent across every edge in the graph. See
-§6 for how negative values are interpreted when a dimension wouldn't
-obviously have a negative meaning.
-
-An edge between two nodes is a **stack of layers**. Each interaction appends a
-new layer. The "current" state of the edge is the top layer. The full history
-is always available.
+Both dimensions are `f64` in `[-1.0, +1.0]` on every actor edge,
+regardless of what the dimension represents. Range uniformity lets the
+ranking math stay single-shape — see §6 for how negative values are
+read when a dimension wouldn't obviously have a negative meaning, and
+§8 for the layer stack that makes an edge a sequence of values rather
+than a single one.
 
 ---
 
@@ -554,7 +549,7 @@ them distinct.
   a viewer-side judgment about *content relevance*, not a
   relationship-depth statement.
 
-The decoupling is real and important. A valid edge shape:
+A valid edge shape:
 
 ```
 +1 sentiment, -0.5 interest  →  "I love this person, but their
@@ -564,13 +559,10 @@ The decoupling is real and important. A valid edge shape:
 This composes correctly under the existing math: the sentiment chain
 (`s_path`) carries the affection through traversal via signed
 multiplication, while the interest chain (`c_path`) is tainted negative
-so the path does not amplify the target's content into the viewing user's
-feed. Loving someone and not following their posts are independent
-positions on the graph; the dim grammar respects that.
-
-The same independence applies on `User → Collective` and elsewhere.
-`dim2` always asks "how much do I want this in my feed," not "how close
-are we."
+so the path does not amplify the target's content into the viewing
+user's feed. The same independence applies on `User → Collective` and
+elsewhere — `dim2` always asks "how much do I want this in my feed,"
+not "how close are we."
 
 ### Range and polarity
 
