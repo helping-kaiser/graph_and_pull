@@ -4,21 +4,16 @@ A visual reference for every structural edge in the CoGra graph,
 plus an audit of `(source, target)` pairs where two different
 structural edge types could overlap.
 
-The catalog this doc visualizes lives in
-[edges.md §2](edges.md#2-structural-edges). The invariant the
-audit feeds into is
-[edges.md §2 "at most one edge label per `(source, target)`
-pair"](edges.md#2-structural-edges), surfaced in
-[invariants.md](invariants.md#topology-and-visibility). This doc
-visualizes the structural slice of that rule; the actor edges
-covered by the same rule live in
-[edges.md §1](edges.md#1-actor-edges). This doc adds no new
-mechanism — it makes the existing rules navigable.
-
+The catalog and the single-label-per-pair invariant this doc
+visualizes both live in
+[edges.md §2](edges.md#2-structural-edges) — the actor-edge slice
+of the same invariant sits in
+[edges.md §1](edges.md#1-actor-edges), and the cross-cutting
+summary in [invariants.md](invariants.md#topology-and-visibility).
 For the conceptual model (categories, dimensions, append-only),
 see [graph-model.md](graph-model.md). For the per-node edge
-catalogs that this doc aggregates, see each node's per-node doc
-listed in [nodes.md](nodes.md).
+catalogs this doc aggregates, see each node's per-node doc listed
+in [nodes.md](nodes.md).
 
 ---
 
@@ -388,15 +383,3 @@ forward-only alone doesn't cover. See the rule bodies in
 [feed-ranking.md §3.5](feed-ranking.md#35-traversal-restrictions)
 for the specific attack each rule closes.
 
----
-
-## What this doc is not
-
-- **Not the catalog.** Row-level meanings, label assignments,
-  and dimension semantics live in
-  [edges.md](edges.md). This doc is a visual aggregation.
-- **Not the conceptual model.** Categories, directionality,
-  append-only — see [graph-model.md](graph-model.md).
-- **Not the Memgraph schema.** Concrete edge-property types
-  live in
-  [graph-data-model.md](../implementation/graph-data-model.md).
