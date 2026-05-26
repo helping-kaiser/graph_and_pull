@@ -1,12 +1,10 @@
 # Contributing to CoGra
 
 This guide is for human contributors. [CLAUDE.md](CLAUDE.md) is
-the AI-facing equivalent. Rules that apply to both audiences are
-kept in both files — the shared subset is mission, core
-principles, hard design rules, and workflow basics. Rules that
-apply to only one audience (session hygiene, AI-specific
-guardrails) live only in CLAUDE.md. Drift between the two is
-caught by author vigilance, not tooling.
+the AI-facing equivalent. Shared rules (mission, core principles,
+hard design rules, workflow basics) live in both; audience-
+specific ones (session hygiene, AI guardrails) live in only one.
+Drift is caught by author vigilance, not tooling.
 
 ---
 
@@ -16,10 +14,9 @@ caught by author vigilance, not tooling.
 for **Peer Network**'s next evolution (Peer Network PSE GmbH) — a
 social media platform that replaces AI-driven content algorithms
 with a transparent, graph-driven, user-controlled system. The
-current Peer Network platform works like Instagram. This repo
-branches off from main Peer Network development to design and
-prototype the graph network that will succeed it; it is a
-multi-year effort, not a short throwaway exploration.
+current Peer Network platform works like Instagram; this repo
+branches off to design and prototype the graph network that will
+succeed it, a multi-year effort.
 
 **Mission:** decentralize the power of social media. The goal is
 not to become the next Instagram/X/TikTok with a graph bolted on —
@@ -38,18 +35,14 @@ them:
    the social graph and direct edge weights. Every user gets a
    personalized view based on their own connections and explicit
    preferences.
-2. **All edges are directional.** Nothing can push onto you.
-   Inbound edges from others never affect your feed. Only your
-   outgoing edges shape what you see.
+2. **All edges are directional.** Only your outgoing edges shape
+   your feed; inbound edges from others never do. Nothing can
+   push onto you.
 3. **[Append-only](docs/primitive/layers.md#append-only-vocabulary)
-   on the graph.** Graph state (edges and node properties) is
-   immutable — you cannot delete or overwrite past interactions
-   or values. New layers are added on top. The principle extends
-   to Postgres-side display content, which uses versioned rows
-   rather than overwrites. Transparency and auditability over
-   convenience. See
-   [docs/primitive/layers.md](docs/primitive/layers.md) for the
-   full rule.
+   on the graph.** Graph state and Postgres-side display content
+   are both layered, never overwritten. Transparency and
+   auditability over convenience. Full rule:
+   [docs/primitive/layers.md](docs/primitive/layers.md).
 4. **Fair economics.** Ad revenue distributes across the economic
    landscape of the graph. Bot clusters earn nothing because real
    users never point toward them. Pull marketing, not push
@@ -65,11 +58,10 @@ them:
    silent edit.
 7. **Community choices stay local.** What a community decides —
    including severing ties — affects only the severing
-   community's own outbound paths. The severance does not
-   propagate forward to the severed party's other neighbours;
-   viewing users whose own paths pass through the severing community
-   see their feeds reshaped, but each of them chooses whether
-   to cascade the severance further.
+   community's own outbound paths, not the severed party's other
+   neighbours. Viewing users whose own paths pass through the
+   severing community see their feeds reshaped, and each chooses
+   whether to cascade the severance further.
 8. **Transparency over black boxes.** The system is a visible,
    auditable graph. Follow the principles of BTC: transparency,
    immutability, fairness.
@@ -205,13 +197,8 @@ link-check (`make docs-link-check`, requires `lychee` —
 
 ## Where to find things
 
-- **Project spirit + workflow** — this file.
-- **AI-assistant-specific rules** — [CLAUDE.md](CLAUDE.md).
-- **Design docs** — [docs/](docs/), organized by primitive
-  ([docs/primitive/](docs/primitive/)), instances
-  ([docs/instances/](docs/instances/)), and implementation
-  ([docs/implementation/](docs/implementation/)). See
-  [docs/README.md](docs/README.md) for the full index.
+- **AI-assistant rules** — [CLAUDE.md](CLAUDE.md).
+- **Design docs** — [docs/README.md](docs/README.md) (full index).
 - **Open design questions** —
   [docs/open-questions.md](docs/open-questions.md).
 - **Development commands** —

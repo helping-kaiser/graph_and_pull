@@ -32,18 +32,16 @@ unwanted attention can't insert themselves into your feed by
 liking your content.
 
 **[Append-only](docs/primitive/layers.md#append-only-vocabulary)
-history.** Graph state — edges and node properties — is
-immutable. New layers go on top; nothing is silently deleted or
+history.** Edges and node properties are layered, not
 overwritten. The only carve-out is in-place redaction of illegal
 content, and even that leaves a visible trace. Transparency and
 auditability over convenience.
 
 **Governance, not admin escape hatches.** Redactions and policy
-changes run through community votes on the graph, with
-weights and thresholds visible. There is no admin override —
+changes run through community votes on the graph, with weights
+and thresholds visible. There is no admin override —
 [external demands enter as ordinary Proposals](docs/primitive/governance.md#external-demands-enter-as-proposals),
-typically filed by a moderator, leaving an auditable trail
-rather than a silent edit.
+leaving an auditable trail rather than a silent edit.
 
 **Fair economics.** Ad revenue distributes across the economic
 landscape of the graph. Bot clusters earn nothing because real
@@ -55,12 +53,10 @@ another user's feed.
 
 **Community choices stay local.** What a community decides —
 including severing ties — affects only the severing community's
-own outbound paths. The severed party's other neighbours are
-unaffected: the severance does not propagate forward to them.
-It does reshape the feeds of viewing users whose own outbound paths
-pass through the severing community — each of them can in turn
-decide whether to sever or not. The cascade spreads by choice,
-not by propagation.
+own outbound paths, not the severed party's other neighbours.
+Viewing users whose own paths pass through the severing community
+see their feeds reshaped, and each chooses whether to cascade the
+severance further. The spread is by choice, not by propagation.
 
 **Fully public graph; no account needed to read.** Everything in
 the graph is visible without signing in. Accounts gate
@@ -78,11 +74,6 @@ forking, self-hosting, and running disconnected graphs are
 architecturally supported. Nothing in the system rewards outrage,
 runs dark patterns, or infers stances the user did not explicitly
 take.
-
-The full set of project principles, hard rules, and the
-contribution workflow live in [CONTRIBUTING.md](CONTRIBUTING.md).
-AI-assistant rules and session-hygiene guidance for Claude on
-this repo live in [CLAUDE.md](CLAUDE.md).
 
 ## Quick start
 
