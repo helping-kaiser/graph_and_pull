@@ -146,13 +146,14 @@ A Post receives:
 A Post's author is the actor whose incoming actor edge has the
 earliest layer-1 timestamp — the same rule that derives
 authorship for every node type
-([authorship.md](../primitive/authorship.md)). The author's edge
-is always the earliest incoming edge by construction. The
-author's `(dim1, dim2)` on that edge is just a normal opinion
-edge, not a special "author" tag.
+([authorship.md](../primitive/authorship.md)). On the graph that
+edge carries the `:AUTHOR` sub-label; the author's `(dim1, dim2)`
+on the same edge are normal opinion values (sentiment / relevance),
+not a stand-in for the label. The two coexist: the label marks
+authorship, the dimensions carry the author's opinion of their
+own work.
 
-On the graph, the authoring edge carries the `:AUTHOR`
-sub-label — the only representation of authorship on the graph
+`:AUTHOR` is the only representation of authorship on the graph
 side, and what the friend-authored fresh-post detection in
 [feed-ranking.md §5.2](../primitive/feed-ranking.md#52-frontend-reordering-friend-authored-fresh-posts)
 traverses. For Postgres-side display queries, `posts.author_id`
