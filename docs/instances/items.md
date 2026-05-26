@@ -5,16 +5,14 @@ An **Item** is a content node representing a physical or digital good
 are interactable content: they can be liked, disliked, commented on,
 and tagged with hashtags.
 
-Items are a **future** concern in the sense that the first iterations
-of CoGra focus on posts and chats; marketplace-like item flows will
-build on top of the graph model once the base is running. The model
-below is committed to regardless.
+Items are a **future** concern: the first iterations of CoGra focus
+on posts and chats, and marketplace-like item flows will build on
+this model once the base is running. The model below is committed
+to regardless.
 
-This doc is the per-node catalog for two related nodes: the **Item**
-content node and the **ItemOwnership** junction node, plus the
-convention for shared ownership through a Collective. Mechanics
-those topics depend on stay in their topical docs — this doc links
-rather than duplicates.
+This doc covers two related nodes — the **Item** content node and
+the **ItemOwnership** junction node — plus the convention for
+shared ownership through a Collective.
 
 ---
 
@@ -47,18 +45,16 @@ The gesture writes the following records atomically:
 - The `Item → ItemOwnership` approval edge with positive top
   layer (`dim1 > 0`).
 
-Because there is no prior owner to cast a Shape B approval vote
-— the Item did not exist a moment ago — the
+With no prior owner to cast a Shape B vote, the
 [two-edge approval pattern](../primitive/graph-model.md#5-junction-node-flows)
 collapses to its 1-of-1 special case: the author's Shape A
 self-claim is the only required vote, and the system writes
-both structural edges atomically alongside it. This is the same
-bootstrap pattern used for the founder's `CollectiveMember` in
-[collectives.md "Creation"](collectives.md#1-creation) and for
-the founder of a Chat in
-[chats.md §2.1](chats.md#21-chat). Every subsequent
-ItemOwnership transfer is a regular two-edge approval (§6) with
-the current owner's Shape B approval vote, not a bootstrap.
+both structural edges atomically alongside it. Same bootstrap
+shape as the founder's `CollectiveMember` in
+[collectives.md "Creation"](collectives.md#1-creation) and the
+founder of a Chat in
+[chats.md §2.1](chats.md#21-chat). Subsequent transfers are
+regular two-edge approvals (§6).
 
 A Collective creating an Item is the same gesture: the graph
 records the Item as the Collective's, and the off-graph
@@ -140,11 +136,8 @@ Postgres-side display content, no author-bearing row.
 
 ## 4. Edges
 
-This doc covers two nodes: the **Item** content node and the
-**ItemOwnership** junction. Each gets its own subsection.
 Dimension labels, sub-category labels, and traversal semantics
-are not duplicated here — see
-[edges.md](../primitive/edges.md).
+live in [edges.md](../primitive/edges.md).
 
 ### 4.1 Item
 
@@ -297,19 +290,14 @@ ItemOwnership uses the **two-edge approval pattern** described in
 4. The system also writes the supersession layer on the
    previous `Item → ItemOwnership_current` edge with
    `dim1 < 0`, marking the old ownership revoked (§7).
-5. Transfer is complete; the new ItemOwnership is now the
-   active one.
+5. The new ItemOwnership is now the active one.
 
-No one can take ownership without the current owner's explicit
-Shape B vote — there is no "take" operation in the graph. The
-bootstrap at Item creation (§1) is the one exception: the
-author's Shape A self-claim is the only required vote because
-no prior ItemOwnership exists, and the two-edge approval pattern
-collapses to its 1-of-1 special case.
-
-The current owner's Shape B vote flows from the very ownership
-record that's about to be revoked — fitting, since approving
-the transfer is the same act that ends their own ownership.
+No one can take ownership without the current owner's Shape B
+vote — there is no "take" operation in the graph. The Item-
+creation bootstrap (§1) is the one exception. The Shape B vote
+flows from the very ownership record that's about to be revoked
+— fitting, since approving the transfer is the same act that
+ends the voter's own ownership.
 
 ---
 
@@ -343,17 +331,12 @@ concurrent second transfer attempt by the same owner is
 serialized behind the first by the transaction and fails the
 current-owner check when it runs.
 
-The cascade is why this works under append-only: the old approval
-edge isn't removed, it just has a newer layer that flips its
-state to revoked. Together the chain of ItemOwnership nodes forms
-an **append-only history of the item's ownership** — every past
-owner remains visible, only the active one changes.
-
 **Invariant — append-only ownership chain:** ItemOwnership nodes
-and the layers on their approval edges are never deleted. Every
-past owner of an Item remains visible on the graph as a
-revoked ItemOwnership; only the active one changes with each
-transfer.
+and the layers on their approval edges are never deleted. The
+old approval edge isn't removed on transfer, just superseded by
+a newer layer that flips its state to revoked. Every past owner
+of an Item remains visible on the graph as a revoked
+ItemOwnership; only the active one changes.
 
 ---
 
@@ -441,28 +424,15 @@ active ItemOwnership at any time (§7); the graph does not support
 parallel ItemOwnership junctions for the same Item by different
 actors. Shared ownership must route through a Collective: the
 Collective holds the single ItemOwnership, and internal sharing
-is the Collective's social contract, not a graph-level
-mechanism.
-
-The single-owner invariant (§7) is deliberate. There is **no
-direct co-ownership** of an Item by multiple parallel
-ItemOwnership junctions. When several actors want to share an
-item, the established pattern is to make the owner a **Collective**
-that the sharing actors are CollectiveMembers of (see
-[collectives.md](collectives.md)).
+is the Collective's social contract, not a graph-level mechanism.
 
 A married couple co-owning a car, three roommates sharing a coffee
 machine, a band co-owning equipment, a co-op holding tools — all
 of these are modeled as: a Collective node, the sharing actors as
-its CollectiveMembers, the Collective as the holder of the
-ItemOwnership. Internal disputes about the shared item are
-resolved by the Collective's own social contract — its own
-governance instances — not by parallel-ItemOwnership voting on the
-graph.
-
-This keeps the Item-side query model simple (one active owner per
-item) and uses the existing Collective primitive for collective
-ownership rather than inventing a parallel mechanism.
+its CollectiveMembers (see [collectives.md](collectives.md)), the
+Collective as the holder of the ItemOwnership. Internal disputes
+are resolved by the Collective's own governance, not by
+parallel-ItemOwnership voting on the graph.
 
 ---
 
