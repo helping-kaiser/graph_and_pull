@@ -190,11 +190,11 @@ Graph-derived fields (`followerCount`, `likeCount`, `isLikedByMe`, etc.) are res
 
 ### Pagination
 
-`feed`, `userPosts`, `following`, `followers`, and `hashtagFeed` use offset pagination for the initial implementation. Cursor-based pagination (more efficient for real-time feeds) can be added later.
+`feed`, `userPosts`, `following`, `followers`, and `hashtagFeed` use offset pagination. Cursor-based pagination (more efficient for real-time feeds) can be added later.
 
 ### Authentication
 
-Auth is stubbed in this (outdated) schema. The `me` query and mutations requiring auth context will return an error until auth is implemented. The auth model — registration via invitation, email verification, JWT access + Postgres-backed refresh tokens, session listing, rate limiting — is specified in [auth.md](auth.md).
+Auth is stubbed in this schema. The `me` query and mutations requiring auth context will return an error until auth is implemented. The auth model — registration via invitation, email verification, JWT access + Postgres-backed refresh tokens, session listing, rate limiting — is specified in [auth.md](auth.md).
 
 ---
 
