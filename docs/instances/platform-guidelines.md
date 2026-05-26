@@ -15,13 +15,12 @@ the document itself lives here, in the repo.
 
 The classification a Network member assigns when authoring or
 voting on a moderation Proposal is one of `illegal`, `sensitive`,
-or `normal`. The bucket *meanings* and the *behavioural
-consequences* of each (redaction cascade, viewer filter,
-reversibility) are pinned at the primitive level — see
+or `normal`. Bucket meanings and behavioural consequences
+(redaction cascade, viewer filter, reversibility) live at the
+primitive level — see
 [nodes.md "Universal: `moderation_status`"](../primitive/nodes.md#universal-moderation_status).
-What follows here is the platform policy: which content the
-Network puts in each bucket. The Network amends these lists via
-§3 as the platform evolves.
+What follows is the platform policy: which content the Network
+puts in each bucket. The Network amends these lists via §3.
 
 ### `illegal`
 
@@ -156,15 +155,15 @@ reasoning as
 [governance.md §7](../primitive/governance.md#7-the-mod-gate).
 
 **Drafting and discussion.** The Proposal carries the new version
-number and hash. The actual text — the new version's diff against
-the previous one — is published off-graph (e.g. the repo's pull
-request) prior to the vote so members can review what they are
-voting on. Voters who cast `+1` without reviewing the linked
-text are operating on the same normative honor system as
-moderators voting on encrypted ChatMessages
-([moderation.md "Encrypted message classification"](moderation.md#encrypted-message-classification)) —
+number and hash. The actual text — the diff against the previous
+version — is published off-graph (e.g. the repo's pull request)
+prior to the vote so members can review what they are voting on.
+Voters who cast `+1` without reviewing operate on the same
+normative honor system as moderators voting on encrypted
+ChatMessages
+([moderation.md "Encrypted message classification"](moderation.md#encrypted-message-classification)),
 addressable through the same Proposal mechanism applied to that
-user's role or participation.
+user's role.
 
 ## 4. URL handling
 
