@@ -77,13 +77,14 @@ targeted field:
 
 1. The field's moderation-status property top layer is replaced
    with a redaction marker per
-   [layers.md §5](../primitive/layers.md#5-deletion-policy). For
-   fields with a graph-side data sibling (`User.username`,
-   `Collective.name`, `Chat.name`, `Hashtag.name`), the data
-   property's top layer is replaced with a redaction marker in
-   the same write. For media targets, the underlying
-   `media_attachments` row is tombstoned and the asset is removed
-   from object storage.
+   [layers.md §5](../primitive/layers.md#5-deletion-policy). The
+   field's substance is tombstoned in the same write, wherever
+   it lives: the graph-side data property's top layer for the
+   data-sibling case (`User.username`, `Collective.name`,
+   `Chat.name`, `Hashtag.name`); the Postgres version row for
+   fields whose text content lives in Postgres; the
+   `media_attachments` row plus the object-storage asset for
+   media targets.
 2. Each redacted original is written to the
    [retention archive](../primitive/retention-archive.md)
    automatically. The `legal_hold_until` value is set
