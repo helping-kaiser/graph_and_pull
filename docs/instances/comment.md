@@ -164,11 +164,9 @@ A Comment receives:
   [edges.md §2 "Reference"](../primitive/edges.md#reference).
 - **`Proposal → Comment` `:TARGETS`** when a moderation
   Proposal targets one of the Comment's per-field
-  moderation-status properties — `content` or `attachments`, or
-  the `'node'` sentinel for both — with `proposed_value ∈
-  {'sensitive', 'illegal', 'normal'}`. See
-  [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting)
-  and §6.
+  moderation-status properties (§3). See
+  [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting);
+  cascade in §6.
 
 ---
 

@@ -131,11 +131,9 @@ A Post receives:
   (sharing a post into a chat, the personal-newsfeed shape).
 - **`Proposal → Post` (`:TARGETS`)** when a moderation Proposal
   targets one of the Post's per-field moderation-status
-  properties — `content` or `attachments`, or the `'node'`
-  sentinel for both — with `proposed_value ∈ {'sensitive',
-  'illegal', 'normal'}`. See
-  [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting)
-  and §6.
+  properties (§3). See
+  [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting);
+  cascade in §6.
 
 ---
 

@@ -334,8 +334,7 @@ A Chat receives:
 - **`Proposal → Chat` (`:TARGETS`)** when a Proposal targets a
   property on the Chat — `name`, `join_policy`, `epoch` (§9
   mid-epoch rotation), any per-field moderation-status property
-  (`name_status`, `description`, `image`), or any
-  governance-parameter property (§10). See
+  (§3), or any governance-parameter property (§10). See
   [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting).
 
 ### 5.2 ChatMessage

@@ -326,9 +326,8 @@ A Collective receives:
   [edges.md §2 "Reference"](../primitive/edges.md#reference).
 - **`Proposal → Collective` (`:TARGETS`)** when a Proposal
   targets a property on the Collective — `name`, any per-field
-  moderation-status property (`name_status`, `display_name`,
-  `description`, `avatar`, `website_url`), or any
-  `governance_rules.*` parameter (§8). See
+  moderation-status property (§3), or any `governance_rules.*`
+  parameter (§8). See
   [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting).
 
 ### 5.2 CollectiveMember

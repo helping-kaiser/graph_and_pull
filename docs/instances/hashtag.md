@@ -161,12 +161,9 @@ The structural edges that do land at a Hashtag:
   Mathematically inert per the invariant above; recorded for
   topology completeness only.
 - **`Proposal → Hashtag` `:TARGETS`** when a moderation
-  Proposal targets the Hashtag's per-field
-  moderation-status property `name_status` (the only
-  user-input field), with `proposed_value ∈ {'sensitive',
-  'illegal', 'normal'}`. See
-  [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting)
-  and §5.
+  Proposal targets the Hashtag's `name_status` (§3). See
+  [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting);
+  cascade in §5.
 
 ---
 

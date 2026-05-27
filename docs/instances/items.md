@@ -193,10 +193,9 @@ An Item receives:
   [edges.md §2 "Reference"](../primitive/edges.md#reference).
 - **`Proposal → Item` (`:TARGETS`)** when a moderation Proposal
   targets one of the Item's per-field moderation-status
-  properties — `name`, `description`, or `attachments`, or the
-  `'node'` sentinel covering all three — with `proposed_value ∈
-  {'sensitive', 'illegal', 'normal'}` (§8). See
-  [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting).
+  properties (§3). See
+  [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting);
+  cascade in §8.
 
 ### 4.2 ItemOwnership
 
