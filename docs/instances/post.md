@@ -47,17 +47,21 @@ member consent is required, per
 A Post node carries the minimum the graph needs to traverse,
 filter, and rank. Substance lives in Postgres (§3).
 
-- **`moderation_status`** — `'normal'` / `'sensitive'` /
-  `'illegal'`, default `'normal'`, layered. Universal across all
-  user-input-bearing nodes; the per-node mechanics — set by a
-  passing `'sensitive'` Proposal, auto-flipped to `'illegal'` by
-  the redaction cascade — are described in
-  [nodes.md "Universal: moderation_status"](../primitive/nodes.md#universal-moderation_status)
-  and §6 below.
+The Post carries one per-field moderation-status property for
+each user-input field — **`content`** (the body) and
+**`attachments`** (every attached media as one status, per the
+future-refinement note in [moderation.md §5](moderation.md#5-scope)).
+Each holds `'normal'` (default) / `'sensitive'` / redaction
+marker, layered. The universal mechanics live in
+[nodes.md "Universal: per-field moderation status"](../primitive/nodes.md#universal-per-field-moderation-status)
+and §6 below. The node-level moderation state is derived from
+these per-field statuses and not stored.
 
 The Post body, attachments, and any other display content do
-**not** live on the graph. Concrete property types and indexes
-for the graph-side node live in
+**not** live on the graph — the per-field properties above
+exist purely as the moderation-targeting surface; the actual
+content lives in Postgres / object storage (§3). Concrete
+property types and indexes for the graph-side node live in
 [graph-data-model.md](../implementation/graph-data-model.md).
 
 ---
@@ -133,9 +137,10 @@ A Post receives:
   [chats.md](chats.md) for the worked-out ChatMessage patterns
   (sharing a post into a chat, the personal-newsfeed shape).
 - **`Proposal → Post` (`:TARGETS`)** when a moderation Proposal
-  targets a property on the Post — `'sensitive'` against
-  `moderation_status`, or `'illegal'` against a specific
-  user-input field. See
+  targets one of the Post's per-field moderation-status
+  properties — `content` or `attachments`, or the `'node'`
+  sentinel for both — with `proposed_value ∈ {'sensitive',
+  'illegal', 'normal'}`. See
   [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting)
   and §6.
 
@@ -174,29 +179,32 @@ occurred.
 Two redaction triggers apply to a Post today:
 
 - **Moderation: `'sensitive'` classification.** A passing
-  `'sensitive'` Proposal flips the top layer of `moderation_status`
-  to `'sensitive'`. No redaction; display content stays. Each
-  viewing user's `content_filtering_severity_level` (see
+  `'sensitive'` Proposal targets one of the Post's per-field
+  moderation-status properties (`content` or `attachments`) and
+  flips its top layer to `'sensitive'`. No redaction; display
+  content stays. Each viewing user's
+  `content_filtering_severity_level` (see
   [data-model.md](../implementation/data-model.md) "User
   preferences") decides how aggressively the frontend filters
-  the Post. Reversible by a counter-Proposal back to `'normal'`.
-  See [moderation.md §1](moderation.md#1-the-two-classification-paths).
+  the affected field. Reversible by a counter-Proposal back to
+  `'normal'`. See [moderation.md §1](moderation.md#1-the-two-classification-paths).
 - **Moderation: `'illegal'` classification.** A passing
-  `'illegal'` Proposal targets one of the Post's user-input
-  fields — `content` (the body), `attachments` (every attached
-  media), or the `'node'` sentinel covering both — and
-  fires the redaction cascade per
+  `'illegal'` Proposal targets one of the same per-field
+  properties — `content`, `attachments`, or the `'node'`
+  sentinel covering both — and fires the redaction cascade per
   [moderation.md §1](moderation.md#1-the-two-classification-paths):
-  the Postgres body row is tombstoned with a version marker,
-  affected `media_attachments` rows are tombstoned and assets
-  removed from object storage, the redacted originals are
-  written to the [retention archive](../primitive/retention-archive.md)
-  under per-row legal hold, and the Post node's
-  `moderation_status` is auto-flipped to `'illegal'`. The
-  cascade does **not** propagate to descendants — a Post
-  classified illegal does not redact its Comments or any
-  ChatMessage that references it; each requires its own
-  classification.
+  the per-field property's top layer is replaced with a
+  redaction marker, the Postgres body row is tombstoned with a
+  version marker (for `content`), affected `media_attachments`
+  rows are tombstoned and assets removed from object storage
+  (for `attachments`), and the redacted originals are written to
+  the [retention archive](../primitive/retention-archive.md)
+  under per-row legal hold. The Post node's derived moderation
+  state evaluates to `'illegal'` once any field carries a
+  redaction marker. The cascade does **not** propagate to
+  descendants — a Post classified illegal does not redact its
+  Comments or any ChatMessage that references it; each requires
+  its own classification.
 
 Account deletion of the Post's author does **not** by default
 affect the Post's body, attachments, or graph node — identity
