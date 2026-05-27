@@ -85,12 +85,16 @@ Every authored property on the User node is layered per
   [network.md §8](network.md#8-membership-and-roles); changes run
   through the multi-sig Proposal pattern in
   [network.md §9](network.md#9-mod-role-changes-via-multi-sig-proposal).
-- **`moderation_status`** — `normal` / `sensitive` / `illegal`,
-  default `normal`. Universal mechanics in
-  [nodes.md "Universal: moderation_status"](nodes.md#universal-moderation_status).
 
-Additional authored properties (display-name fields, verified
-flags, etc.) can be added later, each layering independently.
+The User also carries one per-field moderation-status property
+for each user-filled profile field — `username_status` (for the
+data-sibling `username`), `display_name`, `bio`, `avatar`,
+`website_url`. Each holds `'normal'` (default) / `'sensitive'` /
+redaction marker, layered. The universal mechanics live in
+[nodes.md "Universal: per-field moderation status"](nodes.md#universal-per-field-moderation-status).
+The node-level moderation state is derived from these (max
+severity) and not stored.
+
 Concrete types, constraints, and indexes live in
 [graph-data-model.md](../implementation/graph-data-model.md).
 
@@ -206,16 +210,20 @@ planned:
   under per-row legal hold. Full mechanism in
   [account-deletion.md](../instances/account-deletion.md).
 - **Moderation redaction of authored content.** Network
-  governance can classify a Post, Comment, ChatMessage, or other
-  content node authored by the User as `'illegal'`, triggering
-  per-field redaction and auto-flipping that node's
-  `moderation_status`. The User node itself is unaffected unless
-  the same Proposal targets a User-node property. See
+  governance can classify a specific field of a Post, Comment,
+  ChatMessage, or other content node authored by the User as
+  `'illegal'`, triggering per-field redaction on that node. The
+  User node itself is unaffected unless the same Proposal
+  targets a User-node field. See
   [moderation.md](../instances/moderation.md).
-- **Moderation redaction of a User-node property.** The same
-  Proposal mechanism can target a User's user-input property
-  (e.g. `username`). The redaction marker is written to the
-  affected layer; surrounding layers stay.
+- **Moderation redaction of a User-node field.** The same
+  Proposal mechanism can target one of the User's per-field
+  moderation properties (e.g. `bio`, `avatar`, or
+  `username_status` for the handle). For `username_status` the
+  cascade writes redaction markers on both the status property
+  and the `username` data sibling; for the display-only fields
+  only the named property is touched on the graph. Surrounding
+  layers always stay.
 
 Future triggers — court order, next-of-kin under applicable
 inheritance law, network-admin emergency action — are listed in
