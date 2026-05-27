@@ -176,14 +176,19 @@ text, avatar, website) lives in Postgres (§4).
 - **`name`** — the handle used for mentions and lookups,
   analogous to `User.username`. Layered per
   [layers.md §3](../primitive/layers.md#3-layers-on-nodes), so
-  rename history is preserved. UNIQUE per instance.
-- **`moderation_status`** — `'normal'` / `'sensitive'` /
-  `'illegal'`, default `'normal'`, layered. Universal across all
-  user-input-bearing nodes; per-node mechanics — set by a passing
-  `'sensitive'` Proposal, auto-flipped to `'illegal'` by the
-  redaction cascade — are described in
-  [nodes.md "Universal: moderation_status"](../primitive/nodes.md#universal-moderation_status)
-  and §9 below.
+  rename history is preserved. UNIQUE per instance. Data;
+  per-field status carried separately by `name_status`.
+
+The Collective also carries one per-field moderation-status
+property per user-filled profile field — **`name_status`**
+(companion to the data sibling `name`), **`display_name`**,
+**`description`**, **`avatar`**, **`website_url`**. Each holds
+`'normal'` (default) / `'sensitive'` / redaction marker,
+layered. The universal mechanics live in
+[nodes.md "Universal: per-field moderation status"](../primitive/nodes.md#universal-per-field-moderation-status)
+and §9 below. The node-level moderation state is derived from
+these per-field statuses and not stored.
+
 - **`governance_rules.*`** — structured properties holding the
   social contract: one entry per decision-type instance and one
   per act-as rule (e.g.
@@ -322,9 +327,10 @@ A Collective receives:
   when a content node mentions or embeds the Collective. See
   [edges.md §2 "Reference"](../primitive/edges.md#reference).
 - **`Proposal → Collective` (`:TARGETS`)** when a Proposal
-  targets a property on the Collective — `name`,
-  `moderation_status`, or any `governance_rules.*` parameter
-  (§8). See
+  targets a property on the Collective — `name`, any per-field
+  moderation-status property (`name_status`, `display_name`,
+  `description`, `avatar`, `website_url`), or any
+  `governance_rules.*` parameter (§8). See
   [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting).
 
 ### 5.2 CollectiveMember
@@ -643,27 +649,31 @@ following
 [moderation.md §1](moderation.md#1-the-two-classification-paths):
 
 - **`'sensitive'` classification.** A passing `'sensitive'`
-  Proposal flips the top layer of `moderation_status` to
-  `'sensitive'`. No redaction; display content stays, and each
-  viewing user's `content_filtering_severity_level`
+  Proposal targets one of the Collective's per-field
+  moderation-status properties (`name_status`, `display_name`,
+  `description`, `avatar`, `website_url`) and flips its top
+  layer to `'sensitive'`. No redaction; display content stays,
+  and each viewing user's `content_filtering_severity_level`
   ([data-model.md](../implementation/data-model.md) "User
-  preferences") decides filtering aggressiveness. Reversible by
-  counter-Proposal.
+  preferences") decides filtering aggressiveness for the
+  affected field. Reversible by counter-Proposal.
 - **`'illegal'` classification.** A passing `'illegal'`
-  Proposal targets one of the Collective's user-input fields —
-  `name`, Postgres-side `display_name` / `description` /
-  `website_url`, `avatar`, or the `'node'` sentinel covering all
-  of those per
+  Proposal targets one of the same per-field properties — or
+  the `'node'` sentinel covering all of them per
   [moderation.md §5](moderation.md#5-scope) — and fires the
-  redaction cascade: the affected layer or row becomes a
-  redaction marker / tombstone, the originals land in the
+  redaction cascade: the per-field property's top layer is
+  replaced with a redaction marker (for `name_status` the
+  cascade also writes a redaction marker on the `name` data
+  sibling), the Postgres version row or media asset is
+  tombstoned where applicable, and the originals land in the
   [retention archive](../primitive/retention-archive.md) under
-  per-row legal hold, and `moderation_status` auto-flips to
-  `'illegal'`. The cascade does **not** propagate to descendants
+  per-row legal hold. The Collective's derived moderation state
+  evaluates to `'illegal'` once any field carries a redaction
+  marker. The cascade does **not** propagate to descendants
   (authored Posts/Comments, CollectiveMembers, owned items) —
-  each requires its own classification. `governance_rules.*` are
-  in scope in principle but rarely the target; identity fields
-  are the typical case.
+  each requires its own classification. `governance_rules.*`
+  are in scope in principle but rarely the target; identity
+  fields are the typical case.
 
 A redacted Collective is an anonymized but still-graph-resident
 actor, not a removed one. The Collective's UUID is stable
