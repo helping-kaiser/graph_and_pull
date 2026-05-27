@@ -84,7 +84,8 @@ an `instances/` doc is a sign the mechanism belongs in
   `illegal` both per-field on a per-field moderation-status
   property; reports as Proposals on the graph;
   mod-vote-required-for-every-classification gate; per-field
-  redaction cascade; node-level state derived (max severity).
+  redaction cascade; node-level `moderation_status` cache holds
+  the max severity.
 - [platform-guidelines](instances/platform-guidelines.md) — the
   normative document the Network references when classifying
   content; bucket contents; amendment procedure pinned by

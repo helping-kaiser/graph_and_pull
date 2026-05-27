@@ -5,9 +5,11 @@ primitive everything else uses: any User can create a Proposal
 classifying a specific field of a content node as `sensitive`
 (soft filter) or `illegal` (redaction); the Network votes Shape A;
 threshold-cross applies the classification via cascade. Both
-classifications operate **per-field** — a node's overall
-moderation state is derived from the per-field statuses, not
-stored.
+classifications operate **per-field**; a node-level
+`moderation_status` cache reflects the max severity across the
+node's per-field statuses and is written by the cascade alongside
+the targeted field — see
+[nodes.md "Node-level cache"](../primitive/nodes.md#node-level-cache-moderation_status).
 **No privileged moderator role with extra weight** — mods exist as
 a gate, not as weighted voters.
 
@@ -58,14 +60,15 @@ that node.
 ### `sensitive` — per-field soft filter
 
 A passing `'sensitive'` Proposal flips the top layer of the
-targeted field's moderation-status property to `'sensitive'`.
-Effect: frontends respect each viewing user's
+targeted field's moderation-status property to `'sensitive'` and
+updates the node-level `moderation_status` cache to the new max
+severity. Effect: frontends respect each viewing user's
 `content_filtering_severity_level` (see
 [data-model.md](../implementation/data-model.md) "User
 preferences") when rendering that field; the field's content
 stays. The flag is per-field — `User.bio` can be `'sensitive'`
 while `User.display_name` stays `'normal'`. Reversible via a
-counter-Proposal back to `'normal'`.
+counter-Proposal back to `'normal'`; the cache is recomputed.
 
 ### `illegal` — per-field redaction
 
@@ -93,14 +96,13 @@ targeted field:
    statutory hard-delete, etc. The handoff is post-redaction;
    `legal_admin` has no path back into the live graph.
 
-The node's overall moderation state is **derived** from the
-per-field statuses (max severity) — no separate node-level write
-happens. Once any field carries a redaction marker, the derived
-state evaluates to `'illegal'`, distinguishing a
-partially-or-fully redacted node from a merely sensitive one for
-frontends. `'illegal'` is the strongest state and is not
-downgraded by a later `'sensitive'` Proposal while any redacted
-fields remain.
+The cascade also writes the node-level `moderation_status`
+cache to `'illegal'` in the same transaction. `'illegal'` is the
+strongest state and is not downgraded by a later `'sensitive'`
+Proposal while any redacted fields remain — redaction markers
+are append-only per
+[layers.md §5](../primitive/layers.md#5-deletion-policy), so the
+cache stays pinned at `'illegal'` once any field is redacted.
 
 The cascade is bounded to what the Proposal targeted and does
 **not** propagate to descendants. Classifying a Post's body
@@ -192,12 +194,11 @@ voting body for moderation Proposals.
   `'illegal'` is **not** reversible. The redaction markers on
   the targeted fields are append-only per
   [layers.md §5](../primitive/layers.md#5-deletion-policy), and
-  the derived node-level `'illegal'` evaluation is a consequence
-  of those markers existing on the node — there is no separate
-  property to flip back. A later `'sensitive'` Proposal on a
-  different field also does not downgrade the derived state
+  the node-level `moderation_status` cache, pinned to `'illegal'`
+  by the cascade, recomputes from those markers — a later
+  `'sensitive'` Proposal on a different field cannot downgrade it
   while any redacted fields remain (see
-  [nodes.md](../primitive/nodes.md#node-level-aggregate-derived)).
+  [nodes.md](../primitive/nodes.md#node-level-cache-moderation_status)).
 
 The fractional bar `P` governs while the network is small (a real
 majority of active members is required to pass). Once membership

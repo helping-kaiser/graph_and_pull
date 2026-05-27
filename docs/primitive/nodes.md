@@ -85,36 +85,47 @@ and live in
   reversible — redaction markers are append-only per
   [layers.md §5](layers.md#5-deletion-policy).
 
-### Node-level aggregate (derived)
+### Node-level cache: `moderation_status`
 
-The node-level `moderation_status` is a **derived value, not a
-stored property**: it is computed at read time as the max
-severity across the node's per-field statuses. If any field
-carries a redaction marker, the aggregate is `'illegal'`; else
-if any field is `'sensitive'`, the aggregate is `'sensitive'`;
-else `'normal'`. Frontends read the aggregate when deciding
-whether to apply the soft filter or hide the node entirely; the
-per-field properties are what the cascade actually writes.
-Derived caches do not layer per
-[layers.md §3 "Derived caches"](layers.md#derived-caches-do-not-layer).
+Every content-bearing node also carries a single
+`moderation_status` property — `'normal'` / `'sensitive'` /
+`'illegal'` — caching the max severity across that node's
+per-field statuses. The per-field properties are the source of
+truth and what the cascade writes; the cache is what the read
+path consumes. Feed filtering ("posts that are not `'sensitive'`
+or `'illegal'`") reads one property per candidate node instead
+of all of its per-field statuses, keeping ranking traversals
+narrow.
 
-The `'illegal'` aggregate sticks while any redacted field
-remains — a later `'sensitive'` Proposal on a different field
-does not downgrade it.
+The cache is not layered (per
+[layers.md §3 "Derived caches"](layers.md#derived-caches-do-not-layer)):
+the per-field properties carry the layered history; the cache
+holds the current max. The cascade in
+[moderation.md §1](../instances/moderation.md#1-the-two-classification-paths)
+writes both atomically — the targeted per-field status (as a new
+layer or redaction marker) and the cache (overwritten with the
+new max).
+
+Severity is monotone: once any field carries a redaction marker,
+`moderation_status = 'illegal'` and stays there — a later
+`'sensitive'` Proposal on a different field cannot downgrade it,
+and `'illegal'` is itself unreachable from `'normal'` except via
+a redaction marker that is append-only per
+[layers.md §5](layers.md#5-deletion-policy).
 
 ### Scope
 
-Per-field moderation-status properties appear on every
-user-input-bearing node: **User, Collective, Post, Comment,
-ChatMessage, Chat, Item, Hashtag**.
+Per-field moderation-status properties and the `moderation_status`
+cache appear on every user-input-bearing node: **User, Collective,
+Post, Comment, ChatMessage, Chat, Item, Hashtag**.
 
 Junction nodes (`ChatMember`, `CollectiveMember`, `ItemOwnership`)
-carry no user-input fields and so carry no moderation properties.
-**Proposal** is in the same position — its substance is
-`target_property` + `proposed_value` + the `:TARGETS` edge, with
-no user-input field to redact and no Postgres-side display
-content either. The **`:Network` singleton** is similarly pure
-configuration state. See
+carry no user-input fields and so carry neither per-field
+properties nor the cache. **Proposal** is in the same position —
+its substance is `target_property` + `proposed_value` + the
+`:TARGETS` edge, with no user-input field to redact and no
+Postgres-side display content either. The **`:Network` singleton**
+is similarly pure configuration state. See
 [network.md §3](network.md#3-graph-side-properties).
 
 **Distinct from chat-internal disavowal.** Per-field moderation

@@ -61,15 +61,19 @@ a companion `<field>_status` property carries the status; the data
 property keeps its name and its current shape, and the cascade writes
 to both on illegal classification.
 
-**Node-level aggregate is derived, not stored.** A node's
-moderation_status as a whole is computed at read time from the
-per-field statuses (max severity). No `moderation_status` property
-is written or indexed.
+**Node-level cache.** Every content-bearing node also carries
+a `moderation_status` property — `String`, **not layered**,
+default `'normal'`, values `'normal'` / `'sensitive'` /
+`'illegal'` — caching the max severity across that node's
+per-field statuses. The cascade writes both the targeted per-field
+property and the cache atomically per
+[nodes.md "Node-level cache"](../primitive/nodes.md#node-level-cache-moderation_status).
+The cache is what feed-ranking and filter queries read.
 
 See [nodes.md "Universal: per-field moderation status"](../primitive/nodes.md#universal-per-field-moderation-status)
 and [moderation.md](../instances/moderation.md). Each node-label
-table below lists the per-field properties with a short "per intro"
-note rather than repeating the shape.
+table below lists the per-field properties and the cache with a
+short "per intro" note rather than repeating the shape.
 
 ### Actor nodes
 
@@ -85,6 +89,7 @@ note rather than repeating the shape.
 | `bio`               | String | Per intro. Content lives in Postgres. |
 | `avatar`            | String | Per intro. Asset lives in object storage; the per-field property exists for moderation targeting. |
 | `website_url`       | String | Per intro. Content lives in Postgres. |
+| `moderation_status` | String | Node-level cache (per intro). |
 
 ```cypher
 CREATE CONSTRAINT ON (u:User) ASSERT u.id IS UNIQUE;
@@ -113,6 +118,7 @@ of redactions without requiring layer-aware constraint logic.
 | `description`       | String | Per intro. Content lives in Postgres. |
 | `avatar`            | String | Per intro. Asset lives in object storage. |
 | `website_url`       | String | Per intro. Content lives in Postgres. |
+| `moderation_status` | String | Node-level cache (per intro). |
 
 ```cypher
 CREATE CONSTRAINT ON (c:Collective) ASSERT c.id IS UNIQUE;
@@ -129,6 +135,7 @@ CREATE INDEX ON :Collective(id);
 | `id`                | String | UUID v4. |
 | `content`           | String | Per intro. Body lives in Postgres. |
 | `attachments`       | String | Per intro. Covers every attached media on the post as a single status (per-attachment targeting is a future refinement — see [moderation.md §5](../instances/moderation.md#5-scope)); assets live in object storage. |
+| `moderation_status` | String | Node-level cache (per intro). |
 
 ```cypher
 CREATE CONSTRAINT ON (p:Post) ASSERT p.id IS UNIQUE;
@@ -138,7 +145,7 @@ CREATE INDEX ON :Post(id);
 #### `:Comment`
 
 Same shape as `:Post`: `id`, `content` (per intro), `attachments`
-(per intro).
+(per intro), `moderation_status` (per intro).
 
 ```cypher
 CREATE CONSTRAINT ON (c:Comment) ASSERT c.id IS UNIQUE;
@@ -176,6 +183,7 @@ CREATE INDEX ON :Comment(id);
 | `join_policy_change_threshold` | Float | Pass-threshold for the join-policy family. Default `0.667` (2/3). Layered. |
 | `governance_amendment_quorum`  | Float | Quorum for Proposals targeting any of the governance fraction or weight properties listed above (the "governance of governance" case). Default `0.30`. Layered. |
 | `governance_amendment_threshold` | Float | Pass-threshold for governance amendments. Default `0.667` (2/3). Layered. |
+| `moderation_status` | String | Node-level cache (per intro) for the Chat's per-field statuses (`name_status`, `description`, `image`). |
 
 The `content_privacy` setting (plaintext vs E2EE) lives in Postgres,
 not on the graph — message bodies are always Postgres-side per
@@ -194,6 +202,7 @@ CREATE INDEX ON :Chat(id);
 | `id`                | String | UUID v4. |
 | `content`           | String | Per intro. Body lives in Postgres (plaintext or ciphertext per [chats.md §9](../instances/chats.md#9-encryption-as-the-privacy-mechanism)). The protocol does not gate classification on disclosure of the chat key; "moderate only after reading" is a normative requirement on moderators, not a protocol invariant — see [moderation.md §5](../instances/moderation.md#5-scope). |
 | `attachments`       | String | Per intro. Assets live in object storage. |
+| `moderation_status` | String | Node-level cache (per intro). |
 
 ```cypher
 CREATE CONSTRAINT ON (m:ChatMessage) ASSERT m.id IS UNIQUE;
@@ -213,6 +222,7 @@ so the graph never reads it. See [data-model.md](data-model.md).
 | `name`              | String | Per intro. Content lives in Postgres. (Items do not need graph-side uniqueness on `name`; the moderation-status property uses the field name directly.) |
 | `description`       | String | Per intro. Content lives in Postgres. |
 | `attachments`       | String | Per intro. Assets live in object storage. |
+| `moderation_status` | String | Node-level cache (per intro). |
 
 ```cypher
 CREATE CONSTRAINT ON (i:Item) ASSERT i.id IS UNIQUE;
@@ -226,6 +236,7 @@ CREATE INDEX ON :Item(id);
 | `id`                | String | UUIDv5, content-addressed from `name`. See [data-model.md "Node identity strategies"](data-model.md#node-identity-strategies). |
 | `name`              | String | Canonical form: lowercase, no `#`. Immutable except via the `'illegal'` redaction cascade — see [hashtag.md §5](../instances/hashtag.md#5-lifecycle). Data; per-field status carried separately by `name_status`. |
 | `name_status`       | String | Per intro (status for `name`; the only user-input field on a Hashtag). |
+| `moderation_status` | String | Node-level cache (per intro). |
 
 ```cypher
 CREATE CONSTRAINT ON (h:Hashtag) ASSERT h.id IS UNIQUE;
@@ -246,8 +257,9 @@ The target node itself is reached via a `:TARGETS` structural edge
 [edges.md §2](../primitive/edges.md#2-structural-edges).
 
 `:Proposal` intentionally carries no per-field moderation
-properties: Proposals have no user-authored content fields, so
-they fall outside the per-field moderation scope per
+properties and no `moderation_status` cache: Proposals have no
+user-authored content fields, so they fall outside the
+moderation scope per
 [nodes.md §"Universal: per-field moderation status"](../primitive/nodes.md#universal-per-field-moderation-status).
 
 ```cypher
