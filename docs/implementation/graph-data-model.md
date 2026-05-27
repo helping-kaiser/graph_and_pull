@@ -42,16 +42,34 @@ application relies on; rules the storage layer can't directly express
 (e.g. forbidding a property by absence) are stated as ethos invariants and
 enforced in code tests.
 
-### Shared property: `moderation_status`
+### Shared shape: per-field moderation-status properties
 
-Every content-bearing node carries a `moderation_status` property. The shape
-is identical wherever it appears: `String`, layered, default `'normal'`,
-values `'normal'` / `'sensitive'` / `'illegal'`. `'sensitive'` is set by a
-passing classification Proposal; `'illegal'` is auto-flipped by the system
-when any field on the node receives a redaction marker. See
-[nodes.md "Universal: moderation_status"](../primitive/nodes.md#universal-moderation_status)
-and [moderation.md](../instances/moderation.md). The tables below list the
-property with a short "per intro" note rather than repeating the shape.
+Every content-bearing node carries one graph property per user-filled
+field, holding that field's current moderation status. The shape is
+identical wherever it appears: `String`, layered, default `'normal'`,
+values `'normal'` / `'sensitive'` / redaction marker. `'sensitive'` is
+set by a passing classification Proposal on the per-field property;
+the redaction marker is written by the `'illegal'` cascade.
+
+**Naming.** For fields with no graph-side data sibling (`bio`,
+`avatar`, `content`, `description`, …), the moderation-status property
+is named after the field — `User.bio`, `Post.content`, etc. — and the
+property's value IS the status. For fields that already have a
+graph-side data property for uniqueness or content-addressing
+(`User.username`, `Collective.name`, `Chat.name`, `Hashtag.name`),
+a companion `<field>_status` property carries the status; the data
+property keeps its name and its current shape, and the cascade writes
+to both on illegal classification.
+
+**Node-level aggregate is derived, not stored.** A node's
+moderation_status as a whole is computed at read time from the
+per-field statuses (max severity). No `moderation_status` property
+is written or indexed.
+
+See [nodes.md "Universal: per-field moderation status"](../primitive/nodes.md#universal-per-field-moderation-status)
+and [moderation.md](../instances/moderation.md). Each node-label
+table below lists the per-field properties with a short "per intro"
+note rather than repeating the shape.
 
 ### Actor nodes
 
@@ -60,9 +78,13 @@ property with a short "per intro" note rather than repeating the shape.
 | Property       | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUID v4. Always set by the API. |
-| `username`          | String | Handle for mentions/lookups. Layered per [layers.md](../primitive/layers.md). |
+| `username`          | String | Handle for mentions/lookups. Layered per [layers.md](../primitive/layers.md). Data; per-field status carried separately by `username_status`. |
 | `network_role`      | String | `'member'` or `'moderator'`. Layered. Backs platform-wide governance — see [network.md](../primitive/network.md). |
-| `moderation_status` | String | Per intro. |
+| `username_status`   | String | Per intro (status for `username`). |
+| `display_name`      | String | Per intro. Content lives in Postgres. |
+| `bio`               | String | Per intro. Content lives in Postgres. |
+| `avatar`            | String | Per intro. Asset lives in object storage; the per-field property exists for moderation targeting. |
+| `website_url`       | String | Per intro. Content lives in Postgres. |
 
 ```cypher
 CREATE CONSTRAINT ON (u:User) ASSERT u.id IS UNIQUE;
@@ -85,8 +107,12 @@ of redactions without requiring layer-aware constraint logic.
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUID v4. |
-| `name`              | String | Handle, analogous to `User.username`. Layered. |
-| `moderation_status` | String | Per intro. |
+| `name`              | String | Handle, analogous to `User.username`. Layered. Data; per-field status carried separately by `name_status`. |
+| `name_status`       | String | Per intro (status for `name`). |
+| `display_name`      | String | Per intro. Content lives in Postgres. |
+| `description`       | String | Per intro. Content lives in Postgres. |
+| `avatar`            | String | Per intro. Asset lives in object storage. |
+| `website_url`       | String | Per intro. Content lives in Postgres. |
 
 ```cypher
 CREATE CONSTRAINT ON (c:Collective) ASSERT c.id IS UNIQUE;
@@ -101,7 +127,8 @@ CREATE INDEX ON :Collective(id);
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUID v4. |
-| `moderation_status` | String | Per intro. |
+| `content`           | String | Per intro. Body lives in Postgres. |
+| `attachments`       | String | Per intro. Covers every attached media on the post as a single status (per-attachment targeting is a future refinement — see [moderation.md §5](../instances/moderation.md#5-scope)); assets live in object storage. |
 
 ```cypher
 CREATE CONSTRAINT ON (p:Post) ASSERT p.id IS UNIQUE;
@@ -110,7 +137,8 @@ CREATE INDEX ON :Post(id);
 
 #### `:Comment`
 
-Same shape as `:Post`: `id` and `moderation_status` (per intro).
+Same shape as `:Post`: `id`, `content` (per intro), `attachments`
+(per intro).
 
 ```cypher
 CREATE CONSTRAINT ON (c:Comment) ASSERT c.id IS UNIQUE;
@@ -122,12 +150,14 @@ CREATE INDEX ON :Comment(id);
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                     | String  | UUID v4. |
-| `name`                   | String  | Optional; layered. The graph carries it for routing/display hints. |
+| `name`                   | String  | Optional; layered. The graph carries it for routing/display hints. Data; per-field status carried separately by `name_status`. |
+| `name_status`            | String  | Per intro (status for `name`). |
+| `description`            | String  | Per intro. Content lives in Postgres. |
+| `image`                  | String  | Per intro. Asset lives in object storage. |
 | `join_policy`            | String  | `'open'` / `'invite-only'` / `'request-entry'`. Layered. Read by the system when an actor's claim toward a `:ChatMember` arrives, to decide what approval is required. Multi-sig is not a fourth value — it is the configuration shape produced when `entry_approval_required_count > 1` under either `'invite-only'` or `'request-entry'`. See [chats.md §11](../instances/chats.md#11-joining-and-leaving-a-chat). |
 | `invite_proposer_roles`  | String[] | `ChatMember.role` values whose bearers may propose a new ChatMember under `'invite-only'`. Default `['chat_mod','admin']`. Inapplicable to `'open'` and `'request-entry'`. Layered. See [chats.md §3.1, §11](../instances/chats.md#31-chat). |
 | `entry_approval_required_count` | Integer | Number of qualifying Shape B approver votes the new ChatMember's junction must collect before activation. `0` under `'open'`; default `1` otherwise; higher values produce the multi-sig configuration shape. Layered. See [chats.md §11](../instances/chats.md#11-joining-and-leaving-a-chat). |
 | `entry_approval_eligible_roles` | String[] | `ChatMember.role` values whose bearers' Shape B votes count toward `entry_approval_required_count`. Default `['chat_mod','admin']`. Inapplicable to `'open'`. Layered. See [chats.md §3.1, §11](../instances/chats.md#31-chat). |
-| `moderation_status`      | String  | Per intro. |
 | `epoch`                  | Integer | Current chat-key epoch. Default `1`. Advanced by `+1` on every membership transition that takes effect — `:CLAIM` and `:APPROVAL` both present with positive top layers (join), or active `:APPROVAL` flipped to `dim1 < 0` (leave / disavowal cascade) — and on every passing mid-epoch rotation Proposal. Concurrent transitions serialize per Chat. See [chats.md §9](../instances/chats.md#9-encryption-as-the-privacy-mechanism). |
 | `rotate_key_quorum`      | Float   | Quorum for mid-epoch rotation Proposals targeting `epoch`. Default `0.50`. Layered, amendable via Proposal. See [chats.md §9](../instances/chats.md#9-encryption-as-the-privacy-mechanism). |
 | `rotate_key_threshold`   | Float   | Pass-threshold for mid-epoch rotation Proposals. Default `0.667` (2/3). Layered, amendable via Proposal. See [chats.md §9](../instances/chats.md#9-encryption-as-the-privacy-mechanism). |
@@ -162,7 +192,8 @@ CREATE INDEX ON :Chat(id);
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUID v4. |
-| `moderation_status` | String | Per intro. The protocol does not gate classification on disclosure of the chat key; "moderate only after reading" is a normative requirement on moderators, not a protocol invariant — see [moderation.md §5](../instances/moderation.md#5-scope). |
+| `content`           | String | Per intro. Body lives in Postgres (plaintext or ciphertext per [chats.md §9](../instances/chats.md#9-encryption-as-the-privacy-mechanism)). The protocol does not gate classification on disclosure of the chat key; "moderate only after reading" is a normative requirement on moderators, not a protocol invariant — see [moderation.md §5](../instances/moderation.md#5-scope). |
+| `attachments`       | String | Per intro. Assets live in object storage. |
 
 ```cypher
 CREATE CONSTRAINT ON (m:ChatMessage) ASSERT m.id IS UNIQUE;
@@ -179,7 +210,9 @@ so the graph never reads it. See [data-model.md](data-model.md).
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUID v4. |
-| `moderation_status` | String | Per intro. |
+| `name`              | String | Per intro. Content lives in Postgres. (Items do not need graph-side uniqueness on `name`; the moderation-status property uses the field name directly.) |
+| `description`       | String | Per intro. Content lives in Postgres. |
+| `attachments`       | String | Per intro. Assets live in object storage. |
 
 ```cypher
 CREATE CONSTRAINT ON (i:Item) ASSERT i.id IS UNIQUE;
@@ -191,8 +224,8 @@ CREATE INDEX ON :Item(id);
 | Property            | Type   | Notes |
 |---|---|---|
 | `id`                | String | UUIDv5, content-addressed from `name`. See [data-model.md "Node identity strategies"](data-model.md#node-identity-strategies). |
-| `name`              | String | Canonical form: lowercase, no `#`. Immutable except via the `'illegal'` redaction cascade — see [hashtag.md §5](../instances/hashtag.md#5-lifecycle). |
-| `moderation_status` | String | Per intro. |
+| `name`              | String | Canonical form: lowercase, no `#`. Immutable except via the `'illegal'` redaction cascade — see [hashtag.md §5](../instances/hashtag.md#5-lifecycle). Data; per-field status carried separately by `name_status`. |
+| `name_status`       | String | Per intro (status for `name`; the only user-input field on a Hashtag). |
 
 ```cypher
 CREATE CONSTRAINT ON (h:Hashtag) ASSERT h.id IS UNIQUE;
@@ -206,16 +239,16 @@ CREATE INDEX ON :Hashtag(id);
 |---|---|---|
 | `id`              | String  | UUID v4. |
 | `target_property` | String  | Name of the property on the target node, or the reserved whole-node sentinel `'node'` — see [nodes.md "Whole-node targeting"](../primitive/nodes.md#whole-node-targeting-the-node-sentinel). The `'node'` sentinel covers both the moderation cascade (every user-input field plus all attachments — see [moderation.md §5](../instances/moderation.md#5-scope)) and chat-internal disavowal — see [chats.md §10](../instances/chats.md#10-moderation). |
-| `proposed_value`  | Variant | The proposed new value (type matches `target_property`). Common patterns: (a) **Moderation classification.** `'sensitive'` Proposals set `target_property = 'moderation_status'` and `proposed_value ∈ {'sensitive', 'normal'}`; `'illegal'` Proposals set `target_property` to a specific user-input field name (or the `'node'` sentinel for whole-node coverage) and `proposed_value = 'illegal'`. See [moderation.md §1](../instances/moderation.md#1-the-two-classification-paths). The cascade interprets `'illegal'` to write redaction markers and archive originals. (b) **Chat-internal disavowal.** `target_property = 'node'`, `proposed_value ∈ {'disavowed', 'normal'}`. The cascade writes a `dim1 < 0` (or `dim1 > 0` on reversal) layer on the relevant `:APPROVAL` edge per [chats.md §10](../instances/chats.md#10-moderation). (c) **Property amendments.** `proposed_value` is the new value of whatever graph property `target_property` names — a role string, a numeric threshold, etc. |
+| `proposed_value`  | Variant | The proposed new value (type matches `target_property`). Common patterns: (a) **Moderation classification.** `target_property` names the per-field moderation-status property on the target node (e.g., `'bio'`, `'content'`, `'username_status'`) or the `'node'` sentinel for whole-node coverage; `proposed_value ∈ {'sensitive', 'illegal', 'normal'}`. On pass, the cascade writes the new value as a layer (for `'sensitive'` / `'normal'`) or replaces the top layer with a redaction marker (for `'illegal'`, plus archive + Postgres tombstone). See [moderation.md §1](../instances/moderation.md#1-the-two-classification-paths). (b) **Chat-internal disavowal.** `target_property = 'node'`, `proposed_value ∈ {'disavowed', 'normal'}`. The cascade writes a `dim1 < 0` (or `dim1 > 0` on reversal) layer on the relevant `:APPROVAL` edge per [chats.md §10](../instances/chats.md#10-moderation). (c) **Property amendments.** `proposed_value` is the new value of whatever graph property `target_property` names — a role string, a numeric threshold, etc. |
 
 The target node itself is reached via a `:TARGETS` structural edge
 (`Proposal → Target`), not a foreign-key property — see
 [edges.md §2](../primitive/edges.md#2-structural-edges).
 
-`:Proposal` intentionally has no `moderation_status` property:
-Proposals carry no user-authored content fields, so they fall
-outside the universal moderation property per
-[nodes.md §"Universal: moderation_status"](../primitive/nodes.md#universal-moderation_status).
+`:Proposal` intentionally carries no per-field moderation
+properties: Proposals have no user-authored content fields, so
+they fall outside the per-field moderation scope per
+[nodes.md §"Universal: per-field moderation status"](../primitive/nodes.md#universal-per-field-moderation-status).
 
 ```cypher
 CREATE CONSTRAINT ON (p:Proposal) ASSERT p.id IS UNIQUE;
