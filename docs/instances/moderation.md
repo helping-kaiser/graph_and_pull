@@ -2,9 +2,12 @@
 
 CoGra moderates publicly-visible content via the same governance
 primitive everything else uses: any User can create a Proposal
-classifying content as `sensitive` (per-node soft flag) or
-`illegal` (per-field redaction); the Network votes Shape A;
-threshold-cross applies the classification via cascade.
+classifying a specific field of a content node as `sensitive`
+(soft filter) or `illegal` (redaction); the Network votes Shape A;
+threshold-cross applies the classification via cascade. Both
+classifications operate **per-field** — a node's overall
+moderation state is derived from the per-field statuses, not
+stored.
 **No privileged moderator role with extra weight** — mods exist as
 a gate, not as weighted voters.
 
@@ -26,47 +29,58 @@ recourse.
 ### Vocabulary: moderation vs disavowal
 
 **Invariant — scope reservation.** "Moderation" is Network-scope:
-the act of flipping a node's `moderation_status` to `'sensitive'`
-or `'illegal'` via the governance flow in this doc. "Disavowal"
-is Chat-scope: a `dim1 < 0` layer landed (via the Level 1 / Level 2
-Proposals in [chats.md §10](chats.md#10-moderation)) on a
-ChatMessage- or ChatMember-targeting outcome. The two differ in
-eligibility (Network actives vs chat members), cascade (redaction
-vs `:APPROVAL` edge layer), and reversibility. In chat contexts,
-use "disavowal" — not "removal," "kick," "fire," or "expel."
+the act of flipping a node's per-field moderation-status property
+to `'sensitive'` or writing a redaction marker for `'illegal'`,
+via the governance flow in this doc. "Disavowal" is Chat-scope: a
+`dim1 < 0` layer landed (via the Level 1 / Level 2 Proposals in
+[chats.md §10](chats.md#10-moderation)) on a ChatMessage- or
+ChatMember-targeting outcome. The two differ in eligibility
+(Network actives vs chat members), cascade (per-field
+status / redaction vs `:APPROVAL` edge layer), and reversibility.
+In chat contexts, use "disavowal" — not "removal," "kick,"
+"fire," or "expel."
 
 ## 1. The two classification paths
 
-`sensitive` and `illegal` operate on different units. Both are
-authorized by the same governance instance below; only the
-cascade outcome differs.
+`sensitive` and `illegal` operate on the same per-field
+moderation-status property
+([nodes.md](../primitive/nodes.md#universal-per-field-moderation-status))
+and differ only in what the cascade writes. Both are authorized
+by the same governance instance below.
 
-### `sensitive` — node-level soft flag
+A Proposal targets either (a) one specific user-input field of
+the content node — naming the per-field moderation-status
+property by its field name (e.g., `Post.content`, `User.bio`,
+`Hashtag.name_status`) — or (b) the whole-node `'node'` sentinel,
+which covers every user-input field plus every attached media on
+that node.
 
-Every user-input-bearing node carries a `moderation_status` graph
-property (`'normal'` / `'sensitive'` / `'illegal'`, default
-`'normal'`, layered — see [nodes.md](../primitive/nodes.md)). A
-passing `'sensitive'` Proposal flips the top layer of this
-property to `'sensitive'`. Effect: frontend respects each viewing user's
+### `sensitive` — per-field soft filter
+
+A passing `'sensitive'` Proposal flips the top layer of the
+targeted field's moderation-status property to `'sensitive'`.
+Effect: frontends respect each viewing user's
 `content_filtering_severity_level` (see
 [data-model.md](../implementation/data-model.md) "User
-preferences"); content stays. Reversible via a counter-Proposal
-back to `'normal'`.
+preferences") when rendering that field; the field's content
+stays. The flag is per-field — `User.bio` can be `'sensitive'`
+while `User.display_name` stays `'normal'`. Reversible via a
+counter-Proposal back to `'normal'`.
 
 ### `illegal` — per-field redaction
 
-Illegal-content classification is per-field, not per-node. A
-passing `'illegal'` Proposal targets either (a) one specific
-user-input field of the content node (e.g., a Post's `content`,
-a User's `username`, a Chat's `name`), or (b) the whole-node
-`'node'` sentinel, which targets every user-input field plus
-every attached media on that node. Threshold-cross fires the
-redaction cascade:
+A passing `'illegal'` Proposal fires the redaction cascade on the
+targeted field:
 
-1. Each targeted field's top layer is replaced with a redaction
-   marker per [layers.md §5](../primitive/layers.md#5-deletion-policy). For media
-   targets, the underlying `media_attachments` row is
-   tombstoned and the asset is removed from object storage.
+1. The field's moderation-status property top layer is replaced
+   with a redaction marker per
+   [layers.md §5](../primitive/layers.md#5-deletion-policy). For
+   fields with a graph-side data sibling (`User.username`,
+   `Collective.name`, `Chat.name`, `Hashtag.name`), the data
+   property's top layer is replaced with a redaction marker in
+   the same write. For media targets, the underlying
+   `media_attachments` row is tombstoned and the asset is removed
+   from object storage.
 2. Each redacted original is written to the
    [retention archive](../primitive/retention-archive.md)
    automatically. The `legal_hold_until` value is set
@@ -78,13 +92,15 @@ redaction cascade:
    authorities, retain for prosecution evidence, schedule
    statutory hard-delete, etc. The handoff is post-redaction;
    `legal_admin` has no path back into the live graph.
-3. The node's `moderation_status` is auto-flipped to
-   `'illegal'` so frontends can distinguish a partially-or-fully
-   redacted node from a merely sensitive one and hide it
-   entirely if the viewing user prefers. This is a system-side
-   derivation, not a separate Proposal. `'illegal'` is the
-   strongest state and is not downgraded by a later
-   `'sensitive'` Proposal while any redacted fields remain.
+
+The node's overall moderation state is **derived** from the
+per-field statuses (max severity) — no separate node-level write
+happens. Once any field carries a redaction marker, the derived
+state evaluates to `'illegal'`, distinguishing a
+partially-or-fully redacted node from a merely sensitive one for
+frontends. `'illegal'` is the strongest state and is not
+downgraded by a later `'sensitive'` Proposal while any redacted
+fields remain.
 
 The cascade is bounded to what the Proposal targeted and does
 **not** propagate to descendants. Classifying a Post's body
@@ -99,13 +115,17 @@ A user reporting content **is** the act of creating a Proposal:
   ([nodes.md](../primitive/nodes.md)) with target = the content
   node (via `:TARGETS` edge). `target_property` and
   `proposed_value` depend on the path:
-  - `'sensitive'` Proposal: `target_property = 'moderation_status'`,
-    `proposed_value = 'sensitive'`.
-  - `'illegal'` Proposal: `target_property` is a specific
-    user-input field name on the target node (e.g., `'username'`,
-    `'bio'`, `'content'`, `'avatar'`) — or the whole-node `'node'`
-    sentinel to redact every user-input field plus every attached
-    media on the node. `proposed_value = 'illegal'`.
+  - `'sensitive'` Proposal: `target_property` names a specific
+    per-field moderation-status property on the target node
+    (e.g., `'bio'`, `'content'`, `'description'`, or
+    `'username_status'` for the data-sibling case) — or the
+    whole-node `'node'` sentinel to flag every user-input field
+    at once. `proposed_value = 'sensitive'`.
+  - `'illegal'` Proposal: same `target_property` shape; the
+    cascade replaces the field's top layer with a redaction
+    marker (plus the data sibling, where one exists, plus
+    Postgres / object-storage tombstoning). `proposed_value =
+    'illegal'`.
 - **First reporter** authors the Proposal — the system reads the
   authoring as their +1 vote.
 - **Subsequent reporters** cast Shape A votes
@@ -172,12 +192,12 @@ voting body for moderation Proposals.
   `'illegal'` is **not** reversible. The redaction markers on
   the targeted fields are append-only per
   [layers.md §5](../primitive/layers.md#5-deletion-policy), and
-  `moderation_status = 'illegal'` is a system-derived consequence
-  of those markers existing on the node — flipping the status back
-  while markers remain would misrepresent the node's state. A
-  later `'sensitive'` Proposal also does not downgrade the status
+  the derived node-level `'illegal'` evaluation is a consequence
+  of those markers existing on the node — there is no separate
+  property to flip back. A later `'sensitive'` Proposal on a
+  different field also does not downgrade the derived state
   while any redacted fields remain (see
-  [nodes.md](../primitive/nodes.md)).
+  [nodes.md](../primitive/nodes.md#node-level-aggregate-derived)).
 
 The fractional bar `P` governs while the network is small (a real
 majority of active members is required to pass). Once membership
@@ -197,31 +217,45 @@ bootstrap; they are not fixed rules.
 
 ## 5. Scope
 
-`moderation_status` (the sensitive flag) is a graph-side property
-on every user-input-bearing node — User, Collective, Post,
-Comment, ChatMessage, Chat, Item, Hashtag.
+Per-field moderation-status properties exist on every
+user-input-bearing node — User, Collective, Post, Comment,
+ChatMessage, Chat, Item, Hashtag — per
+[nodes.md "Universal: per-field moderation status"](../primitive/nodes.md#universal-per-field-moderation-status)
+and the per-label tables in
+[graph-data-model.md](../implementation/graph-data-model.md). Both
+`'sensitive'` and `'illegal'` Proposals target one of these
+properties; the value the cascade writes is what distinguishes
+the two paths.
 
-**Illegal-classification target fields** — valid `target_property`
-values for an `'illegal'` Proposal:
+**Valid `target_property` values:**
 
-| Node | Targetable fields | `'node'` covers |
+| Node | Targetable per-field properties | `'node'` covers |
 |---|---|---|
-| **User** | `username`, `display_name`, `bio`, `avatar`, `website_url` | all of the above |
-| **Collective** | `name`, `display_name`, `description`, `avatar`, `website_url` | all of the above |
+| **User** | `username_status`, `display_name`, `bio`, `avatar`, `website_url` | all of the above |
+| **Collective** | `name_status`, `display_name`, `description`, `avatar`, `website_url` | all of the above |
 | **Post** | `content`, `attachments` (all attached media on the post) | both |
 | **Comment** | `content`, `attachments` | both |
 | **ChatMessage** | `content`, `attachments`. Both `plaintext` and `encrypted` per [chats.md §9](chats.md#9-encryption-as-the-privacy-mechanism); encrypted messages are classifiable once readable (see "encrypted message classification" below) | both |
-| **Chat** | `name`, `description`, `image` | all three |
+| **Chat** | `name_status`, `description`, `image` | all three |
 | **Item** | `name`, `description`, `attachments` | all of the above |
-| **Hashtag** | `name` | n/a (only field) |
+| **Hashtag** | `name_status` | n/a (only field) |
 
-The field-name set per node type tracks the user-input fields
+The graph-needed data fields (`User.username`, `Collective.name`,
+`Chat.name`, `Hashtag.name`) are targeted via their `_status`
+companion property rather than the data property itself — the
+cascade writes to both on `'illegal'` so the redaction marker
+lands on the data the graph actually reads, but the Proposal
+names the status property because that is the moderation surface.
+
+The field set per node type tracks the user-input fields
 enumerated in [nodes.md](../primitive/nodes.md) and
 [data-model.md](../implementation/data-model.md). Adding a new
 user-input field to any of these node types automatically adds it
 to the valid `target_property` set; the cascade handler must
-know how to redact it (graph-side layer marker, Postgres
-tombstone version row, or media tombstone + asset removal).
+know how to redact it (graph-side per-field layer marker, plus
+the data-property layer marker for graph-needed fields, plus
+Postgres tombstone version row or media tombstone + asset
+removal as applicable).
 
 Per-attachment targeting (redacting one specific attachment on a
 Post that has several) is a future refinement — the current shape
