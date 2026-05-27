@@ -199,23 +199,9 @@ properties or a tombstone version row on Postgres-side display
 content; both preserve a visible record that the change
 occurred.
 
-A Comment can be redacted via moderation:
-
-- **Moderation classification.** A `'sensitive'` or `'illegal'`
-  Proposal targets one of the Comment's per-field
-  moderation-status properties — `content`, `attachments`, or
-  the `'node'` sentinel covering both — and runs the cascade
-  per [moderation.md §1](moderation.md#1-the-two-classification-paths).
-  Comment-specific writes on `'illegal'`: the affected Postgres
-  body row is tombstoned with a version marker (for `content`),
-  affected `media_attachments` rows are tombstoned and assets
-  removed from object storage (for `attachments`), and the
-  originals go to the
-  [retention archive](../primitive/retention-archive.md) under
-  per-row legal hold. The cascade does not propagate across
-  `:CONTAINMENT` — a Comment classified illegal does not redact
-  its replies, and a parent classified illegal does not redact
-  this Comment; each node requires its own classification.
+Redaction triggers on a Comment are moderation
+([moderation.md §1](moderation.md#1-the-two-classification-paths))
+and — with the author's opt-in — content-level account deletion.
 
 Account deletion of the Comment's author does **not** by
 default affect the Comment's body, attachments, or graph node —

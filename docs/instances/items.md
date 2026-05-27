@@ -357,34 +357,13 @@ permitted "removal" is in-place layer redaction on graph
 properties or a tombstone version row on Postgres-side display
 content; both preserve a visible record that the change occurred.
 
-An Item can be redacted via moderation:
-
-- **Moderation classification.** A `'sensitive'` or `'illegal'`
-  Proposal targets one of the Item's per-field moderation-status
-  properties — `name`, `description`, `attachments`, or the
-  `'node'` sentinel covering all three — and runs the cascade
-  per [moderation.md §1](moderation.md#1-the-two-classification-paths).
-  Item-specific writes on `'illegal'`: affected Postgres rows
-  are tombstoned with version markers (for `name` and
-  `description`), affected `media_attachments` rows are
-  tombstoned and assets removed from object storage (for
-  `attachments`), and the originals go to the
-  [retention archive](../primitive/retention-archive.md) under
-  per-row legal hold. The cascade does not propagate to the
-  Item's Comments, references, or ItemOwnership chain — each
-  requires its own classification.
-
-**Account deletion of the Item's author** does not affect the
-Item's name, description, attachments, or graph node. Identity-
-level deletion redacts the User's PII; the User node's UUID is
-stable and the Item's authorship edge keeps pointing at it.
-Content-level deletion does **not** sweep up Items: Items are
-goods, not first-person expression, and
+Moderation is the only redaction trigger on an Item
+([moderation.md §1](moderation.md#1-the-two-classification-paths)) —
+content-level account deletion does not sweep up Items per
 [account-deletion.md §1](account-deletion.md#1-two-redaction-levels)
-scopes content-level redaction to Posts, Comments, and
-ChatMessages only.
+(Items are goods, not first-person expression).
 
-**Account deletion of an owner** is the same shape: the User node
+**Account deletion of an owner.** The User node
 persists with redacted PII, the ItemOwnership chain UUIDs remain
 valid, and ownership continues to resolve. If the deleted owner
 is the current owner, the Item continues to be owned by that

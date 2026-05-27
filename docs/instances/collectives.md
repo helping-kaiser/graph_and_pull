@@ -642,23 +642,10 @@ and the chain of CollectiveMembers remains visible on the
 graph. A dissolved Collective node persists; only its acting
 capacity is gone.
 
-A Collective can be redacted via moderation:
-
-- **Moderation classification.** A `'sensitive'` or `'illegal'`
-  Proposal targets one of the Collective's per-field
-  moderation-status properties — `name_status`, `display_name`,
-  `description`, `avatar`, `website_url`, or the `'node'`
-  sentinel covering all of them — and runs the cascade per
-  [moderation.md §1](moderation.md#1-the-two-classification-paths).
-  Collective-specific writes on `'illegal'`: for `name_status`
-  the cascade also writes a redaction marker on the `name` data
-  sibling; affected Postgres version rows or media assets are
-  tombstoned where applicable; originals land in the
-  [retention archive](../primitive/retention-archive.md) under
-  per-row legal hold. The cascade does not propagate to
-  descendants (authored Posts/Comments, CollectiveMembers, owned
-  items). `governance_rules.*` are in scope in principle but
-  rarely the target; identity fields are the typical case.
+Moderation is the only redaction trigger on a Collective node
+itself ([moderation.md §1](moderation.md#1-the-two-classification-paths)) —
+typically targeting identity fields. `governance_rules.*` are
+in scope in principle but rarely the target.
 
 A redacted Collective is an anonymized but still-graph-resident
 actor, not a removed one. The Collective's UUID is stable

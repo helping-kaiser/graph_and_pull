@@ -169,20 +169,9 @@ properties or a tombstone version row on Postgres-side display
 content; both preserve a visible record that the change
 occurred.
 
-A Post can be redacted via moderation:
-
-- **Moderation classification.** A `'sensitive'` or `'illegal'`
-  Proposal targets one of the Post's per-field moderation-status
-  properties — `content`, `attachments`, or the `'node'`
-  sentinel covering both — and runs the cascade per
-  [moderation.md §1](moderation.md#1-the-two-classification-paths).
-  Post-specific writes on `'illegal'`: the affected Postgres body
-  row is tombstoned with a version marker (for `content`),
-  affected `media_attachments` rows are tombstoned and assets
-  removed from object storage (for `attachments`), and the
-  originals go to the
-  [retention archive](../primitive/retention-archive.md) under
-  per-row legal hold.
+Redaction triggers on a Post are moderation
+([moderation.md §1](moderation.md#1-the-two-classification-paths))
+and — with the author's opt-in — content-level account deletion.
 
 Account deletion of the Post's author does **not** by default
 affect the Post's body, attachments, or graph node — identity

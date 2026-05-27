@@ -376,12 +376,11 @@ A ChatMessage receives:
 - **`ChatMessage / Post / Comment → ChatMessage` (`:REFERENCES`)**
   when another content node embeds this message.
 - **`Proposal → ChatMessage` (`:TARGETS`)** when a Proposal
-  targets the ChatMessage — `'sensitive'` or `'illegal'`
-  against `content` or `attachments` (the per-field
-  moderation-status properties), or the `'node'` sentinel for
-  Level 1 chat-internal disavowal (§10). The disavowal vote
-  carrier is the voter's `ChatMember` junction (Shape B), so the
-  chat stance stays decoupled from personal sentiment on
+  targets the ChatMessage — either global moderation
+  ([moderation.md §1](moderation.md#1-the-two-classification-paths))
+  or chat-internal disavowal (§10). The disavowal vote carrier
+  is the voter's `ChatMember` junction (Shape B), so the chat
+  stance stays decoupled from personal sentiment on
   `User → ChatMessage`.
 
 ### 5.3 ChatMember
@@ -1106,18 +1105,8 @@ occurred.
 
 ### 13.1 Chat
 
-A `'sensitive'` or `'illegal'` Proposal targets one of the
-Chat's per-field moderation-status properties — `name_status`,
-`description`, `image`, or the `'node'` sentinel covering all
-three — and runs the cascade per
-[moderation.md §1](moderation.md#1-the-two-classification-paths).
-Chat-specific writes on `'illegal'`: for `name_status` the
-cascade also writes a redaction marker on the `name` data
-sibling; for `description` it tombstones the Postgres version
-row; for `image` it tombstones the `media_attachments` row and
-removes the asset. The cascade does not propagate to the chat's
-ChatMessages, ChatMembers, or any content node that references
-the chat.
+Moderation is the only redaction trigger on a Chat node
+([moderation.md §1](moderation.md#1-the-two-classification-paths)).
 
 **Account deletion of the founder** does not affect the chat:
 identity-level deletion redacts the founder's PII but the User
@@ -1128,14 +1117,8 @@ expression per
 
 ### 13.2 ChatMessage
 
-A `'sensitive'` or `'illegal'` Proposal targets one of the
-ChatMessage's per-field moderation-status properties —
-`content`, `attachments`, or the `'node'` sentinel covering
-both — and runs the cascade per
-[moderation.md §1](moderation.md#1-the-two-classification-paths).
-ChatMessage-specific writes on `'illegal'`: the Postgres body
-row is tombstoned (for `content`) or the `media_attachments`
-rows and assets are tombstoned (for `attachments`). The cascade
+Moderation
+([moderation.md §1](moderation.md#1-the-two-classification-paths))
 applies regardless of whether the message is plaintext or
 encrypted; encrypted messages are classifiable once the relevant
 epoch key has been voluntarily disclosed per §9 and

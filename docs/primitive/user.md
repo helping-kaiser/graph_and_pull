@@ -206,21 +206,13 @@ planned:
   Originals go to the [retention archive](retention-archive.md)
   under per-row legal hold. Full mechanism in
   [account-deletion.md](../instances/account-deletion.md).
-- **Moderation redaction of authored content.** Network
-  governance can classify a specific field of a Post, Comment,
-  ChatMessage, or other content node authored by the User as
-  `'illegal'`, triggering per-field redaction on that node. The
-  User node itself is unaffected unless the same Proposal
-  targets a User-node field. See
-  [moderation.md](../instances/moderation.md).
-- **Moderation redaction of a User-node field.** The same
-  Proposal mechanism can target one of the User's per-field
-  moderation properties (e.g. `bio`, `avatar`, or
-  `username_status` for the handle). For `username_status` the
-  cascade writes redaction markers on both the status property
-  and the `username` data sibling; for the display-only fields
-  only the named property is touched on the graph. Surrounding
-  layers always stay.
+- **Moderation.**
+  [moderation.md](../instances/moderation.md) targets either a
+  User-node field (`bio`, `avatar`, `username_status`, …) or a
+  field of content the User authored. Either path leaves the
+  User node otherwise intact; redaction of authored content does
+  not propagate to the User node unless the same Proposal also
+  targets a User-node field.
 
 Future triggers — court order, next-of-kin under applicable
 inheritance law, network-admin emergency action — are listed in
