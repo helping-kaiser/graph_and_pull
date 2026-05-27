@@ -204,6 +204,21 @@ sessions accumulate context that doesn't help: redundant doc
 re-reads, resolved discussions, stale hypotheses. Fresh sessions
 reload this file and start lean.
 
+### Tightening passes: write current state, not change history
+
+When fixing wrong, stale, or imprecise text in a docs pass:
+
+- **Prefer deletion to rewriting.** If a sentence's only job was
+  a comparison or restatement that turns out to be wrong, delete
+  it. Don't replace a wrong sentence with a longer correct one
+  whose only purpose is to explain the cut.
+- **Never leave markers of what was removed.** No "previously X,
+  now Y", no "the rule used to be Z", no "no longer stored" — the
+  doc describes the current state; the change history lives in
+  git.
+- **Overly verbose is bad.** A reader wants the current rule in
+  the fewest words that carry it. Trim, don't pad.
+
 ---
 
 ## Development commands
