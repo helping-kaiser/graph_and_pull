@@ -88,7 +88,8 @@ A ChatMessage is created by a single authoring gesture from an
 active ChatMember of the chat — the same shape a Post or Comment
 uses. The gesture writes atomically:
 
-- A new `:ChatMessage` node carrying `moderation_status` (§3.2).
+- A new `:ChatMessage` node carrying its per-field moderation
+  properties — `content` and `attachments` (§3.2).
   `content_privacy` is a Postgres-side property on the
   `chat_messages` row (§4.2).
 - The Postgres `chat_messages` row carrying the message body
@@ -112,7 +113,8 @@ concern (§4.2, §9).
 
 A Chat node carries:
 
-- **`name`** — optional routing/display hint. Layered.
+- **`name`** — optional routing/display hint. Layered. Data;
+  per-field status carried separately by `name_status`.
 - **`join_policy`** — one of `open`, `invite-only`,
   `request-entry` (§11). Layered.
 - **`invite_proposer_roles`** — list of `ChatMember.role`
@@ -133,11 +135,14 @@ A Chat node carries:
 - **`epoch`** — integer chat-key-rotation counter (§9). Default
   `1`. Layered. Advances by `1` on every membership change and
   on every passing mid-epoch rotation Proposal.
-- **`moderation_status`** — `'normal'` / `'sensitive'` /
-  `'illegal'`, layered, default `'normal'`. Universal across
-  user-input-bearing nodes; mechanics in
-  [nodes.md](../primitive/nodes.md#universal-moderation_status)
-  and §13.1.
+The Chat also carries one per-field moderation-status property
+per user-input field — **`name_status`** (companion to the data
+sibling `name`), **`description`**, and **`image`**. Each holds
+`'normal'` (default) / `'sensitive'` / redaction marker,
+layered. The universal mechanics live in
+[nodes.md "Universal: per-field moderation status"](../primitive/nodes.md#universal-per-field-moderation-status)
+and §13.1. The node-level moderation state is derived from these
+per-field statuses and not stored.
 
 A Chat also carries a set of **governance-parameter properties**
 — role weights, disavowal quorum/threshold pairs, property-change
@@ -151,9 +156,15 @@ Concrete property types and indexes live in
 
 ### 3.2 ChatMessage
 
-A ChatMessage node carries:
-
-- **`moderation_status`** — same shape as the Chat property.
+A ChatMessage node carries one per-field moderation-status
+property per user-input field — **`content`** (the body) and
+**`attachments`** (every attached media as one status, per
+[moderation.md §5](moderation.md#5-scope)). Each holds
+`'normal'` (default) / `'sensitive'` / redaction marker,
+layered, same shape as the Chat per-field properties above.
+The message body itself (plaintext or ciphertext) lives in
+Postgres (§4.2); the per-field properties exist purely as the
+moderation-targeting surface.
 
 Concrete types and indexes live in
 [graph-data-model.md](../implementation/graph-data-model.md).
@@ -181,8 +192,8 @@ A ChatMember junction carries:
   role-based weight derivation at tally time (§10 "How roles fit
   in"). Layered.
 
-Junction nodes carry no `moderation_status` per
-[nodes.md](../primitive/nodes.md#universal-moderation_status) —
+Junction nodes carry no per-field moderation properties per
+[nodes.md](../primitive/nodes.md#universal-per-field-moderation-status) —
 ChatMember has no user-input fields.
 
 ### 3.4 ChatMember roles and their powers
@@ -324,7 +335,8 @@ A Chat receives:
   [edges.md §2 "Reference"](../primitive/edges.md#reference).
 - **`Proposal → Chat` (`:TARGETS`)** when a Proposal targets a
   property on the Chat — `name`, `join_policy`, `epoch` (§9
-  mid-epoch rotation), `moderation_status`, or any
+  mid-epoch rotation), any per-field moderation-status property
+  (`name_status`, `description`, `image`), or any
   governance-parameter property (§10). See
   [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting).
 
@@ -366,12 +378,12 @@ A ChatMessage receives:
 - **`ChatMessage / Post / Comment → ChatMessage` (`:REFERENCES`)**
   when another content node embeds this message.
 - **`Proposal → ChatMessage` (`:TARGETS`)** when a Proposal
-  targets the ChatMessage — `'sensitive'` against
-  `moderation_status`, `'illegal'` against `content` or
-  `attachments`, or the `'node'` sentinel for Level 1
-  chat-internal disavowal (§10). The disavowal vote carrier is
-  the voter's `ChatMember` junction (Shape B), so the chat
-  stance stays decoupled from personal sentiment on
+  targets the ChatMessage — `'sensitive'` or `'illegal'`
+  against `content` or `attachments` (the per-field
+  moderation-status properties), or the `'node'` sentinel for
+  Level 1 chat-internal disavowal (§10). The disavowal vote
+  carrier is the voter's `ChatMember` junction (Shape B), so the
+  chat stance stays decoupled from personal sentiment on
   `User → ChatMessage`.
 
 ### 5.3 ChatMember
@@ -1096,19 +1108,24 @@ occurred.
 
 ### 13.1 Chat
 
-`'illegal'`-classification target fields on a Chat: `name`
-(graph-side layer redaction), `description` (Postgres tombstone
-version row), the chat image (media tombstone + asset removal,
-targeted via `image_id`), or the `'node'` sentinel per
-[moderation.md §5](moderation.md#5-scope). A passing Proposal
-fires the redaction cascade and auto-flips `moderation_status`
-to `'illegal'`. The cascade does **not** propagate to the
-chat's ChatMessages, ChatMembers, or any content node that
-references the chat.
+A Chat carries per-field moderation-status properties for
+**`name_status`** (companion to the `name` data sibling),
+**`description`**, and **`image`** — per §3.1. An `'illegal'`
+Proposal targets one of these (or the `'node'` sentinel per
+[moderation.md §5](moderation.md#5-scope)); the cascade replaces
+the targeted property's top layer with a redaction marker. For
+`name_status` it also writes a redaction marker on the `name`
+data sibling. For `description` it tombstones the Postgres
+version row; for `image` it tombstones the `media_attachments`
+row and removes the asset. The Chat's derived moderation state
+evaluates to `'illegal'` once any field carries a redaction
+marker. The cascade does **not** propagate to the chat's
+ChatMessages, ChatMembers, or any content node that references
+the chat.
 
-`'sensitive'` classification is a top-layer flip on
-`moderation_status` only; no redaction, reversible by
-counter-Proposal.
+A `'sensitive'` Proposal targets the same per-field property and
+flips its top layer to `'sensitive'` — no redaction, reversible
+by counter-Proposal.
 
 **Account deletion of the founder** does not affect the chat:
 identity-level deletion redacts the founder's PII but the User
@@ -1119,13 +1136,17 @@ expression per
 
 ### 13.2 ChatMessage
 
-`'illegal'`-classification target fields on a ChatMessage:
-`content` (Postgres tombstone version row), `attachments`
-(media tombstone + asset removal), or the `'node'` sentinel.
-The cascade applies regardless of whether the message is
-plaintext or encrypted; encrypted messages are classifiable
-once the relevant epoch key has been voluntarily disclosed per
-§9 and
+A ChatMessage carries per-field moderation-status properties
+for **`content`** and **`attachments`** — per §3.2. An
+`'illegal'` Proposal targets one of these (or the `'node'`
+sentinel); the cascade replaces the targeted property's top
+layer with a redaction marker, tombstones the Postgres body
+row (for `content`) or the `media_attachments` rows + assets
+(for `attachments`), and the message's derived moderation state
+evaluates to `'illegal'`. The cascade applies regardless of
+whether the message is plaintext or encrypted; encrypted
+messages are classifiable once the relevant epoch key has been
+voluntarily disclosed per §9 and
 [moderation.md "Encrypted message classification"](moderation.md#encrypted-message-classification).
 
 **Ciphertext is body content; epoch keys are not.** The Postgres
