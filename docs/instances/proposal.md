@@ -37,8 +37,8 @@ What the author specifies at creation:
 - **The target node** — recorded as the system-created
   outgoing `:TARGETS` structural edge (§4). Fixed at
   creation; a Proposal cannot be re-targeted.
-- **`target_property`**, **`proposed_value`**, and
-  **`value_kind`** — graph properties on the new Proposal
+- **`target_property`**, **`proposed_value`**, **`value_kind`**,
+  and **`rule_anchor`** — graph properties on the new Proposal
   (§2).
 
 The system writes three records atomically: the
@@ -91,11 +91,42 @@ incoming vote edge from the authoring actor (§5).
     handler-specific structured bundle covering multiple
     properties across multiple nodes, applied atomically by
     the cascade. See "Composite proposals" below.
+- **`rule_anchor`** — **required.** Every Proposal is grounded
+  in a rule that lives in one or more layered properties on
+  some node; this field pins the snapshot of that rule at
+  author-time per
+  [governance.md §5 "Rule snapshot at author time"](../primitive/governance.md#rule-snapshot-at-author-time).
+  Shape:
+
+  ```
+  rule_anchor: Map
+    { node_id: String      // node hosting the rule property(ies)
+    , as_of:  Timestamp    // read each anchored property as-of this point
+    }
+  ```
+
+  Single entry covers every current consumer:
+  - Collective Proposals (executions or amendments under
+    `governance.<action_key>`) — `{ <Collective>, T }`; the
+    dispatcher reads `Collective.governance` as-of T and
+    indexes by action_key.
+  - Network dual-quorum moderation Proposals —
+    `{ <Network>, T }`; the dispatcher reads both
+    `_quorum_fraction` and `_quorum_count` as-of T so the
+    `min(P × |active|, K)` rule is fully frozen.
+
+  At tally and cascade the dispatcher reads each rule property
+  as-of `as_of` rather than at the current top layer, so
+  amendments committed mid-flight don't retroactively change
+  in-flight Proposals' rule parameters. Timestamp-based
+  addressing on node-property layers is a forward dependency —
+  see
+  [layers.md §3](../primitive/layers.md#3-layers-on-nodes).
 
 None of these properties layers — the Proposal's identity *is*
 the specific change it proposes; mutating any of them
 mid-lifecycle would change what voters are voting on. A revised
-target, value, or kind requires a new Proposal.
+target, value, kind, or anchor requires a new Proposal.
 
 ### Composite proposals
 

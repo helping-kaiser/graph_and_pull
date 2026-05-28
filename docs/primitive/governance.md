@@ -535,23 +535,41 @@ parameters amendable via the same Proposal primitive
 otherwise face an ambiguity: do amendments retro-apply to
 already-open Proposals or only to the next Proposal authored?
 
-**The pattern: snapshot at author-time.** The application
-records the **layer index** of the rule property at Proposal
-creation and reads the rule from that frozen layer at tally
-and cascade — rules-of-the-game stable through a vote. Since
-the property is already layered, no value duplication; the
-snapshot is a layer-index reference. Per-voter applicability
-stays live per §2.2 and the rest of §5 — the rule is frozen,
-but who currently satisfies it (and with what current weight)
-is not.
+**The pattern: snapshot at author-time, on every Proposal.**
+Every Proposal is grounded in a rule; the rule lives in one
+or more layered node properties; the Proposal records a
+pointer to the exact moment of those properties at creation —
+stored as the required
+[`rule_anchor`](../instances/proposal.md#2-graph-side-properties)
+(`{ node_id, as_of: Timestamp }`). Tally and cascade read each
+rule property on `node_id` as-of `as_of` rather than at the
+current top layer. Rules-of-the-game stable through a vote.
+Since the properties are already layered, no value
+duplication; the snapshot is a single timestamp. Per-voter
+applicability stays live per §2.2 and the rest of §5 — the
+rule is frozen, but who currently satisfies it (and with what
+current weight) is not.
 
-Current consumer:
-[collectives.md §8 "Snapshot at author-time"](../instances/collectives.md#snapshot-at-author-time)
-applies the pattern to `Collective.governance`. Other
-governance subjects whose rule parameters live in layered
-properties apply the same pattern using their own per-property
-layer indices; subjects whose rule parameters aren't amendable
-have no in-flight ambiguity to resolve.
+Why one timestamp rather than per-property layer indices: per-
+node serialized writes (see "Tally serialization" below — the
+same lock discipline applies to property writes) make layer
+timestamps strictly monotonic per node, so one timestamp pins
+the node's full state at that moment, even for rules that
+span several properties on the same node.
+
+Consumer shapes:
+
+- **Single-property rule on one node** — e.g. Collective
+  Proposals (executions or amendments under
+  `governance.<action_key>`); the dispatcher reads
+  `Collective.governance` as-of `as_of` and indexes by
+  `action_key`. See
+  [collectives.md §8 "Snapshot at author-time"](../instances/collectives.md#snapshot-at-author-time).
+- **Multi-property rule on one node** — e.g. Network
+  dual-quorum moderation Proposals; the dispatcher reads
+  both `_quorum_fraction` and `_quorum_count` as-of `as_of`
+  so the `min(P × |active|, K)` rule is fully frozen with a
+  single anchor.
 
 ---
 
