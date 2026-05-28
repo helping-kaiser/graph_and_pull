@@ -10,6 +10,100 @@ items are sketches awaiting the user's call.
 
 ---
 
+## How to use this file
+
+This is the working doc for the Q20 economics design pass. It lives
+on the long-lived branch `jakob/economics/design`. No PR into main
+until the design is fully settled.
+
+**Each session should:**
+
+1. Re-read this file in full at the start. It replaces the previous
+   session's context.
+2. Pick the next item from "Discussion order" below. Don't jump
+   ahead unless a prerequisite is naturally settled along the way.
+   The user will flag if a topic needs an earlier resolution first.
+3. Discuss with the user: lay out options + trade-offs; let the
+   user decide. Per [CLAUDE.md](../CLAUDE.md), never make design
+   decisions autonomously.
+4. Update this file with the outcome — move resolved items into
+   "Settled decisions", remove or supersede stale `[proposal]`
+   sketches, add new sub-questions surfaced by the resolution.
+5. Commit + push on this branch; end the session. Each session
+   produces one commit on this branch.
+
+**After the design is fully settled:**
+
+- Open a PR merging this scratchpad into main.
+- Then create separate branches for each canonical landing pad
+  (see "Files this will eventually touch" at the bottom). Don't
+  author canonical primitive / implementation docs from this
+  design branch; this branch produces only the scratch.
+
+## Discussion order
+
+1. **Token issuance model** — pass-through vs mint-on-hit vs
+   calendar-mint-with-decay. *In progress; next session resumes
+   here.* Analysis under *A — Token shape* below.
+2. Campaign expiry behavior (refund / pro-rata / mixed).
+3. Goal-hit detection cadence (continuous / epoch-snapshot /
+   claim-on-hit).
+4. Attribution math concretization (Shapley specifics; conduit
+   credit formula; cut-off enforcement).
+5. Action gating specifics (which actions; quota shapes; CGT
+   prices; how the soft-quota threshold gets set).
+6. Wallet onboarding & claim-escrow policy.
+7. Marketplace + infrastructure primitive scoping — in this design
+   pass or deferred to a follow-up workstream?
+8. Q19 stake-gated quorum reopen (now that a token exists).
+9. Q16 `S(t)` input candidates (token-related or unrelated).
+10. Authoring plan: which canonical docs in which order; what
+    splits between `economics.md` / `token.md` / `ledger.md`.
+
+## Next session pickup
+
+**Topic 1: Token issuance model.** Three options on the table —
+**pass-through** (fixed supply, no mint), **mint-on-hit** (campaign-
+driven mint), and **calendar-mint with decay** (peer-network-style
+supply curve, distributed via campaign attribution not per-activity).
+Full analysis preserved under *A — Token shape* below. User has not
+yet decided.
+
+---
+
+## Guiding principles surfaced in discussion
+
+- **Fair > cheap.** Pick the cheapest only among equally-fair
+  options.
+- **Public auditability** of money flows is a design north star —
+  vendors and buyers can't silently scam each other when contracts
+  + payments are graph-visible.
+- **Maximize free user actions; price only at the margins.**
+  Gating exists to stop spam and fund infrastructure, not to
+  extract from normal use.
+- **Costs are explicit, not hidden.** "If it's free, you're the
+  product" is a real observation — compute, storage, and bandwidth
+  cost real resources; someone always pays. CoGra's answer is to
+  make the payment relationship visible (host edges, transfer
+  edges) instead of monetizing user data. Self-hosters pay nothing
+  to the network; hosted users pay their host; net-negative users
+  (consume more than they contribute) are sponsored explicitly by
+  whoever values them, or pay themselves. Data is free for all;
+  what gets paid for is *service delivery*, not data access.
+- **Early-holder upside comes from demand growth, not from
+  rewarding squatters.** Token price rises if advertiser demand
+  outpaces fixed or slow-growing supply; "joined early and held"
+  benefits from the rise without a mechanism that pays inactive
+  early users on a calendar.
+- **Per-action distribution is the anti-pattern, not calendar-mint
+  per se.** The peer-network spec rewarded users per-activity
+  (likes, posts, comments), which bots beat humans at. That
+  mechanism is rejected. The spec's supply curve (fixed daily mint
+  with annual decay) is a separate question and remains a candidate
+  issuance model — see *A — Token shape* below.
+
+---
+
 ## Settled decisions
 
 - **Native CGT token, on-chain.** `[settled]` Advertisers buy CGT on
@@ -44,14 +138,51 @@ items are sketches awaiting the user's call.
   no single-operator risk. Candidates: ETH L2 (Base / Optimism /
   Arbitrum), Solana, custom appchain. `[proposal]` decide once the
   primitive is written; chain choice is implementation.
-- **Mint schedule.**
-  - The user flagged the tension: "joined early and got rich" sells
-    early adopters; sustained-activity-only rewards weaken that.
-  - `[proposal]` Rewards minted on goal-hit from a sustained-issuance
-    pool, rate tied to advertiser spend not calendar time. Means
-    early graph-important users accrue CGT during the early period
-    and may hold — captures the early-adopter narrative without
-    rewarding pure squatters.
+- **Token issuance model.** Three live options to evaluate against
+  each other:
+  - **(a) Pass-through, fixed supply** `[proposal]`. Total supply
+    set at launch; never inflates. Advertisers buy CGT on a DEX,
+    deposit to fund a campaign, contributors claim at goal-hit.
+    Treasury's 2% is a slice of each deposit. Early-holder upside
+    comes purely from demand growth against fixed supply.
+    - **Pros**: one supply curve to design (initial only); no
+      ongoing-mint governance question; cleanest ledger story
+      (chain holds balances, CoGra signs Merkle roots, no
+      mint-side state).
+    - **Cons**: initial premine must cover lifetime liquidity
+      (under-issuance → DEX slippage); no protocol-level subsidy
+      lever; weaker deflationary narrative (price growth only,
+      no supply story).
+  - **(b) Mint-on-hit (campaign-driven)** `[proposal]`. New CGT
+    minted on each campaign goal-hit, distributed to contributors;
+    advertiser's deposit goes to a burn or sink. Mint rate tied to
+    campaign activity, not calendar.
+    - **Pros**: protocol can subsidize specific behaviors (hosts,
+      conduits, etc.) without taking from advertiser budget;
+      initial premine can be small.
+    - **Cons**: two supply curves to balance (initial + ongoing
+      mint rate); needs governance for the mint rate; more
+      complex ledger story (chain must distinguish "transferred"
+      from "minted" CGT for the claim contract).
+  - **(c) Calendar-mint with decay** `[proposal — peer-network
+    supply curve, anti-sybil distribution]`. Fixed daily mint
+    (e.g. 5000 CGT/day) decaying 10%/year, totaling ~18M lifetime.
+    Distribution mechanism is *not* per-activity (the rejected
+    peer-network mechanism) but campaign-attribution: each day's
+    mint accumulates in a pool drawn against campaign closes,
+    or directly tops up campaign payouts.
+    - **Pros**: clean deflationary supply narrative (the "joined
+      early and got rich" story sells naturally without rewarding
+      squatters); fixed lifetime supply with predictable curve;
+      protocol-level reward pool independent of advertiser flow.
+    - **Cons**: requires queueing/accumulation logic if a day has
+      no qualifying campaigns; mismatch handling if campaign
+      payouts exceed available mint; one extra knob (the decay
+      rate) that needs justification.
+  - **Trade-off summary**: (a) is simplest and leans on demand
+    growth alone; (c) keeps the deflationary curve narrative
+    without per-activity sybil risk; (b) is most flexible but
+    adds two governance surfaces. None obviously dominates yet.
 - **Initial distribution / premine.** Open. Team allocation?
   Airdrop to alpha users? Liquidity-bootstrap auction?
 - **Treasury accrual currency.** `[proposal]` Treasury takes CGT
