@@ -204,6 +204,17 @@ sessions accumulate context that doesn't help: redundant doc
 re-reads, resolved discussions, stale hypotheses. Fresh sessions
 reload this file and start lean.
 
+### One Edit per response during active design iteration
+
+When the user is reviewing design choices in real time and each
+Edit carries content they may push back on, send **one Edit per
+response and wait**. A rejection of the first Edit doesn't stop
+later Edits in the same response from applying, and the user
+can't course-correct a fan-out mid-flight. Once a decision is
+settled and you're mechanically applying it across N files,
+parallel batches are fine again — the distinction is iteration
+vs. application.
+
 ### Tightening passes: write current state, not change history
 
 When fixing wrong, stale, or imprecise text in a docs pass:
@@ -218,6 +229,12 @@ When fixing wrong, stale, or imprecise text in a docs pass:
   git.
 - **Overly verbose is bad.** A reader wants the current rule in
   the fewest words that carry it. Trim, don't pad.
+- **Decisions are facts, not recommendations.** Once a design
+  decision is settled, write it as the decision —
+  "the pattern: X", "every Proposal carries Z" — not
+  "recommended pattern: X" or "applications can opt into Y".
+  Softening framing contradicts the agreement and reads as a
+  half-decision.
 
 ---
 
