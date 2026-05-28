@@ -10,6 +10,10 @@ vote is cast on a Proposal that *targets* that node's
 specific property, not on the underlying node directly. When
 the tally crosses threshold, a cascade writes a new layer on
 the target property with the Proposal's `proposed_value`.
+Multi-property atomic changes — admitting a shareholder with
+re-distribution, for instance — use **composite proposals**
+(§2) which carry a structured bundle in place of a scalar
+value and cascade atomically across all affected properties.
 
 This doc describes the node; the **governance mechanics** it
 hosts — eligibility, weight function, threshold policy, outcome
@@ -33,8 +37,9 @@ What the author specifies at creation:
 - **The target node** — recorded as the system-created
   outgoing `:TARGETS` structural edge (§4). Fixed at
   creation; a Proposal cannot be re-targeted.
-- **`target_property`** and **`proposed_value`** — graph
-  properties on the new Proposal (§2).
+- **`target_property`**, **`proposed_value`**, and
+  **`value_kind`** — graph properties on the new Proposal
+  (§2).
 
 The system writes three records atomically: the
 `:Proposal` node, the outgoing `:TARGETS` edge, and an
@@ -62,13 +67,73 @@ incoming vote edge from the authoring actor (§5).
     [chats.md §10](chats.md#10-moderation)).
     `proposed_value ∈ {'disavowed', 'normal'}`.
 - **`proposed_value`** — the value to set on
-  `target_property` if the Proposal passes. Values used with
-  the `'node'` sentinel are listed in the two bullets above.
+  `target_property` if the Proposal passes. Shape depends on
+  `value_kind` (below); values used with the `'node'` sentinel
+  are listed in the two bullets above.
+- **`value_kind`** — string discriminator on the shape of
+  `proposed_value`, set at Proposal creation and consumed by
+  frontends to render the right editor / display widget
+  without needing out-of-band knowledge of every
+  `target_property`. Enumerated:
+  - `'scalar:string'` — `proposed_value` is a string
+    (moderation classifications, role strings, `name`
+    changes, …).
+  - `'scalar:float'` — `proposed_value` is a Float
+    (quorum fractions, `ownership_pct`, …).
+  - `'scalar:integer'` — `proposed_value` is an Integer
+    (absolute quorum counts, half-lives, …).
+  - `'rule'` — `proposed_value` is a `Rule` object — the
+    (eligibility, weights, threshold) triple used for
+    governance rules. Consumer: governance-rule amendments
+    on collectives (see
+    [collectives.md §8](collectives.md#8-governance--the-social-contract)).
+  - `'composite:<action_key>'` — `proposed_value` is a
+    handler-specific structured bundle covering multiple
+    properties across multiple nodes, applied atomically by
+    the cascade. See "Composite proposals" below.
 
-Neither property layers — the Proposal's identity *is* the
-specific change it proposes; mutating either mid-lifecycle
-would change what voters are voting on. A revised target or
-value requires a new Proposal.
+None of these properties layers — the Proposal's identity *is*
+the specific change it proposes; mutating any of them
+mid-lifecycle would change what voters are voting on. A revised
+target, value, or kind requires a new Proposal.
+
+### Composite proposals
+
+A composite Proposal carries a structured `proposed_value`
+bundle that atomically writes layers on several properties —
+usually across several nodes that together encode one
+invariant. The canonical case is shareholder admission:
+creating the new `:CollectiveMember` junction with N% stake
+and reducing existing shareholders' `ownership_pct` so the
+100% total holds; either change passing alone would break the
+invariant.
+
+Three conventions hold across every composite kind:
+
+1. **`:TARGETS` points at the owning entity.** For
+   Collective-internal composites, the Collective node — not
+   any one affected junction; the bundle inside
+   `proposed_value` carries the per-node specifics.
+2. **Bundle entries carry `_from` and `_to` for every
+   property being changed.** At threshold-cross the cascade
+   re-validates by checking each affected property's current
+   value equals the entry's `_from`. Any mismatch — typically
+   state drift between author-time and tally-time — causes
+   the cascade to refuse; the Proposal records a terminal
+   `passed_but_invariant_rejected` outcome and a fresh
+   Proposal with refreshed numbers is needed. Straightforward
+   compare-and-swap; voters see exactly what's being asserted
+   about current state.
+3. **Per-`action_key` handlers own bundle shape, author-time
+   invariant validation, and the cascade transaction.** The
+   primitive doesn't enumerate composite shapes — each
+   application doc declares its own action keys.
+
+Composite kinds in current use live in their application docs
+— see
+[collectives.md §8](collectives.md#8-governance--the-social-contract)
+for `composite:decision:admit_shareholder` and
+`composite:decision:transfer_shares`.
 
 A Proposal does **not** carry any per-field moderation-status
 properties: it has no user-input fields to redact (see
@@ -222,6 +287,12 @@ is the node-level progression.
   type — re-layering `Chat → ChatMember` for a `ChatMember`
   target, or writing nothing on a `ChatMessage` target since
   the Proposal's pass-state is itself the chat's stance.
+  Composite Proposals (§2 "Composite proposals") re-validate
+  against current state at this point — if any bundle entry's
+  `_from` no longer matches the affected property's current
+  value, the cascade refuses and the Proposal terminates as
+  `passed_but_invariant_rejected`. A fresh Proposal with
+  refreshed numbers is the only path forward.
 - **Outcome stickiness** — after the cascade, the target
   stays in its new state until a future vote event pushes
   it back across a threshold
