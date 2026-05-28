@@ -523,6 +523,36 @@ its old weight or take the current one?
 Specific applications can override this if they need vote-time
 snapshot weights, but they carry the burden of explaining why.
 
+### Rule snapshot at author time
+
+The "current at tally time" default above governs **per-voter
+data** — a voter's role, `ownership_pct`, junction properties.
+It does **not** extend to **the rule itself** — the
+eligibility predicate, weight function, and threshold the
+tally evaluates against. When an application makes its rule
+parameters amendable via the same Proposal primitive
+(governance of governance), in-flight Proposals would
+otherwise face an ambiguity: do amendments retro-apply to
+already-open Proposals or only to the next Proposal authored?
+
+**The pattern: snapshot at author-time.** The application
+records the **layer index** of the rule property at Proposal
+creation and reads the rule from that frozen layer at tally
+and cascade — rules-of-the-game stable through a vote. Since
+the property is already layered, no value duplication; the
+snapshot is a layer-index reference. Per-voter applicability
+stays live per §2.2 and the rest of §5 — the rule is frozen,
+but who currently satisfies it (and with what current weight)
+is not.
+
+Current consumer:
+[collectives.md §8 "Snapshot at author-time"](../instances/collectives.md#snapshot-at-author-time)
+applies the pattern to `Collective.governance`. Other
+governance subjects whose rule parameters live in layered
+properties apply the same pattern using their own per-property
+layer indices; subjects whose rule parameters aren't amendable
+have no in-flight ambiguity to resolve.
+
 ---
 
 ## 6. When outcomes take effect

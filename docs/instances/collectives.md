@@ -572,23 +572,17 @@ until co-signers cross the threshold.
 
 ### Snapshot at author-time
 
-When a Proposal is authored under a `governance[X]` entry, the
-Proposal records the **layer index** of `Collective.governance`
-at author-time as its rule snapshot. At tally and cascade time,
-rule parameters are read from that frozen layer rather than the
-current top layer — amendments committed mid-flight do not
-retroactively change the in-flight Proposal's threshold,
-eligibility predicate, or weights. Since `governance` is already
-layered, the snapshot is just a layer-index reference; no
-duplicate value storage.
-
-Voter eligibility against the frozen predicate is still
-evaluated at tally time per
-[governance.md §2.2](../primitive/governance.md#22-eligibility)
-— a voter who acquires the right role mid-flight counts; one
-who loses it drops via the eligibility-dropout cascade. The
-rule is frozen; the *applicability* of the rule to a given
-voter at a given moment is live.
+Collective amendments apply the snapshot pattern from
+[governance.md §5 "Rule snapshot at author time"](../primitive/governance.md#rule-snapshot-at-author-time).
+A Proposal authored under a `governance[X]` entry records the
+**layer index** of `Collective.governance` at author-time;
+tally and cascade read the rule from that frozen layer.
+Amendments committed mid-flight do not retroactively change
+in-flight Proposals' threshold, eligibility predicate, or
+weights. Voter applicability against the frozen predicate is
+still evaluated live at tally time — a voter who acquires the
+right role mid-flight counts; one who loses it drops via the
+eligibility-dropout cascade.
 
 ### Simple and composite actions
 
