@@ -187,15 +187,16 @@ cache. Universal mechanics in
 [nodes.md](../primitive/nodes.md#universal-per-field-moderation-status);
 Collective-specific cascade in §9.
 
-- **`governance_rules.*`** — structured properties holding the
-  social contract: one entry per decision-type instance and one
-  per act-as rule (e.g.
-  `governance_rules.remove_worker = { eligibility, weights, threshold }`,
-  `governance_rules.act_as_transfer_item = { … }`). **Each rule
-  is itself a layered authored property** per
-  [layers.md §3](../primitive/layers.md#3-layers-on-nodes), and
-  changes go through the standard Proposal pattern with that
-  rule's own parameters — governance of governance. See §8.
+- **`governance`** — a single layered map property holding the
+  Collective's entire social contract, keyed by `action_key`
+  string. Each entry is a `Rule` object carrying two triples —
+  `exec` (eligibility, weights, threshold for the action) and
+  `amend` (eligibility, weights, threshold for amending this
+  entry). Layered per
+  [layers.md §3](../primitive/layers.md#3-layers-on-nodes);
+  amending an entry is a standard Proposal targeting
+  `governance.<action_key>`, gated by that entry's own `amend`
+  triple — governance of governance, scoped per rule. See §8.
 
 Concrete property types and indexes live in
 [graph-data-model.md](../implementation/graph-data-model.md).
@@ -221,9 +222,11 @@ weight changes — see §8).
   `'worker'`, `'band member'`, `'subsidiary'`, `'partner'`,
   `'member'`, etc. Open-ended per the social contract; the role
   vocabulary is **Collective-specific**, not a global enum.
-  Layered. *How the role catalog is introduced, scoped, and bound
-  to powers is an open design question — see
-  [open-questions.md Q21](../open-questions.md#q21--collective-role-catalog-how-role-strings-are-introduced-scoped-and-bound-to-powers).*
+  Layered. The vocabulary is **implicit** — it is the set of
+  strings used anywhere in the Collective's `governance` map
+  (§8) eligibility predicates plus the strings assigned to any
+  active member's `role`. Typos are amendable like any other
+  `role` change via a Proposal targeting `CollectiveMember.role`.
 - **`ownership_pct`** — when the role implies a stake (e.g.
   shareholder). Layered when present.
 - **`voting_weight`** — optional direct weight override for
@@ -326,8 +329,8 @@ A Collective receives:
   [edges.md §2 "Reference"](../primitive/edges.md#reference).
 - **`Proposal → Collective` (`:TARGETS`)** when a Proposal
   targets a property on the Collective — `name`, any per-field
-  moderation-status property (§3), or any `governance_rules.*`
-  parameter (§8). See
+  moderation-status property (§3), or any `governance.<action_key>`
+  entry (§8). See
   [edges.md §2 "Subject targeting"](../primitive/edges.md#subject-targeting).
 
 ### 5.2 CollectiveMember
@@ -479,141 +482,268 @@ unilaterally; a household requires consensus for everything; a
 co-op uses 2/3 majorities for major decisions. The graph supports
 all of these without any primitive changes.
 
-### Per-decision-type instances
+### The `governance` map
 
-Every decision-type in a collective is a separate governance
-instance per
-[governance.md §2](../primitive/governance.md#2-the-five-components).
-Each instance has its own:
+The entire social contract lives in **one layered map property
+on the Collective** — `governance`, keyed by `action_key`
+string. Each entry is a `Rule` object:
 
-- **Subject** — what's being decided (a CollectiveMember junction
-  for member changes; a Proposal node for property changes).
-- **Eligibility** — who can vote (`role = CEO`,
-  `role = board_member`, all members, members weighted by
-  `ownership_pct`, …). Evaluated at tally time per
-  [governance.md §2.2](../primitive/governance.md#22-eligibility).
-- **Weights** — how each voter's contribution is computed (uniform,
-  role-based, or property-derived).
-- **Threshold** — quorum and pass-threshold.
+```
+governance: Map<String, Rule>
+  where Rule = {
+    exec:  { eligibility, weights, threshold, exclude_subject? },
+    amend: { eligibility, weights, threshold }
+  }
+```
 
-Instances coexist on the same Collective. Hiring a worker and
-removing a board member can use entirely different rules; the
-system routes each decision to its instance based on the subject
-and the subject's role.
+`exec` is the per-component governance instance per
+[governance.md §2](../primitive/governance.md#2-the-five-components)
+that governs executing the action. `amend` is almost the same
+shape but **without `exclude_subject`** — the subject of an
+amendment is the rule entry itself, not a CollectiveMember, so
+there is no member to exclude. Amending a rule entry is a
+standard Proposal with `value_kind = 'rule'`,
+`target_property = 'governance.<action_key>'`, and
+`proposed_value` set to the new `Rule` object; the Proposal is
+gated by the entry's own `amend` triple — governance of
+governance, scoped per rule.
 
-### Act-as rules
+**The `amend` triple is self-applying.** Amending the `amend`
+half of a rule uses that same `amend` triple. Tightening the
+amendment process requires using the current amendment process —
+no separate meta-meta-rule, no infinite regress, no primitive
+default.
 
-Act-as rules are a second family of rules in the social
-contract, sitting alongside the decision-type instances above.
-They govern the on-behalf-of mechanism described in §2: which
-members can produce which classes of gestures as the Collective.
+**Schema is fixed; the action set is data.** `governance` is a
+single map-typed property declared once in
+[graph-data-model.md](../implementation/graph-data-model.md);
+new action keys never require a schema change. Adding,
+amending, or tombstoning an entry all flow through the same
+`target_property = 'governance.<action_key>'` Proposal mechanism.
 
-An act-as rule has the same parameter shape as a decision-type
-instance — eligibility, weights, threshold — but its outcome is
-the production of the Collective's outgoing edge itself, not a
-state transition on a separate subject. A single-signer rule
-(threshold `1`) is the common case; a multi-sig rule
-(threshold > `1`) delays the gesture until co-signers satisfy
-the threshold, analogous to a multi-sig junction approval.
+### Action keys
 
-When no explicit rule covers a gesture, the defaults from §2
-apply — content-acts allow any active member, governance-acts
-deny. Explicit rules override these in either direction. The
-example configurations below include illustrative act-as rules
-alongside decision-type rules.
+`action_key` strings follow conventions the dispatch layer
+**constructs from a member's gesture** — they are not
+arbitrary strings the Collective invents. The Collective
+writes rules under keys matching those conventions; the
+dispatch builds the candidate key the same way at gesture
+time and walks the fallback chain (below) until it finds an
+entry. Three reserved top-level namespaces:
+
+- **`decision:<operation>[:<role>]`** — Proposals that change
+  Collective-internal state. The `<operation>` enumerates
+  what the cascade can produce on `:Collective` or
+  `:CollectiveMember`: `add_member`, `remove_member`,
+  `change_role`, `change_ownership_pct`,
+  `change_voting_weight`, `set:<property>` (for Collective
+  node properties like `name`, `description`, `avatar`,
+  `website_url`). The optional `<role>` parameter refines
+  member-related operations by the affected member's role.
+  Composite Collective operations (`admit_shareholder`,
+  `transfer_shares`, …) take their own operation key paired
+  with a handler that knows the composite shape per
+  [proposal.md §2 "Composite proposals"](proposal.md#composite-proposals).
+- **`actas:<gesture-identifier>`** — gating Collective
+  outgoing edges through an authorized member. The
+  gesture-identifier is derived from the actor edge being
+  produced — by convention `<gesture>:<target_type>`
+  (e.g. `actas:author:Post`, `actas:vote:Proposal`,
+  `actas:transfer:Item`) so the dispatch builds the key
+  deterministically from the would-be edge. **Two fixed
+  class fallback keys** are recognized:
+  `actas:content_default` and `actas:governance_default` —
+  so a Collective can override the §2 in-prose defaults at
+  class granularity without enumerating every gesture.
+- **`system:<key>`** — Collective-level meta keys when needed
+  (rare; the per-rule `amend` triple covers most cases).
+
+Within each namespace the Collective declares only the keys
+it wants to govern explicitly — the fallback chain (below)
+handles the rest.
+
+### Fallback chain at dispatch
+
+The dispatch layer constructs the most-specific applicable
+`action_key` from the gesture per the construction conventions
+above, then walks **most-specific to most-general** through
+`governance` until it finds a matching entry:
+
+1. Most-specific (with parameter): e.g. `actas:author:Post`
+   for "author a Post as the Collective", or
+   `decision:add_member:worker` for "admit a worker".
+2. Class-general (parameter dropped): e.g.
+   `actas:content_default` for any content-act, or
+   `decision:add_member` for any member admission regardless
+   of role.
+3. **In-prose default from §2:** allow any active member for
+   content-acts; deny for governance-acts and for
+   `decision:*` gestures without a matching key.
+
+A Collective only needs to declare rules where it wants to
+override the §2 in-prose defaults — the rest fall through.
+
+A single-signer entry (`exec.threshold = 1`) collapses the
+co-signed-acts pattern (see
+[governance.md §3](../primitive/governance.md#co-signed-acts-threshold--1-in-either-shape))
+to its 1-of-1 case: the gesture executes immediately when the
+acting member satisfies `exec.eligibility`. A multi-signer entry
+(`exec.threshold > 1`) holds the gesture pending in a Proposal
+until co-signers cross the threshold.
+
+### Snapshot at author-time
+
+Collective Proposals apply the snapshot pattern from
+[governance.md §5 "Rule snapshot at author time"](../primitive/governance.md#rule-snapshot-at-author-time)
+via the
+[`rule_anchor`](proposal.md#2-graph-side-properties) field —
+required on every Proposal. A Proposal authored under a
+`governance[X]` entry sets `rule_anchor = <Collective.id>`.
+Tally and cascade read `Collective.governance` as-of the
+Proposal's authorship-edge timestamp and index by `action_key`
+to recover the frozen Rule. Amendments committed mid-flight do
+not retroactively change in-flight Proposals' threshold,
+eligibility predicate, or weights. Voter applicability against
+the frozen predicate is still evaluated live at tally time —
+a voter who acquires the right role mid-flight counts; one
+who loses it drops via the eligibility-dropout cascade.
+
+### Simple and composite actions
+
+The `Rule` shape is uniform across all action keys. What
+differs is the Proposal's `value_kind` and `proposed_value`
+shape:
+
+- **Simple** — single property change.
+  `value_kind ∈ {'scalar:string', 'scalar:float',
+  'scalar:integer', 'rule'}`, `target_property` names the
+  property being changed. Examples: rename the Collective
+  (`scalar:string`, `target_property = 'name'`); tighten a
+  rule (`rule`, `target_property = 'governance.<action_key>'`);
+  fire a worker (the cascade writes the
+  `Collective → CollectiveMember` `:APPROVAL` state-transition
+  layer per §9).
+- **Composite** — multi-property atomic change across multiple
+  nodes. `value_kind = 'composite:<action_key>'`,
+  `proposed_value` is a handler-specific bundle of `_from` /
+  `_to` entries, `:TARGETS` points at the Collective node (the
+  owning entity). See
+  [proposal.md §2 "Composite proposals"](proposal.md#composite-proposals).
+  Examples: `composite:decision:admit_shareholder` (new member
+  + redistribute existing percentages so the total stays at
+  100%); `composite:decision:transfer_shares` (move N% from
+  one shareholder to another).
+
+The author-time invariant (e.g. "post-change percentages sum
+to 100%") and the cascade re-validation against current state
+are handler responsibilities per `action_key`, not primitive
+machinery.
 
 ### No primitive defaults
 
-Unlike Chats — which default to community-vote moderation because
-that fits informal communities — Collectives must explicitly
-define their rules at creation. Creating a Collective is the act
-of writing its social contract. The example configurations below
-are starting templates, not enforced defaults.
+Unlike Chats — which default to community-vote moderation
+because that fits informal communities — Collectives must
+explicitly define their rules at creation. Creating a
+Collective is the act of writing its social contract. The
+example configurations below are starting templates, not
+enforced defaults.
 
 ### Hierarchical authority is just a parameter choice
 
-The "no admin veto" stance from chat governance is a chat-specific
-default, not a primitive principle. A collective whose social
-contract gives the CEO `weight = ∞` (or just `threshold = 1` with
-`eligibility = role = CEO`) for the "fire worker" decision IS
-expressing CEO-unilateral authority — and the graph supports it.
-The primitive doesn't pick a power structure; the collective does.
+The "no admin veto" stance from chat governance is a
+chat-specific default, not a primitive principle. A collective
+whose social contract gives the CEO `weight = ∞` (or just
+`exec.threshold = 1` with `exec.eligibility = role = CEO`) for
+the "fire worker" decision IS expressing CEO-unilateral
+authority — and the graph supports it. The primitive doesn't
+pick a power structure; the collective does.
 
 ### Example configurations
 
-The roles below (`CEO`, `founder`, `board_member`, `shareholder`,
-`worker`, etc.) are **collective-specific** per §3 — each social
-contract defines its own role vocabulary; the primitive only
-requires it to be used consistently for that collective's
-eligibility and weight rules.
+The roles below (`CEO`, `founder`, `board_member`,
+`shareholder`, `worker`, etc.) are **collective-specific** per
+§3 — each social contract defines its own role vocabulary; the
+primitive only requires it to be used consistently for that
+collective's eligibility and weight rules. Each table shows
+`exec` only; the `amend` triple for each entry is the
+Collective's choice (typically tighter than its `exec` — see
+the corporate example below).
 
 #### Corporate hierarchy
 
-A small company with founders, a CEO, board members, and workers.
+A small company with founders, a CEO, board members, and
+workers.
 
-| Decision-type / Act-as rule        | Eligibility                                            | Threshold |
-|------------------------------------|--------------------------------------------------------|-----------|
-| Hire / fire worker                 | `role = CEO`                                           | 1 vote    |
-| Promote worker to senior           | `role = CEO`                                           | 1 vote    |
-| Add board member                   | `role = founder`, weighted by `ownership_pct`          | > 50%     |
-| Remove board member                | `role IN (founder, board_member)`, excluding subject   | ≥ 2/3     |
-| Remove CEO                         | `role = board_member`                                  | ≥ 2/3     |
-| Change `ownership_pct`             | `role IN (founder, shareholder)`, weighted by stake    | ≥ 75%     |
-| Change `Collective.name`           | All active members                                     | > 50%     |
-| Act-as: post / comment             | `role = press_officer` *(override of the any-member default)*   | 1 signer  |
-| Act-as: author external Proposal   | `role = CEO`                                           | 1 signer  |
-| Act-as: cast vote in external Proposal | `role = CEO` or `role = board_member`              | 1 signer  |
-| Act-as: transfer Item (acquire / release) | `role IN (founder, board_member)`, weighted by stake | ≥ 50% signers |
+| `action_key`                                | `exec.eligibility`                                        | `exec.threshold` |
+|---------------------------------------------|-----------------------------------------------------------|------------------|
+| `decision:add_member:worker`                | `role = CEO`                                              | 1 vote           |
+| `decision:remove_member:worker`             | `role = CEO`                                              | 1 vote           |
+| `decision:change_role:worker`               | `role = CEO`                                              | 1 vote           |
+| `decision:add_member:board_member`          | `role = founder`, weighted by `ownership_pct`             | > 50%            |
+| `decision:remove_member:board_member`       | `role IN (founder, board_member)`, `exclude_subject`      | ≥ 2/3            |
+| `decision:remove_member:CEO`                | `role = board_member`                                     | ≥ 2/3            |
+| `decision:admit_shareholder` *(composite)*  | `role IN (founder, shareholder)`, weighted by stake       | ≥ 75%            |
+| `decision:transfer_shares` *(composite)*    | `role = shareholder`, weighted by `ownership_pct`         | ≥ 75%            |
+| `decision:set:name`                         | All active members                                        | > 50%            |
+| `actas:author:Post`                         | `role = press_officer` *(overrides any-member default)*   | 1 signer         |
+| `actas:author:Proposal`                     | `role = CEO`                                              | 1 signer         |
+| `actas:vote:Proposal`                       | `role IN (CEO, board_member)`                             | 1 signer         |
+| `actas:transfer:Item`                       | `role IN (founder, board_member)`, weighted by stake      | ≥ 50% signers    |
 
-A worker is fired by a single CEO vote; a board member is removed
-only by board supermajority; a CEO is removed only by the rest of
-the board. Routine PR posting is delegated to a single press
-officer (locking down the otherwise any-member default for
-content-acts), while consequential moves — proposing, voting,
-and transferring company assets — are routed to leadership and
-the board.
+A worker is hired or fired by a single CEO vote; a board
+member is removed only by board supermajority; a CEO is removed
+only by the rest of the board. Routine PR posting is delegated
+to a single press officer (locking down the otherwise
+any-member default for content-acts), while consequential
+moves — proposing, voting, and transferring company assets —
+are routed to leadership and the board. Shareholder admissions
+and transfers are composite actions: the Proposal's bundle
+covers both the new/changed CollectiveMember junction and the
+redistributed `ownership_pct` values across affected members,
+atomic at cascade.
+
+Sample `amend` triples for the same Collective, showing how
+amendment cost is calibrated per rule:
+
+| `action_key`                              | `amend.eligibility`                                       | `amend.threshold` |
+|-------------------------------------------|-----------------------------------------------------------|-------------------|
+| `decision:add_member:worker`              | `role IN (founder, board_member)`                         | > 50%             |
+| `decision:transfer_shares`                | `role = shareholder`, weighted by `ownership_pct`         | ≥ 90%             |
+| `decision:set:name`                       | `role IN (founder, board_member)`                         | ≥ 2/3             |
+
+The CEO-can-hire rule is cheap to amend (board majority);
+share-transfer rules are expensive to amend (near-unanimous
+shareholders); the Collective's name is moderately gated. Each
+rule self-describes its mutability cost.
 
 #### Household (5 people)
 
-| Decision-type / Act-as rule    | Eligibility                                | Threshold                                 |
-|--------------------------------|--------------------------------------------|-------------------------------------------|
-| Add a new member               | All active members                         | 100% of cast, 100% quorum                 |
-| Remove a member                | All members except subject                 | ≥ 90% of cast, 100% quorum of remaining   |
-| Routine spending (if tracked)  | All active members                         | > 50%, ≥ 60% quorum                       |
-| Act-as: vote in HOA Proposal   | All active members                         | > 50% signers                              |
-| Act-as: acquire shared Item    | All active members                         | > 50% signers                              |
+| `action_key`                              | `exec.eligibility`                  | `exec.threshold`                          |
+|-------------------------------------------|-------------------------------------|-------------------------------------------|
+| `decision:add_member`                     | All active members                  | 100% of cast, 100% quorum                 |
+| `decision:remove_member`                  | All members, `exclude_subject`      | ≥ 90% of cast, 100% quorum of remaining   |
+| `decision:routine_spending`               | All active members                  | > 50%, ≥ 60% quorum                       |
+| `actas:vote:Proposal`                     | All active members                  | > 50% signers                             |
+| `actas:transfer:Item`                     | All active members                  | > 50% signers                             |
 
 Everyone has equal voice; consensus dominates. Content-acts
-(posting to the household feed, reacting on shared content) are
-left at the any-member default — no override.
+(posting to the household feed, reacting on shared content)
+are left at the any-member default — no override.
 
 #### Worker co-op
 
 All members equal stake; some routine decisions delegated to
 officers.
 
-| Decision-type / Act-as rule         | Eligibility                | Threshold       |
-|-------------------------------------|----------------------------|-----------------|
-| Add a new member                    | All active members         | ≥ 2/3           |
-| Remove a member                     | All members except subject | ≥ 2/3           |
-| Routine operations                  | `role = officer`           | > 50%           |
-| Major policy change                 | All active members         | ≥ 2/3           |
-| Change capital structure            | All active members         | ≥ 75%           |
-| Act-as: vote in federation Proposal | All active members         | > 50% signers   |
-| Act-as: transfer co-op-held Item    | All active members         | ≥ 2/3 signers   |
-
-### Where governance rules live
-
-Each decision-type's and act-as rule's parameters are stored as a
-structured property on the Collective node (e.g.,
-`Collective.governance_rules.remove_worker = { eligibility, weights, threshold }`,
-`Collective.governance_rules.act_as_transfer_item = { eligibility, weights, threshold }`).
-**Each such property layers per
-[layers.md §3](../primitive/layers.md#3-layers-on-nodes); changes
-to any rule follow the standard Proposal pattern with that
-rule's own configurable parameters.** The bootstrap rules are set
-at collective creation; everything afterward is governance of
-governance.
+| `action_key`                              | `exec.eligibility`              | `exec.threshold` |
+|-------------------------------------------|---------------------------------|------------------|
+| `decision:add_member`                     | All active members              | ≥ 2/3            |
+| `decision:remove_member`                  | All members, `exclude_subject`  | ≥ 2/3            |
+| `decision:routine_operations`             | `role = officer`                | > 50%            |
+| `decision:major_policy_change`            | All active members              | ≥ 2/3            |
+| `decision:change_capital_structure`       | All active members              | ≥ 75%            |
+| `actas:vote:Proposal`                     | All active members              | > 50% signers    |
+| `actas:transfer:Item`                     | All active members              | ≥ 2/3 signers    |
 
 ---
 
@@ -643,8 +773,8 @@ capacity is gone.
 
 Moderation is the only redaction trigger on a Collective node
 itself ([moderation.md §1](moderation.md#1-the-two-classification-paths)) —
-typically targeting identity fields. `governance_rules.*` are
-in scope in principle but rarely the target.
+typically targeting identity fields. Entries inside `governance`
+are in scope in principle but rarely the target.
 
 A redacted Collective is an anonymized but still-graph-resident
 actor, not a removed one. The Collective's UUID is stable

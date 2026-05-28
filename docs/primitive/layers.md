@@ -87,6 +87,25 @@ properties; they have their own independent layer stacks.
 
 A node's current properties are the top layer of each property.
 History is preserved per field, independent of other fields.
+Each layer carries `(value, timestamp)` parallel to edge layers
+(§2), so consumers can address a specific past layer
+**by timestamp** — "read property X as-of T" returns the layer
+on X with the largest timestamp ≤ T. Per-node serialized
+writes (the discipline used in
+[governance.md "Tally serialization"](governance.md#tally-serialization))
+make timestamps strictly monotonic per node, so a single
+timestamp pins the node's full state at that moment — no
+per-property index needed.
+
+> **Forward dependency.** The concrete storage representation
+> for timestamp-addressable node-property layers is added in a
+> follow-up PR; the first consumer that depends on the
+> addressing is
+> [proposal.md §2 `rule_anchor`](../instances/proposal.md#2-graph-side-properties)
+> (governance rule snapshot at Proposal author-time, required
+> on every Proposal), and the primitive principle is described
+> in
+> [governance.md §5 "Rule snapshot at author time"](governance.md#rule-snapshot-at-author-time).
 
 ### What properties belong on graph nodes
 

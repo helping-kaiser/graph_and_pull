@@ -523,6 +523,52 @@ its old weight or take the current one?
 Specific applications can override this if they need vote-time
 snapshot weights, but they carry the burden of explaining why.
 
+### Rule snapshot at author time
+
+The "current at tally time" default above governs **per-voter
+data** — a voter's role, `ownership_pct`, junction properties.
+It does **not** extend to **the rule itself** — the
+eligibility predicate, weight function, and threshold the
+tally evaluates against. When an application makes its rule
+parameters amendable via the same Proposal primitive
+(governance of governance), in-flight Proposals would
+otherwise face an ambiguity: do amendments retro-apply to
+already-open Proposals or only to the next Proposal authored?
+
+**The pattern: snapshot at author-time, on every Proposal.**
+Every Proposal is grounded in a rule; the rule lives in one
+or more layered node properties on a single node; the
+Proposal identifies that node via the required
+[`rule_anchor`](../instances/proposal.md#2-graph-side-properties)
+(scalar — the node's UUID). Tally and cascade read each rule
+property on `rule_anchor` as-of the Proposal's authorship-edge
+timestamp (per
+[authorship.md](../primitive/authorship.md)) rather than at
+the current top layer. Rules-of-the-game stable through a
+vote. Per-voter applicability stays live per §2.2 and the
+rest of §5 — the rule is frozen, but who currently satisfies
+it (and with what current weight) is not.
+
+Per-node serialized writes (see "Tally serialization" below —
+the same lock discipline applies to property writes) make
+layer timestamps strictly monotonic per node, so one
+timestamp pins the node's full state at that moment, even for
+rules that span several properties on the same node.
+
+Consumer shapes:
+
+- **Single-property rule on one node** — e.g. Collective
+  Proposals (executions or amendments under
+  `governance.<action_key>`); the dispatcher reads
+  `Collective.governance` as-of `as_of` and indexes by
+  `action_key`. See
+  [collectives.md §8 "Snapshot at author-time"](../instances/collectives.md#snapshot-at-author-time).
+- **Multi-property rule on one node** — e.g. Network
+  dual-quorum moderation Proposals; the dispatcher reads
+  both `_quorum_fraction` and `_quorum_count` as-of `as_of`
+  so the `min(P × |active|, K)` rule is fully frozen with a
+  single anchor.
+
 ---
 
 ## 6. When outcomes take effect
@@ -773,7 +819,7 @@ community.
 - **Collective governance (full social contract)** —
   [collectives.md](../instances/collectives.md). Membership
   changes (hire / fire / promote), property changes (`name`,
-  `governance_rules`, `ownership_pct`), and any other
+  `governance.<action_key>`, `ownership_pct`), and any other
   decision-type the collective defines. A Collective hosts as
   many instances as its social contract specifies; each is
   parameterized for its own decision-type. Shape B

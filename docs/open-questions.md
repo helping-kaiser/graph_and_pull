@@ -24,11 +24,10 @@ within a phase, order is flexible.
 
 | Phase | # | Question | Why here |
 |:---:|:---:|:---:|---|
-| 1. Collectives v1 | 1 | **Q21** | Collective role catalog — how role strings are introduced, scoped, and bound to powers. Current docs assume role strings exist without specifying a catalog mechanism. The granularity range (corporate hierarchy vs. household consensus) is the design constraint. Surfaced from the post-tightening audit; in active resolution. |
-| 2. Economics workstream | 2 | **Q20** | Economics primitive — ad-revenue distribution mechanism, the ledger database home, and the "pull marketing" vocabulary anchor. The dedicated post-audit workstream. Settling it may also supply inputs to Q16 (S's derivation) and reopen the stake-gating option rejected for Q19. |
-| 3. Sort fallback | 3 | **Q16** | Derivation of `S(t)`, the intrinsic per-node scalar that breaks ties at the bottom of the sort cascade. Q2 settled the rest of the math but left S's inputs open. The user has flagged S's inputs as part of economics, so this phase is naturally informed by Q20. |
-| 4. Federation phase | 4 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol; cross-instance bootstrap and integrity raise further sub-questions. Deferred until federation becomes concrete. |
-| 5. Governance v1.x | 5 | **Q19** | Bot-resistant non-arbitrary quorum for Network-scope governance. PR-05 shipped dual-quorum (fractional bar + absolute floor) as the v1 compromise; the absolute floor itself is a static parameter and the fractional bar's denominator is still bot-inflatable. A self-calibrating mechanism that does not depend on identity verification or economic gating is unsolved. Defer until the network's bot-density evidence justifies replacing the parameter pair. |
+| 1. Economics workstream | 1 | **Q20** | Economics primitive — ad-revenue distribution mechanism, the ledger database home, and the "pull marketing" vocabulary anchor. The dedicated post-audit workstream. Settling it may also supply inputs to Q16 (S's derivation) and reopen the stake-gating option rejected for Q19. |
+| 2. Sort fallback | 2 | **Q16** | Derivation of `S(t)`, the intrinsic per-node scalar that breaks ties at the bottom of the sort cascade. Q2 settled the rest of the math but left S's inputs open. The user has flagged S's inputs as part of economics, so this phase is naturally informed by Q20. |
+| 3. Federation phase | 3 | **Q15** | Identity reconciliation across separately-running instances for handle-based and per-creation node types. Type 1 nodes (hashtags) federate for free per Q14; Types 2 and 3 need a protocol; cross-instance bootstrap and integrity raise further sub-questions. Deferred until federation becomes concrete. |
+| 4. Governance v1.x | 4 | **Q19** | Bot-resistant non-arbitrary quorum for Network-scope governance. PR-05 shipped dual-quorum (fractional bar + absolute floor) as the v1 compromise; the absolute floor itself is a static parameter and the fractional bar's denominator is still bot-inflatable. A self-calibrating mechanism that does not depend on identity verification or economic gating is unsolved. Defer until the network's bot-density evidence justifies replacing the parameter pair. |
 
 As questions resolve, their blocks disappear from below and their
 rows disappear from this table. The table stays in place until all
@@ -52,6 +51,7 @@ questions are closed.
 - Q9 — see [moderation.md](instances/moderation.md) and [network.md](primitive/network.md). Authorization for redaction runs through community-driven Network governance: any User authors a Proposal classifying content as `illegal`; threshold-cross requires at least one moderator's positive vote (the gate), ≥2/3 of cast votes in favor, and a low community quorum; threshold-cross triggers the [layers.md §5](primitive/layers.md#5-deletion-policy) redaction cascade. External pressure (court orders, etc.) doesn't bypass the mechanism — it prompts a moderator to start the same Proposal, which the community completes. Pathological corner cases (all moderators compromised) fall under the federation/forking exit per Q15.
 - Q17 — see [feed-ranking.md §3.1](primitive/feed-ranking.md#31-which-edges-contribute-factors). No `Content → Author` back-edge exists or is added; content actor edges terminate at the content node and contribute only to ranking that content. The "I liked Alice's last three posts, so show me more Alice" intuition is supported by an explicit follow gesture, not inferred from post-affinity — that inference would be exactly the behavior-to-edge translation [graph-model.md §3](primitive/graph-model.md#3-edge-categories) (stances-not-events) rules out. Back-edge variants (with-cap, with-weight-discount, gated-on-reciprocation, propagate-to-author-only) each failed against either bot-bridge amplification or the actor-only-factor symmetry of §3.1, or both. A frontend may surface a follow-prompt after observed repeated engagement, but this is a UX nudge, not a graph mechanism, and is not added prophylactically — revisit only if feed-quality data shows the gap matters.
 - Q18 — see [feed-ranking.md §3](primitive/feed-ranking.md#3-per-edge-composition-along-a-path) (simple-paths invariant — every path is vertex-simple, enforced via a per-path visited set; bidirectional topologies like mutual user edges, junction approval pairs, and `:BEARER` pairs would otherwise admit cyclic paths where the same intermediate's mediating role multiplies into the product without conveying new information) and [feed-ranking.md §4.1](primitive/feed-ranking.md#41-path-contribution-and-distance-decay) (single-transit-cap rejected — for 100 paths `U → Aᵢ → B → t` the sum factors as `d(3) · s(B → t) · Σᵢ s(U → Aᵢ) · s(Aᵢ → B)`, a clean product of "network-aggregate endorsement of `B`" times "`B`'s stance on `t`," which is trust propagation working correctly; bot-bridge amplification is already handled by severance + delta-funnel auto-detection in §3.6–§3.8, and `d(R)` already calibrates direct-vs-indirect, making 100 R=3 paths beating one R=2 path the intentional default). One-line entry added to [invariants.md "Ranking"](primitive/invariants.md#ranking) for discoverability.
+- Q21 — see [collectives.md §8](instances/collectives.md#8-governance--the-social-contract). The role-catalog problem dissolves under a single layered `governance` map property on `:Collective`, keyed by `action_key` string. Each entry is a `Rule` of paired `exec` + `amend` triples so amendment cost is calibrated per-rule (CEO-can-hire stays cheap; share-distribution stays expensive) and the `amend` triple is self-applying (no infinite regress, no primitive default needed). The role vocabulary is **implicit** — the set of strings used in any `governance.<key>` eligibility predicate plus the strings assigned to any active member's `role`; typos are amendable like any other `role` change via a Proposal targeting `CollectiveMember.role`. Schema is fixed (one map property, declared in [graph-data-model.md](implementation/graph-data-model.md)); the action set is data, so new action keys never require a schema change. Composite atomic changes spanning multiple junctions (e.g. admit shareholder with redistribution, transfer shares between shareholders) ride on a new `value_kind = 'composite:<action_key>'` discriminator on Proposal with `_from` / `_to` bundle entries the cascade re-validates against current state — see [proposal.md §2 "Composite proposals"](instances/proposal.md#composite-proposals). The new `value_kind` field also makes `proposed_value`'s shape self-describing for frontends (`'scalar:string'`, `'scalar:float'`, `'scalar:integer'`, `'rule'`, `'composite:*'`) — no per-action_key out-of-band knowledge needed to render the right editor.
 
 ---
 
@@ -405,101 +405,3 @@ supply them),
 economics layer; once Q20 settles, that option can be
 re-evaluated).
 
----
-
-## Q21 — Collective role catalog: how role strings are introduced, scoped, and bound to powers
-
-**Where it shows up:**
-[collectives.md §3](instances/collectives.md#collectivemember)
-(the open-ended `role` string on CollectiveMember),
-[collectives.md §8 "Per-decision-type instances"](instances/collectives.md#per-decision-type-instances)
-(eligibility predicates like `role = CEO` referenced inside
-`Collective.governance_rules.*` entries),
-[collectives.md §8 "Example configurations"](instances/collectives.md#example-configurations)
-(corporate / household / co-op tables that name `CEO`,
-`founder`, `band_lead`, `social_media_intern`, etc. as if from a
-catalog that does not exist on the graph).
-**Status:** open
-
-### Context
-
-A Collective's social contract relies on role strings to scope
-powers — only a `CEO` can fire a worker, only a `founder` votes on
-ownership changes, only a `band_lead` writes promotional posts as
-the band. The docs say role strings live in two places:
-
-1. **As an assignment** — the `role` property on a
-   CollectiveMember junction (§3).
-2. **As a power** — referenced inside the `eligibility` clause of
-   a `Collective.governance_rules.*` property (§8).
-
-What the docs do **not** say is **where the catalog of valid role
-strings lives, how new roles are introduced, and how a member's
-role assignment is validated against that catalog (if at all)**.
-The example tables read as if there is some authoritative
-`Collective.roles = ['CEO', 'founder', ...]` list, but no such
-property is declared anywhere on the graph.
-
-Open sub-questions:
-
-- **Catalog representation.** Is the set of valid role strings an
-  explicit property on the Collective (a layered list of strings,
-  amendable via Proposal)? Or implicit — derived from the union
-  of strings that appear in any `governance_rules.*` entry plus
-  the strings assigned to any CollectiveMember? Implicit avoids a
-  second source of truth but lets typos silently create new roles;
-  explicit forbids typos but adds a separate amendment surface.
-- **Role-creation procedure.** If explicit, what is the Proposal
-  shape for "add a new role to the catalog"? Is adding the role
-  string atomic with adding at least one governance_rules entry
-  that references it, or are the two edits separate?
-- **Role-removal procedure.** Removing a role from the catalog
-  while members still hold it — does the member's `role`
-  layered-property hold the now-defunct string until amended, or
-  is removal blocked while any holder exists?
-- **Granularity range.** Some collectives need fine-grained
-  hierarchies (a corporation with a dozen distinct roles and
-  carefully tiered powers); others need very loose vocabularies
-  (a household where the only role is "member" and consensus
-  rules everything). The mechanism has to accommodate both
-  extremes without forcing either to do bureaucratic work it
-  doesn't need.
-- **Cross-Collective role semantics.** `CEO` in one Collective has
-  no relationship to `CEO` in another — same string, different
-  authority. Should this be explicit at the schema layer (each
-  Collective owns its catalog) or just emergent from the fact
-  that governance_rules live on the Collective node? The current
-  framing is emergent; that may be fine, but the docs should say
-  so.
-
-### Constraints (from established principles)
-
-- **No central authority.** Per [CLAUDE.md](../CLAUDE.md), each
-  Collective owns its own social contract; there is no
-  Network-level role registry.
-- **Append-only.** Per [layers.md](primitive/layers.md), role
-  catalog changes must be layered, not destructive — even role
-  removals leave the prior catalog intact in lower layers.
-- **Governance of governance.** Per
-  [collectives.md §8 "Where governance rules live"](instances/collectives.md#where-governance-rules-live),
-  amendments to governance properties run through the same
-  Proposal mechanism they govern. The role catalog, if explicit,
-  inherits this.
-- **No primitive defaults.** Per
-  [collectives.md §8 "No primitive defaults"](instances/collectives.md#no-primitive-defaults),
-  Collectives must explicitly define their rules at creation —
-  any role-catalog mechanism must not impose a default vocabulary.
-
-### Options considered
-
-None worked out yet. Initial sketches in PR discussion proposed
-both implicit-catalog and explicit-catalog framings; neither
-exercised against the granularity-range constraint above.
-
-### Related
-
-[Q15](#q15--cross-instance-federation-identity-reconciliation-for-handle-based-and-per-creation-nodes)
-(federation will need a position on whether two Collectives at
-different instances can meaningfully share a role vocabulary or
-not — likely "no" by default, but Q21 closes that question for
-single-instance use first).
