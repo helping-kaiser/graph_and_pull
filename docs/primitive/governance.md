@@ -545,12 +545,9 @@ property on `rule_anchor` as-of the Proposal's authorship-edge
 timestamp (per
 [authorship.md](../primitive/authorship.md)) rather than at
 the current top layer. Rules-of-the-game stable through a
-vote. The snapshot uses what the data model already provides
-— a node identifier and the authorship timestamp — so
-nothing extra rides on the Proposal beyond `rule_anchor`.
-Per-voter applicability stays live per §2.2 and the rest of
-§5 — the rule is frozen, but who currently satisfies it (and
-with what current weight) is not.
+vote. Per-voter applicability stays live per §2.2 and the
+rest of §5 — the rule is frozen, but who currently satisfies
+it (and with what current weight) is not.
 
 Per-node serialized writes (see "Tally serialization" below —
 the same lock discipline applies to property writes) make
