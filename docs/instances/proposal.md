@@ -93,34 +93,31 @@ incoming vote edge from the authoring actor (§5).
     the cascade. See "Composite proposals" below.
 - **`rule_anchor`** — **required.** Every Proposal is grounded
   in a rule that lives in one or more layered properties on
-  some node; this field pins the snapshot of that rule at
-  author-time per
+  some node; this field identifies that node, per
   [governance.md §5 "Rule snapshot at author time"](../primitive/governance.md#rule-snapshot-at-author-time).
-  Shape:
+  The dispatcher reads each rule property on `rule_anchor`
+  **as-of the Proposal's authorship-edge timestamp** per
+  [authorship.md](../primitive/authorship.md) (the earliest
+  incoming actor edge) at tally and cascade, so amendments
+  committed mid-flight don't retroactively change in-flight
+  Proposals' rule parameters.
 
   ```
-  rule_anchor: Map
-    { node_id: String      // node hosting the rule property(ies)
-    , as_of:  Timestamp    // read each anchored property as-of this point
-    }
+  rule_anchor: String   // node ID hosting the rule property(ies)
   ```
 
-  Single entry covers every current consumer:
+  Covers every current consumer with a single value:
   - Collective Proposals (executions or amendments under
-    `governance.<action_key>`) — `{ <Collective>, T }`; the
-    dispatcher reads `Collective.governance` as-of T and
-    indexes by action_key.
+    `governance.<action_key>`) — `rule_anchor = <Collective.id>`;
+    dispatcher reads `Collective.governance` as-of authorship
+    and indexes by action_key.
   - Network dual-quorum moderation Proposals —
-    `{ <Network>, T }`; the dispatcher reads both
-    `_quorum_fraction` and `_quorum_count` as-of T so the
-    `min(P × |active|, K)` rule is fully frozen.
+    `rule_anchor = <Network.id>`; dispatcher reads both
+    `_quorum_fraction` and `_quorum_count` as-of authorship so
+    the `min(P × |active|, K)` rule is fully frozen.
 
-  At tally and cascade the dispatcher reads each rule property
-  as-of `as_of` rather than at the current top layer, so
-  amendments committed mid-flight don't retroactively change
-  in-flight Proposals' rule parameters. Timestamp-based
-  addressing on node-property layers is a forward dependency —
-  see
+  Timestamp-based addressing on node-property layers is a
+  forward dependency — see
   [layers.md §3](../primitive/layers.md#3-layers-on-nodes).
 
 None of these properties layers — the Proposal's identity *is*

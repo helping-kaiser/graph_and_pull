@@ -537,25 +537,26 @@ already-open Proposals or only to the next Proposal authored?
 
 **The pattern: snapshot at author-time, on every Proposal.**
 Every Proposal is grounded in a rule; the rule lives in one
-or more layered node properties; the Proposal records a
-pointer to the exact moment of those properties at creation —
-stored as the required
+or more layered node properties on a single node; the
+Proposal identifies that node via the required
 [`rule_anchor`](../instances/proposal.md#2-graph-side-properties)
-(`{ node_id, as_of: Timestamp }`). Tally and cascade read each
-rule property on `node_id` as-of `as_of` rather than at the
-current top layer. Rules-of-the-game stable through a vote.
-Since the properties are already layered, no value
-duplication; the snapshot is a single timestamp. Per-voter
-applicability stays live per §2.2 and the rest of §5 — the
-rule is frozen, but who currently satisfies it (and with what
-current weight) is not.
+(scalar — the node's UUID). Tally and cascade read each rule
+property on `rule_anchor` as-of the Proposal's authorship-edge
+timestamp (per
+[authorship.md](../primitive/authorship.md)) rather than at
+the current top layer. Rules-of-the-game stable through a
+vote. The snapshot uses what the data model already provides
+— a node identifier and the authorship timestamp — so
+nothing extra rides on the Proposal beyond `rule_anchor`.
+Per-voter applicability stays live per §2.2 and the rest of
+§5 — the rule is frozen, but who currently satisfies it (and
+with what current weight) is not.
 
-Why one timestamp rather than per-property layer indices: per-
-node serialized writes (see "Tally serialization" below — the
-same lock discipline applies to property writes) make layer
-timestamps strictly monotonic per node, so one timestamp pins
-the node's full state at that moment, even for rules that
-span several properties on the same node.
+Per-node serialized writes (see "Tally serialization" below —
+the same lock discipline applies to property writes) make
+layer timestamps strictly monotonic per node, so one
+timestamp pins the node's full state at that moment, even for
+rules that span several properties on the same node.
 
 Consumer shapes:
 

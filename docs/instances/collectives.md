@@ -598,20 +598,15 @@ Collective Proposals apply the snapshot pattern from
 via the
 [`rule_anchor`](proposal.md#2-graph-side-properties) field —
 required on every Proposal. A Proposal authored under a
-`governance[X]` entry sets:
-
-```
-rule_anchor = { node_id: <Collective.id>, as_of: <author-time T> }
-```
-
-Tally and cascade read `Collective.governance` as-of `T` and
-index by `action_key` to recover the frozen Rule. Amendments
-committed mid-flight do not retroactively change in-flight
-Proposals' threshold, eligibility predicate, or weights. Voter
-applicability against the frozen predicate is still evaluated
-live at tally time — a voter who acquires the right role
-mid-flight counts; one who loses it drops via the
-eligibility-dropout cascade.
+`governance[X]` entry sets `rule_anchor = <Collective.id>`.
+Tally and cascade read `Collective.governance` as-of the
+Proposal's authorship-edge timestamp and index by `action_key`
+to recover the frozen Rule. Amendments committed mid-flight do
+not retroactively change in-flight Proposals' threshold,
+eligibility predicate, or weights. Voter applicability against
+the frozen predicate is still evaluated live at tally time —
+a voter who acquires the right role mid-flight counts; one
+who loses it drops via the eligibility-dropout cascade.
 
 ### Simple and composite actions
 
