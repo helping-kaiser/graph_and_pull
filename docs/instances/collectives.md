@@ -523,44 +523,65 @@ amending, or tombstoning an entry all flow through the same
 
 ### Action keys
 
-`action_key` strings are free-form per the Collective, but the
-dispatch layer uses three reserved top-level prefixes:
+`action_key` strings follow conventions the dispatch layer
+**constructs from a member's gesture** — they are not
+arbitrary strings the Collective invents. The Collective
+writes rules under keys matching those conventions; the
+dispatch builds the candidate key the same way at gesture
+time and walks the fallback chain (below) until it finds an
+entry. Three reserved top-level namespaces:
 
-- **`decision:<key>`** — Proposals that change
-  Collective-internal state (`decision:add_worker`,
-  `decision:remove_board_member`, `decision:rename`, …). The
-  subject is either a CollectiveMember junction (for member
-  lifecycle changes) or the Collective node (for property
-  changes), routed by the action.
-- **`actas:<key>`** — gating Collective outgoing edges through
-  an authorized member (`actas:Post:author`,
-  `actas:Item:transfer`, …). Two class-default fallback keys
-  exist: `actas:content_default` and `actas:governance_default`.
+- **`decision:<operation>[:<role>]`** — Proposals that change
+  Collective-internal state. The `<operation>` enumerates
+  what the cascade can produce on `:Collective` or
+  `:CollectiveMember`: `add_member`, `remove_member`,
+  `change_role`, `change_ownership_pct`,
+  `change_voting_weight`, `set:<property>` (for Collective
+  node properties like `name`, `description`, `avatar`,
+  `website_url`). The optional `<role>` parameter refines
+  member-related operations by the affected member's role.
+  Composite Collective operations (`admit_shareholder`,
+  `transfer_shares`, …) take their own operation key paired
+  with a handler that knows the composite shape per
+  [proposal.md §2 "Composite proposals"](proposal.md#composite-proposals).
+- **`actas:<gesture-identifier>`** — gating Collective
+  outgoing edges through an authorized member. The
+  gesture-identifier is derived from the actor edge being
+  produced — by convention `<gesture>:<target_type>`
+  (e.g. `actas:author:Post`, `actas:vote:Proposal`,
+  `actas:transfer:Item`) so the dispatch builds the key
+  deterministically from the would-be edge. **Two fixed
+  class fallback keys** are recognized:
+  `actas:content_default` and `actas:governance_default` —
+  so a Collective can override the §2 in-prose defaults at
+  class granularity without enumerating every gesture.
 - **`system:<key>`** — Collective-level meta keys when needed
   (rare; the per-rule `amend` triple covers most cases).
 
-Within each namespace the sub-key is whatever the Collective
-chose at rule creation. Composite actions that touch multiple
-properties (e.g. share admission with redistribution) take the
-same `action_key`; the composite shape is signaled on the
-Proposal via `value_kind = 'composite:<action_key>'` (see
-[proposal.md §2 "Composite proposals"](proposal.md#composite-proposals)).
+Within each namespace the Collective declares only the keys
+it wants to govern explicitly — the fallback chain (below)
+handles the rest.
 
 ### Fallback chain at dispatch
 
-When a member invokes a gesture, the dispatch layer maps it to
-an `action_key` candidate and walks **most-specific to
-most-general** through `governance` until it finds a matching
-entry:
+The dispatch layer constructs the most-specific applicable
+`action_key` from the gesture per the construction conventions
+above, then walks **most-specific to most-general** through
+`governance` until it finds a matching entry:
 
-1. Most-specific: e.g. `actas:Post:author`.
-2. Class-general: e.g. `actas:content_default`.
-3. **Class default from §2:** allow any active member for
-   content-acts; deny for governance-acts and for unrecognized
-   `decision:*` actions.
+1. Most-specific (with parameter): e.g. `actas:author:Post`
+   for "author a Post as the Collective", or
+   `decision:add_member:worker` for "admit a worker".
+2. Class-general (parameter dropped): e.g.
+   `actas:content_default` for any content-act, or
+   `decision:add_member` for any member admission regardless
+   of role.
+3. **In-prose default from §2:** allow any active member for
+   content-acts; deny for governance-acts and for
+   `decision:*` gestures without a matching key.
 
 A Collective only needs to declare rules where it wants to
-override the §2 defaults — the rest fall through.
+override the §2 in-prose defaults — the rest fall through.
 
 A single-signer entry (`exec.threshold = 1`) collapses the
 co-signed-acts pattern (see
@@ -658,21 +679,21 @@ the corporate example below).
 A small company with founders, a CEO, board members, and
 workers.
 
-| `action_key`                              | `exec.eligibility`                                        | `exec.threshold` |
-|-------------------------------------------|-----------------------------------------------------------|------------------|
-| `decision:add_worker`                     | `role = CEO`                                              | 1 vote           |
-| `decision:remove_worker`                  | `role = CEO`                                              | 1 vote           |
-| `decision:promote_worker_to_senior`       | `role = CEO`                                              | 1 vote           |
-| `decision:add_board_member`               | `role = founder`, weighted by `ownership_pct`             | > 50%            |
-| `decision:remove_board_member`            | `role IN (founder, board_member)`, `exclude_subject`      | ≥ 2/3            |
-| `decision:remove_CEO`                     | `role = board_member`                                     | ≥ 2/3            |
-| `decision:admit_shareholder` *(composite)* | `role IN (founder, shareholder)`, weighted by stake      | ≥ 75%            |
-| `decision:transfer_shares` *(composite)*  | `role = shareholder`, weighted by `ownership_pct`         | ≥ 75%            |
-| `decision:rename`                         | All active members                                        | > 50%            |
-| `actas:Post:author`                       | `role = press_officer` *(overrides any-member default)*   | 1 signer         |
-| `actas:Proposal:author`                   | `role = CEO`                                              | 1 signer         |
-| `actas:Proposal:vote`                     | `role IN (CEO, board_member)`                             | 1 signer         |
-| `actas:Item:transfer`                     | `role IN (founder, board_member)`, weighted by stake      | ≥ 50% signers    |
+| `action_key`                                | `exec.eligibility`                                        | `exec.threshold` |
+|---------------------------------------------|-----------------------------------------------------------|------------------|
+| `decision:add_member:worker`                | `role = CEO`                                              | 1 vote           |
+| `decision:remove_member:worker`             | `role = CEO`                                              | 1 vote           |
+| `decision:change_role:worker`               | `role = CEO`                                              | 1 vote           |
+| `decision:add_member:board_member`          | `role = founder`, weighted by `ownership_pct`             | > 50%            |
+| `decision:remove_member:board_member`       | `role IN (founder, board_member)`, `exclude_subject`      | ≥ 2/3            |
+| `decision:remove_member:CEO`                | `role = board_member`                                     | ≥ 2/3            |
+| `decision:admit_shareholder` *(composite)*  | `role IN (founder, shareholder)`, weighted by stake       | ≥ 75%            |
+| `decision:transfer_shares` *(composite)*    | `role = shareholder`, weighted by `ownership_pct`         | ≥ 75%            |
+| `decision:set:name`                         | All active members                                        | > 50%            |
+| `actas:author:Post`                         | `role = press_officer` *(overrides any-member default)*   | 1 signer         |
+| `actas:author:Proposal`                     | `role = CEO`                                              | 1 signer         |
+| `actas:vote:Proposal`                       | `role IN (CEO, board_member)`                             | 1 signer         |
+| `actas:transfer:Item`                       | `role IN (founder, board_member)`, weighted by stake      | ≥ 50% signers    |
 
 A worker is hired or fired by a single CEO vote; a board
 member is removed only by board supermajority; a CEO is removed
@@ -691,9 +712,9 @@ amendment cost is calibrated per rule:
 
 | `action_key`                              | `amend.eligibility`                                       | `amend.threshold` |
 |-------------------------------------------|-----------------------------------------------------------|-------------------|
-| `decision:add_worker`                     | `role IN (founder, board_member)`                         | > 50%             |
+| `decision:add_member:worker`              | `role IN (founder, board_member)`                         | > 50%             |
 | `decision:transfer_shares`                | `role = shareholder`, weighted by `ownership_pct`         | ≥ 90%             |
-| `decision:rename`                         | `role IN (founder, board_member)`                         | ≥ 2/3             |
+| `decision:set:name`                       | `role IN (founder, board_member)`                         | ≥ 2/3             |
 
 The CEO-can-hire rule is cheap to amend (board majority);
 share-transfer rules are expensive to amend (near-unanimous
@@ -707,8 +728,8 @@ rule self-describes its mutability cost.
 | `decision:add_member`                     | All active members                  | 100% of cast, 100% quorum                 |
 | `decision:remove_member`                  | All members, `exclude_subject`      | ≥ 90% of cast, 100% quorum of remaining   |
 | `decision:routine_spending`               | All active members                  | > 50%, ≥ 60% quorum                       |
-| `actas:Proposal:vote`                     | All active members                  | > 50% signers                             |
-| `actas:Item:transfer`                     | All active members                  | > 50% signers                             |
+| `actas:vote:Proposal`                     | All active members                  | > 50% signers                             |
+| `actas:transfer:Item`                     | All active members                  | > 50% signers                             |
 
 Everyone has equal voice; consensus dominates. Content-acts
 (posting to the household feed, reacting on shared content)
@@ -726,8 +747,8 @@ officers.
 | `decision:routine_operations`             | `role = officer`                | > 50%            |
 | `decision:major_policy_change`            | All active members              | ≥ 2/3            |
 | `decision:change_capital_structure`       | All active members              | ≥ 75%            |
-| `actas:Proposal:vote`                     | All active members              | > 50% signers    |
-| `actas:Item:transfer`                     | All active members              | ≥ 2/3 signers    |
+| `actas:vote:Proposal`                     | All active members              | > 50% signers    |
+| `actas:transfer:Item`                     | All active members              | ≥ 2/3 signers    |
 
 ---
 
