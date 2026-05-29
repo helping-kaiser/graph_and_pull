@@ -45,15 +45,10 @@ until the design is fully settled.
 1. **Token issuance model** — *substantially settled: decaying
    calendar mint, no fresh premine, peer-token percentage
    carry-forward, conservation equation and γ=5% bot-loss locked
-   in. Outstanding: two parallel focused sessions on the two
-   surviving non-burn distribution candidates:*
-   - **1a. POL** (protocol-owned liquidity) — calendar mint into
-     protocol's LP position.
-   - **1b. (Z)** importance-weighted distribution from burn
-     activity — mint flows from where CGT is burned out to
-     important actors connected to that activity.
+   in. Outstanding: POL (protocol-owned liquidity) focused
+   session — calendar mint into protocol's LP position.*
 
-   *(i)/(W)/(X)/(Y) eliminated this session — see A.*
+   *(i)/(W)/(X)/(Y)/(Z) all eliminated — see A.*
 2. Campaign expiry behavior (refund / pro-rata / mixed).
 3. Goal-hit detection cadence (continuous / epoch-snapshot /
    claim-on-hit).
@@ -71,36 +66,18 @@ until the design is fully settled.
 
 ## Next session pickup
 
-**Topic 1: Token issuance model — two focused sessions queued.**
-Marketing-flow math fully locked (conservation equation + strict
-cap + γ=5%). Calendar mint identified as burn-buffer under that
-math — needs a non-burn distribution channel to play any economic
-role. Candidate elimination complete: (i) host/proof-of-resource,
-(W) cap-relaxation, (X) target-supply commitment, (Y) proof-of-
-personhood — all scrapped (see *A — Token shape* for reasons).
+**Topic 1: Token issuance model — POL focused session next.**
+Marketing-flow math locked. All non-POL candidates for non-burn
+distribution eliminated; POL is the sole surviving supply
+mechanism. See *A — Token shape* for the conservation equation,
+worked examples, gaming-attack audit, and elimination reasons.
 
-**Surviving candidates: POL and (Z).** Each is large enough to
-deserve its own focused session, with no other ideas spinning in
-the background.
-
-- **1b. (Z) focused session — next up.** Design importance-
-  weighted distribution from burn activity. Epoch-based cadence
-  preferred. Sub-questions to chew on: connection definition,
-  importance metric form, burn-scaling, anti-gaming surface.
-  Tightly coupled to graph-primitive sybil resistance. User
-  chose Z first because it's the more likely-to-fail design —
-  resolve the harder one early, before sinking time into POL
-  details that might end up doing all the work.
-- **1a. POL focused session — after Z.** Design how calendar
-  mint deposits into protocol-owned LP — trigger cadence, one-
-  sided vs. swap-pair, LP fee/share disposition, chain coupling,
-  IL posture.
-
-Both need to be worked through before Topic 1 closes; the order
-is just risk-first.
-
-See *A — Token shape* for the conservation equation, worked
-examples, gaming-attack audit, and full elimination reasons.
+POL focused session: how calendar mint deposits into protocol-
+owned LP — trigger cadence, one-sided vs. swap-pair, LP fee/
+share disposition, chain coupling, IL posture, and mint schedule
+sized against burn rate. Initial pre-check: POL appears self-
+deal-immune by construction — no graph-visible extraction
+surface.
 
 ---
 
@@ -203,8 +180,22 @@ examples, gaming-attack audit, and full elimination reasons.
   `[settled finding]` Calendar mint adds zero to circulating
   supply under the strict cap — what enters circulation via mint
   is exactly what extra burn destroys. Mint plays an economic
-  role *only* if a non-burn distribution channel is added. See
-  *A — Token shape* for live candidates.
+  role *only* if a non-burn distribution channel is added. POL
+  is the live candidate; see *A — Token shape*.
+- **Structural cap on any new-mint-to-graph mechanism.**
+  `[settled, derived]` Any mechanism that creates new CGT and
+  routes it to graph-defined recipients hits the same self-deal
+  cap: per binding period, distribution `< γD = 0.05D`, else
+  self-deal becomes profitable. Maximum net circulating-supply
+  growth per binding = `γD − burn = 0.02D`, less with any safety
+  margin. Future "distribute to active users" proposals must
+  clear this audit first.
+- **Asymptotic supply requires mint decoupled from burn
+  activity.** `[settled, derived]` The peer-network curve has an
+  asymptote because mint is *scheduled*. Any mechanism that ties
+  mint amount to burn volume gives linear-in-volume supply →
+  unbounded. POL (calendar mint into LP) preserves the
+  asymptote; burn-coupled mint mechanisms do not.
 
 ---
 
@@ -299,7 +290,7 @@ examples, gaming-attack audit, and full elimination reasons.
   forever-owners of all CGT). (c) the path: find calendar mint a
   real job.
 
-  **Eliminated candidates** *(this session)*:
+  **Eliminated candidates:**
   - **~~(i) Host / infrastructure with proof-of-resource.~~** Scrap.
     Big engineering overhead and off-ethos — distribution should
     flow to *relevant users*, not infrastructure providers, even
@@ -317,8 +308,24 @@ examples, gaming-attack audit, and full elimination reasons.
     is a property of the *graph itself* (severance + topology), not
     of external differentiators (KYC, biometrics, IP scans, mouse
     tracking — all outdated and breakable).
+  - **~~(Z) Importance-weighted distribution from burn activity.~~**
+    Scrap. h(t) zero-jail handles free-riders structurally
+    (severed/unconnected accounts contribute 0 to importance mass),
+    but in-view self-deal still binds: bot funds campaign and is
+    sole occupant of its own h-view neighborhood, capturing
+    distribution back. Strict-cap reasoning extends to (Z) — per
+    campaign distribution `< γD = 0.05D` or self-deal becomes
+    profitable. At the cap, net circulating-supply growth =
+    `γD − burn = 0.02D` per campaign, less with safety margin,
+    and the growth lives in the campaign neighborhood — liquid
+    market supply still contracts unless treasury continuously
+    sells. Two shape problems on top of the small size: growth
+    scales linearly with campaign volume → supply → ∞ (breaks
+    the asymptotic curve), and supply direction depends on
+    treasury policy rather than being structural. POL fills the
+    same role without these issues.
 
-  **Surviving candidates** — each gets its own focused session:
+  **Surviving candidate.**
 
   - **POL (Protocol-Owned Liquidity).** Calendar mint
     periodically deposits into the protocol's DEX LP position.
@@ -326,6 +333,11 @@ examples, gaming-attack audit, and full elimination reasons.
     diluted proportionally, late users buy from deep protocol-LP
     at AMM market price rather than from coordinated early
     holders. Defensible narrative.
+
+    Pre-check: POL appears self-deal-immune by construction —
+    bot funds campaign, burns CGT, receives nothing from POL;
+    would have to buy LP exposure at market price like any other
+    actor. No graph-visible extraction surface.
 
     Open sub-questions for the POL focused session:
     - Trigger / cadence for pool → LP (per-epoch, threshold-
@@ -345,54 +357,12 @@ examples, gaming-attack audit, and full elimination reasons.
       initial LP, separately from POL's ongoing growth?
     - Impermanent-loss posture: protocol holds long-term, accept
       IL, or hedge?
+    - Mint schedule vs. burn rate. Strict-cap burn is 0.03D per
+      campaign; POL mint must offset this to set net supply
+      direction. What ratio yields the shape we want?
 
-  - **(Z) Importance-weighted distribution from burn activity.**
-    Refined formulation: *only actors connected to the paying
-    parts of the graph receive a share, based on their importance
-    relative to the amount of CGT used (or burned) by connected
-    nodes.* Mint flows from where economic activity is happening
-    (campaign burns) outward to important actors near that
-    activity, weighted by both importance and connection
-    strength.
-
-    **Cadence: epoch-based.** `[preference noted]` Each epoch's
-    mint is distributed by importance × proximity to recent burn
-    activity globally, not gated on specific campaign-close
-    events. Smoother dynamics; sidesteps "single late campaign
-    grabs accumulated mint" failure mode at this level too.
-
-    Open sub-questions for the Z focused session:
-    - Connection definition: what does "connected to the paying
-      parts" mean precisely? Path from advertiser? From
-      contributors? From the campaign anchor? Distance-weighted?
-    - Importance metric: which form of h(t) — and does the
-      graph primitive give us a *global*, severance-resistant
-      aggregate, or only viewer-local h(t)?
-    - Burn-scaling: how does the epoch's mint distribution scale
-      with recent burn activity in the connected sub-graph?
-    - Anti-gaming surface (the hardest part):
-      - Self-deal capture: bot funds campaign, burns own CGT,
-        captures mint back to its own cluster. Net loss γ×D from
-        burn vs. gain from mint — must ensure burn always
-        dominates.
-      - In-cluster amplification: bot cluster has high mutual
-        h(t); central bot captures cluster's mint share.
-      - Bots-at-distance: bot creates sybil actors at various
-        graph distances to capture multiple distance-weighted
-        shares.
-    - Necessary anti-gaming properties (sketch):
-      - Mint distributed per campaign must be < burn amount of
-        that campaign (so self-deal coalitions still lose).
-      - Importance metric must verify through paths that go
-        through high-h real-user anchors (severance-resistant).
-      - Distribution must drop off sharply with co-clustering to
-        the burning advertiser (so bot can't claim mint flowing
-        to its own cluster).
-    - Tight coupling to graph-primitive sybil resistance — this
-      mechanism inherits the graph's robustness floor.
-
-  Treasury-only direction (without POL pairing) rejected as poor
-  distribution narrative.
+  Treasury-only direction (mint accrues to treasury for
+  discretionary use) rejected as poor distribution narrative.
 
 - **Treasury accrual currency.** `[proposal]` Treasury takes CGT
   (campaigns are CGT-denominated, no conversion needed). Treasury
