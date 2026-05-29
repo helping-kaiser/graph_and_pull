@@ -42,13 +42,14 @@ until the design is fully settled.
 
 ## Discussion order
 
-1. **Token issuance model** — *substantially settled: decaying
-   calendar mint, no fresh premine, peer-token percentage
-   carry-forward, conservation equation and γ=5% bot-loss locked
-   in. Outstanding: POL (protocol-owned liquidity) focused
-   session — calendar mint into protocol's LP position.*
+1. **Token issuance model** — *fully settled. Decaying calendar
+   mint (peer-network curve), no fresh premine, peer-token
+   percentage carry-forward, POL mechanism (V3 one-sided above
+   spot, TWAP_24h-anchored hourly sub-deposits), POL fees flow
+   to treasury (β).*
 
-   *(i)/(W)/(X)/(Y)/(Z) all eliminated — see A.*
+   *Eliminated non-burn distribution candidates: (i), (W), (X),
+   (Y), (Z), (γ) — see A.*
 2. Campaign expiry behavior (refund / pro-rata / mixed).
 3. Goal-hit detection cadence (continuous / epoch-snapshot /
    claim-on-hit).
@@ -66,18 +67,18 @@ until the design is fully settled.
 
 ## Next session pickup
 
-**Topic 1: Token issuance model — POL focused session next.**
-Marketing-flow math locked. All non-POL candidates for non-burn
-distribution eliminated; POL is the sole surviving supply
-mechanism. See *A — Token shape* for the conservation equation,
-worked examples, gaming-attack audit, and elimination reasons.
+**Topic 1 closed. Next: Topic 2 — campaign expiry behavior.**
+Token issuance model fully settled (see *Settled decisions* and
+*A — Token shape*). POL mechanism, mint schedule, USD-flow ratio
+finding, and fee disposition (β: fees → treasury) all locked in.
 
-POL focused session: how calendar mint deposits into protocol-
-owned LP — trigger cadence, one-sided vs. swap-pair, LP fee/
-share disposition, chain coupling, IL posture, and mint schedule
-sized against burn rate. Initial pre-check: POL appears self-
-deal-immune by construction — no graph-visible extraction
-surface.
+Next session pickup: **Topic 2 — campaign expiry behavior.** What
+happens to a campaign's escrowed deposit when the window closes
+with the goal unmet. Options sketched in *B — Campaign primitive*:
+refund advertiser minus small treasury fee, pro-rata partial
+payout to contributors based on contribution so far, or a mixed
+scheme. Anti-honey-pot framing matters (open-ended campaigns and
+naive-refund policies each have specific gaming surfaces).
 
 ---
 
@@ -159,29 +160,31 @@ surface.
   attack). Strict version makes such collusion strictly
   unprofitable.
 - **Conservation equation with γ=5% bot-loss rate.** `[settled]`
-  Per campaign: `contributor_payout = (1−γ)D`, `burn = (γ−0.02)D +
-  mint_actual`, `treasury = 0.02D`, `mint_actual = min(α×D,
-  pool_share)`. γ=5% gives 5% strict bot loss on self-deal; ~3%
-  net long-run circulating-supply contraction per campaign
-  (independent of mint pool state).
-- **Net-deflationary regime.** `[settled]` Circulating supply
-  decreases monotonically over campaign lifetime (treasury washes
-  to long-run zero via eventual sale-back). Holding is
-  structurally attractive — strong narrative.
-- **Concurrency: irrelevant under the formula.** `[settled]`
-  Contributor payout, bot loss, and net supply change are all
-  invariant to mint pool state. Allocation rule across concurrent
-  campaigns can be the simplest one (pro-rata at close, or FIFO).
-- **Dry-spell mint stays in pool.** `[settled]` Accumulated mint
-  during idle periods doesn't burn or escape — drains when
-  campaigns return. The conservation equation handles emptiness
-  automatically (burn drops with mint_actual; γ×D loss invariant).
-- **Calendar mint = burn-buffer (under current formula).**
-  `[settled finding]` Calendar mint adds zero to circulating
-  supply under the strict cap — what enters circulation via mint
-  is exactly what extra burn destroys. Mint plays an economic
-  role *only* if a non-burn distribution channel is added. POL
-  is the live candidate; see *A — Token shape*.
+  Per campaign: `contributor_payout = (1−γ)D = 0.95D`,
+  `burn = (γ−0.02)D = 0.03D`, `treasury = 0.02D`. Calendar mint
+  flows separately into POL, not through the campaign formula.
+  γ=5% gives 5% strict bot loss on self-deal; per-campaign net
+  total-supply change = −0.03D from burn.
+- **Long-run deflationary regime.** `[settled]` Total CGT supply
+  evolves as `daily_mint − daily_burn`. Mint follows the peer-
+  network decay curve (lifetime asymptote ≈ 18M CGT); burn =
+  `0.03 × Σ daily D`, persistent as long as campaigns run. After
+  the mint decay tapers, burn dominates and supply contracts.
+  Early in the curve, total-supply direction depends on campaign
+  volume vs. then-current mint, but POL's demand-coupled release
+  means *active* circulating supply tracks demand even when total
+  supply grows. Long-run holding remains structurally attractive.
+- **Concurrency: trivially independent under POL.** `[settled]`
+  Per-campaign payouts use only D and γ; no shared pool state
+  across campaigns. N concurrent campaigns each settle their own
+  conservation equation independently.
+- **Calendar mint = POL supply via demand-coupled release.**
+  `[settled]` Calendar mint creates new CGT on schedule and
+  deposits into the POL position. Mint enters *active*
+  circulation only as buyers (typically advertisers funding
+  campaigns) pull it from POL. Total supply grows on the calendar;
+  active circulation grows on demand. Idle periods → POL
+  accumulates CGT above-spot, drains on demand return.
 - **Structural cap on any new-mint-to-graph mechanism.**
   `[settled, derived]` Any mechanism that creates new CGT and
   routes it to graph-defined recipients hits the same self-deal
@@ -196,6 +199,56 @@ surface.
   mint amount to burn volume gives linear-in-volume supply →
   unbounded. POL (calendar mint into LP) preserves the
   asymptote; burn-coupled mint mechanisms do not.
+- **POL mechanism = V3 one-sided concentrated liquidity above
+  spot.** `[settled]` Each mint epoch deposits CGT into a fresh
+  V3 position with range `[TWAP_24h, 5 × TWAP_24h]`. Position
+  acts as resting limit-sell distributed across the range and
+  rebalances naturally as advertisers buy (CGT → USDC) and
+  contributors sell back (USDC → CGT) within the range. Demand-
+  coupled supply release: mint enters active circulation only as
+  buyers pull it. Requires V3-style DEX (Uniswap V3 or equivalent
+  on an EVM L2 is the obvious fit).
+- **POL cadence = hourly sub-deposits.** `[settled]` Daily mint
+  split into 24 hourly micro-deposits of 1/24 each. Spreads MEV
+  attack surface; per-event manipulation is uneconomic at this
+  scale.
+- **POL range anchor = pool TWAP_24h, not external oracle.**
+  `[settled]` Cross-venue arbitrage pulls any single pool's spot
+  toward consensus market price within seconds; 24h TWAP averages
+  over that arb'd spot, so manipulating the anchor requires
+  holding spot off natural for many hours of sustained capital
+  deployment (uneconomic at typical mint sizes). External oracles
+  (Chainlink etc.) overkill at the value-at-risk per deposit and
+  add external dependency.
+- **Mint schedule = peer-network curve, continuous from peer to
+  CGT.** `[settled]` 5000 CGT/day at peer-genesis, 10%/year decay
+  step. CGT inherits the schedule at peer's current point — no
+  reset, no fresh premine. Present-day daily mint ≈ 4500 CGT.
+  Lifetime supply asymptote ≈ 18M CGT. Decay-step name
+  ("halvening-equivalent"), exact peer→CGT conversion ratio,
+  initial split (LP seed / treasury / holder allocation), and the
+  precise anchor of the next decay step deferred to token.md
+  authoring (function of CoGra release date).
+- **USD-flow ratio for active contributors = 0.95 × price-
+  trajectory factor.** `[settled finding]` Active-user USD outcome
+  per advertiser dollar = (marketing-flow %) × (CGT price at
+  contributor sell / CGT price at advertiser buy). Marketing flow
+  % = 0.95 (graph-determined via Shapley/conduit, ungameable).
+  Trajectory factor follows supply/demand balance over the
+  campaign window. Stable price → 95% USD. Mild deflation → >95%
+  USD. POL MEV (front-running spot, JIT liquidity, range-boundary
+  arb) attaches to POL's LP fee earnings, not contributor USD —
+  both the 0.95 and the price trajectory are out of speculator
+  reach.
+- **POL fee disposition = fees flow to treasury (β).** `[settled]`
+  Periodic `collect()` on POL's V3 positions; proceeds (mixed CGT
+  + USDC) sent to treasury wallet. Treasury already takes 2% of
+  campaign deposits in CGT; POL fees add an auxiliary CGT +
+  counterparty stream. Treasury free to market-sell at discretion.
+  Natural V3 fee tier for CGT/USDC = 0.30%. (α) hold-forever
+  rejected: ignores a real auxiliary stream for no benefit. (δ)
+  buyback-and-burn rejected: decoration on a deflation narrative
+  already carried by campaign burn + the asymptotic mint curve.
 
 ---
 
@@ -204,9 +257,13 @@ surface.
 ### A — Token shape
 
 - **Chain choice.** Need cheap settlement, DEX composability,
-  no single-operator risk. Candidates: ETH L2 (Base / Optimism /
-  Arbitrum), Solana, custom appchain. `[proposal]` decide once the
-  primitive is written; chain choice is implementation.
+  V3-style concentrated liquidity support (for POL), no single-
+  operator risk. Candidates narrow to EVM L2s with Uniswap V3 or
+  equivalent: Base, Optimism, Arbitrum. Solana could host POL via
+  alternative concentrated-liquidity venues (Orca etc.) but
+  decouples the mechanic from the canonical V3 implementation.
+  `[proposal]` decide at primitive-writing time; chain choice is
+  implementation.
 - **Token issuance model: decaying calendar mint, asymptotic fixed
   supply.** `[settled, direction]` Peer-network supply curve —
   fixed daily mint with ~10%/year decay, ~18M lifetime asymptote.
@@ -228,69 +285,83 @@ surface.
   translated into CGT — not unit-for-unit. This seeds initial LP
   liquidity and respects pre-existing holder expectations without
   creating new concentration.
-- **Marketing-flow conservation equation.** `[settled]` Per campaign:
+- **Marketing-flow conservation equation.** `[settled]` Per
+  campaign (calendar mint is separate; flows into POL, not
+  through the campaign formula):
 
   ```
-  deposit + mint_actual = burn + treasury + contributor_payout
+  deposit = burn + treasury + contributor_payout
   ```
 
-  With strict-cap design (`contributor_payout < deposit` always) and
-  size-invariant `γ = 5%` percentage loss:
+  Strict-cap design (`contributor_payout < deposit` always),
+  `γ = 5%`:
 
   ```
-  contributor_payout = (1 − γ) × deposit             = 0.95 D
-  treasury           = 0.02 × deposit                = 0.02 D
-  mint_actual        = min(α × deposit, pool_share)
-  burn               = (γ − 0.02) × deposit + mint_actual
-                     = 0.03 D + mint_actual
+  contributor_payout = (1 − γ) × deposit = 0.95 D
+  treasury           = 0.02 × deposit    = 0.02 D
+  burn               = (γ − 0.02) × deposit = 0.03 D
   ```
 
-  **Invariants:** contributor_payout, bot self-deal loss, and net
-  circulating-supply change are all independent of mint_actual.
-  Per-campaign net circulating-supply change = `−(γ − 0.02) × D
-  = −0.03 D` long-run (after treasury sale-back). Strictly
-  negative — circulating supply only decreases over time.
+  Per-campaign net total-supply change = `−0.03 D` from burn.
+  System-wide daily total-supply change = `daily_mint(t) −
+  0.03 × Σ daily D`.
 
-- **Worked examples** (D=10k, γ=5%, α=20%):
+- **Worked example: one day in steady state.** Assume CGT ≈ $1,
+  daily campaign volume D = $5000, present-day calendar mint ≈
+  4500 CGT/day via hourly POL sub-deposits, V3 range
+  `[TWAP_24h, 5 × TWAP_24h]`.
 
-  | Scenario | mint_actual | burn | treasury | payout | bot loss | Δ supply |
-  |---|---|---|---|---|---|---|
-  | Pool full | 2,000 | 2,300 | 200 | 9,500 | 500 | −300 |
-  | Pool empty | 0 | 300 | 200 | 9,500 | 500 | −300 |
-  | Pool partial (500) | 500 | 800 | 200 | 9,500 | 500 | −300 |
+  | Flow | CGT movement | USD movement |
+  |---|---|---|
+  | Calendar mint → POL | +4500 CGT to POL position | — (above spot, awaiting buyers) |
+  | Advertisers buy from POL | −5000 POL → +5000 advertiser | +$5000 to POL, −$5000 advertiser |
+  | Campaign deposit | 5000 advertiser → campaign | — |
+  | Burn | −150 CGT destroyed | — |
+  | Treasury accrual | +100 CGT to treasury wallet | — |
+  | Contributor payout | +4750 CGT to contributors | — |
+  | Contributors sell to POL | −4750 contributors → +4750 POL | −$4750 POL → +$4750 contributors |
 
-  Identical outcomes for all participants and for system supply
-  regardless of pool state.
+  End of day: advertisers spent $5000, contributors received
+  $4750 → **USD-to-contributor ratio = 95%** at stable CGT price.
+  POL position net change: `+4250 CGT` (= 4500 − 5000 + 4750) and
+  `+$250 USDC` (= 5000 − 4750). POL naturally accumulates both
+  sides — CGT from mint, USDC from the burn+treasury wedge in net
+  trading flow.
 
-- **Gaming-attack audit** (all safe under strict cap):
+  Long-run total-supply trajectory: `+4500 − 150 = +4350 CGT/day`
+  net at present rates. Mint decays 10%/year; burn persists with
+  campaign volume. After the decay arc tapers, burn dominates and
+  supply contracts. Whether early-curve total-supply growth
+  pressures price depends on demand scaling with adoption; POL's
+  demand-coupled release means active circulating supply tracks
+  demand even when total supply grows.
+
+- **Gaming-attack audit on campaigns** (all safe under strict
+  cap):
 
   | Attempt | Outcome |
   |---|---|
-  | Self-deal (advertiser=contributor) | Loses γ×D always |
+  | Self-deal (advertiser = contributor) | Loses γ×D always |
   | Tiny-h-gain self-deal | Same — payout is (1−γ)D regardless of h-gain |
-  | Pool-depletion DoS | Cost-prohibitive (γ × Σdeposits); no leverage on legitimate users |
   | Sybil contributors | Shapley measures structural contribution from graph |
-  | Timing for full/empty pool | Bot loss invariant — no exploit |
-  | Coalition advertiser+contributors | Loses γ×D split among colluders |
+  | Coalition advertiser + contributors | Loses γ×D split among colluders |
   | Off-chain side payments to fake attribution | Attribution is graph-computed on-chain |
   | Cross-campaign coordination | Each campaign loses γ×D independently |
 
-- **Calendar mint as burn-buffer (current finding).** `[settled]`
-  Mint_actual flows into circulation via contributors but is
-  exactly offset by additional burn — net circulating change from
-  mint = 0. The pool accumulates calendar mint; campaigns drain
-  pool into burn. Calendar mint as currently wired does *zero
-  economic work*: it's bookkeeping. The system's supply behavior
-  is identical with or without calendar mint.
+- **POL MEV audit** (all bounded; none touch contributor USD):
 
-- **Open: non-burn distribution channel for mint.** Without one,
-  calendar mint serves no purpose. (a) "cosmetic narrative"
-  rejected (useless mechanisms get deleted). (b) "scrap calendar
-  mint" rejected (would lock ~1500 peer-network holders as
-  forever-owners of all CGT). (c) the path: find calendar mint a
-  real job.
+  | Vector | Outcome |
+  |---|---|
+  | Front-run deposit by spot manipulation | TWAP_24h anchor + hourly sub-deposits: manipulation cost exceeds extractable value at typical mint sizes |
+  | JIT (just-in-time) liquidity capturing fees | Extracts POL fee revenue, not principal; doesn't affect supply-management mechanic or contributor USD |
+  | Range-boundary arbitrage | Reduces POL fee income, not principal; same as JIT |
 
-  **Eliminated candidates:**
+  POL MEV attaches to fee earnings only. The 0.95 marketing-flow
+  ratio (graph-determined) and the CGT price trajectory
+  (mint/burn balance) are both out of MEV reach.
+
+- **Eliminated candidates for non-burn mint distribution.**
+
   - **~~(i) Host / infrastructure with proof-of-resource.~~** Scrap.
     Big engineering overhead and off-ethos — distribution should
     flow to *relevant users*, not infrastructure providers, even
@@ -324,49 +395,19 @@ surface.
     the asymptotic curve), and supply direction depends on
     treasury policy rather than being structural. POL fills the
     same role without these issues.
+  - **~~(γ) Periodic release of LP shares to users.~~** Scrap.
+    "Release to users" requires a user-selection rule; any non-
+    trivial rule (h-weighted, active-in-window, etc.) inherits
+    (Z)'s self-deal exposure, any trivial rule (everyone equal
+    proportional share) is a no-op stock split.
 
-  **Surviving candidate.**
-
-  - **POL (Protocol-Owned Liquidity).** Calendar mint
-    periodically deposits into the protocol's DEX LP position.
-    Net: LP CGT depth grows, total supply grows, existing holders
-    diluted proportionally, late users buy from deep protocol-LP
-    at AMM market price rather than from coordinated early
-    holders. Defensible narrative.
-
-    Pre-check: POL appears self-deal-immune by construction —
-    bot funds campaign, burns CGT, receives nothing from POL;
-    would have to buy LP exposure at market price like any other
-    actor. No graph-visible extraction surface.
-
-    Open sub-questions for the POL focused session:
-    - Trigger / cadence for pool → LP (per-epoch, threshold-
-      triggered, continuous?).
-    - One-sided deposit (AMM auto-balances; simpler; larger price
-      impact) vs. swap-half-then-pair (capital-efficient; smaller
-      price drop). User confirmed 50/50-by-value is the standard
-      LP shape.
-    - What's done with LP fees and LP shares:
-      - (α) protocol holds forever — slow, no direct user benefit.
-      - (β) fees fund treasury — composable with anything.
-      - (γ) periodic release of LP shares to users — recursively
-        anti-sybil-bound.
-      - (δ) fees buyback-and-burn — further deflationary.
-    - Chain / DEX choice (couples to "Chain choice" above).
-    - Initial seeding: does peer-token carry-forward also seed
-      initial LP, separately from POL's ongoing growth?
-    - Impermanent-loss posture: protocol holds long-term, accept
-      IL, or hedge?
-    - Mint schedule vs. burn rate. Strict-cap burn is 0.03D per
-      campaign; POL mint must offset this to set net supply
-      direction. What ratio yields the shape we want?
-
-  Treasury-only direction (mint accrues to treasury for
+  Treasury-only direction (mint accrues directly to treasury for
   discretionary use) rejected as poor distribution narrative.
 
 - **Treasury accrual currency.** `[proposal]` Treasury takes CGT
-  (campaigns are CGT-denominated, no conversion needed). Treasury
-  free to market-sell at its discretion.
+  from campaigns (CGT-denominated, no conversion needed) and CGT
+  + counterparty from POL fee collection (β). Treasury free to
+  market-sell at its discretion.
 
 ### B — Campaign primitive
 
