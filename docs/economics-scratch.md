@@ -64,8 +64,14 @@ until the design is fully settled.
    value deferred to economics.md authoring). Continuous credit
    for sustained reach at any level; spike attacks earn zero
    structurally.*
-4. Attribution math concretization (Shapley specifics; conduit
-   credit formula; cut-off enforcement).
+4. **Attribution math concretization** — *fully settled. Shapley
+   via per-path equal split among distinct authors:
+   `φ_i = Σ_{π∋i} w_π / |A_π|`. Exact — `h` is a linear path-sum,
+   so the 2ⁿ coalition blowup collapses to per-path arithmetic.
+   Target excluded; anchor a full player; signed multiplication
+   carries through; net-negatives floored. Streaming settlement,
+   O(players) memory. Bot-detection rule + root-concentration
+   dampener parked as follow-ups.*
 5. Action gating specifics (which actions; quota shapes; CGT
    prices; how the soft-quota threshold gets set).
 6. Wallet onboarding & claim-escrow policy.
@@ -78,20 +84,19 @@ until the design is fully settled.
 
 ## Next session pickup
 
-**Topic 3 closed. Next: Topic 4 — attribution math
-concretization (Shapley specifics; conduit credit formula;
-cut-off enforcement).** `achieved_h_gain` is settled as a
-sustained-level metric: `max { L : h ≥ L for some continuous
-interval of length ≥ τ }` over `[start_ts, end_ts]`, τ ≈ Δt/3.
-See *Settled decisions* and the *B — Campaign primitive* section.
+**Topic 4 closed. Next: Topic 5 — action gating specifics
+(which actions; quota shapes; CGT prices; how the soft-quota
+threshold gets set).** Attribution is settled: Shapley via
+per-path equal split among distinct authors,
+`φ_i = Σ_{π∋i} w_π / |A_π|`, computed exactly because `h` is a
+linear sum over paths. See *Settled decisions* and the
+*C — Attribution math* section.
 
-Topic 4 needs: precise Shapley formulation on the relevant
-subgraph (anchor→target paths that lifted `h`), exact conduit
-credit treatment (Billie's "large share" emerges from
-counterfactual removal), and the cut-off rule (only edges/nodes
-appearing after `campaign_start_ts` count for the "new path"
-component; conduit credit ignores cut-off). The C section has
-sketches; needs full formalization.
+Two Topic-4 tails parked as follow-ups (see *Deliberately
+deferred*): the bot-cluster detection rule (needs path/topology
+signals, not just the payout floats) and the root-concentration
+dampener (optional reactor-tilt, decided alongside `d(R)`
+calibration).
 
 ---
 
@@ -347,6 +352,63 @@ sketches; needs full formalization.
   severance even when they did the work); time-weighted average
   (spike-resistant but under-credits honest ramp delivery at
   `D/2`, structurally underpaying the linear-delivery case).
+- **Attribution rule = Shapley via per-path equal split.**
+  `[settled]` Each contributor's payout share is the Shapley value
+  of the path-sum game on `h_anchor(target)`. Because `h` is a
+  linear sum over paths
+  ([feed-ranking.md §4.2–4.3](primitive/feed-ranking.md)), each
+  path is a unanimity requirement of its authors and the Shapley
+  value has the closed form `φ_i = Σ_{π ∋ i} w_π / |A_π|` — the
+  `2ⁿ` coalition blowup never appears.
+  `w_π = d(R_π)·f(Δt_π)·(s_path + c_path)` is the same path weight
+  feed-ranking sums into `h`; `A_π` is the set of distinct authors
+  on path π. Rejected: leave-one-out (`Σ_{π∋i} w_π` — double-
+  counts multi-author paths, over-rewards long-path participation)
+  and magnitude-proportional split (magnitude already sets `w_π`,
+  and in a product the *bottleneck* edge, not the strongest, is
+  the most pivotal).
+- **Players = authors (wallets); target excluded; anchor a full
+  player.** `[settled]` `A_π` counts distinct *authors* of all
+  edges *and* content nodes on the path (footprint dedup: an
+  author counts once per path however many elements they own on
+  it; a non-actor node is never paid, its author is). The target
+  node is excluded — it is the advertiser, and a direct transfer
+  is the alternative if they want to pay it. The anchor is a full
+  player, typically the largest share (the influencer-marketing
+  outcome), subject to the parked root-concentration dampener.
+- **Sign carries through; net-negatives floored.** `[settled]`
+  Signed multiplication rides through `w_π` unchanged (an even
+  count of negative `dim1` → positive contribution; "enemy of my
+  enemy" surfaces the advertiser and is credited). Forced by
+  conservation — shares must sum to `h`. A contributor whose paths
+  net negative gets `φ_i < 0`, floored to 0 (no clawback); the
+  positive players renormalize to fill the pool:
+  `payout_i = (φ_i / Σ_{j: φ_j > 0} φ_j) · 0.95·P`. A distrusted
+  detractor earning via a double-negative path is an accepted
+  property.
+- **Attribution snapshot `t*`.** `[settled]` A single point in
+  `[start_ts, end_ts]`, never settlement time. On active
+  settlement the advertiser may select an earlier `t*` to exclude
+  a late bot intrusion (defaulting toward `end_ts`). On auto-
+  settlement `t*` is the sustaining interval that realized
+  `achieved_h_gain` (Topic 3), so pool size and split derive from
+  the same graph state. Exact point within that interval deferred
+  to economics.md authoring.
+- **Computation = exact, streaming, O(players) memory.**
+  `[settled]` Enumerate above-dust paths anchor→target with
+  branch-and-bound (prune when best-possible completion `< ε`,
+  `ε` = smallest payable CGT); no hop cap. Distribute each path's
+  weight to its authors as it is found, then discard it — memory
+  is `O(players M)`, never `O(paths P)`; time is `O(P·L̄)`, the
+  same traversal that computes `h_anchor(target)`, so attribution
+  adds no asymptotic cost over ranking. Flat in total graph size
+  (only the anchor's dust-reachable neighborhood enters);
+  exponential only in dense-corridor connectivity (simple-path
+  counting is #P-hard), bounded in practice by decay + dust.
+  Backstops for a pathological corridor: steeper `d(R)`, a
+  per-campaign compute budget, and a logged sampling fallback
+  (never silent). Async/background; campaigns independent →
+  trivially parallel.
 
 ---
 
@@ -567,27 +629,53 @@ sketches; needs full formalization.
 
 ### C — Attribution math
 
-- **Target shape**: Shapley-style marginal contribution. Each
-  contributor's payout = the counterfactual drop in achieved
-  `h_anchor(target)` if that contributor's edges (or the
-  contributor's node, for conduits) were removed.
-- **What counts as a "contribution".**
-  - (a) New edges (actor or structural) added during the campaign
-    window.
-  - (b) New content nodes whose paths from anchor toward target
-    raised `h`.
-  - (c) Conduit nodes on the lifted paths — credited by their
-    existing position even if they added nothing during the window.
-- **Why Billie gets the largest share.** Conduit credit. Her
-  counterfactual removal collapses many paths; the Shapley
-  calculation captures this without any special rule.
-- **Cut-off discipline.** Only edges/nodes appearing *after*
-  `campaign_start_ts` count for the "new path" component. Conduit
-  credit ignores cut-off (it's about pre-existing position).
-- **Cost.** Exact Shapley on the relevant subgraph is expensive but
-  bounded — the subgraph is "nodes/edges on paths from anchor to
-  target that lifted `h`", not the whole graph. `[proposal]` Compute
-  once at settlement, not per-impression.
+- **Shapley via per-path equal split.** `[settled]` Per-contributor
+  payout share = the Shapley value of the path-sum game on
+  `h_anchor(target)`, which has the closed form
+
+  ```
+  φ_i = Σ_{π ∋ i}  w_π / |A_π|
+  ```
+
+  summed over all paths π from anchor to target containing an
+  element authored by i, with
+  `w_π = d(R_π)·f(Δt_π)·(s_path(π) + c_path(π))` the path weight
+  (identical to the term feed-ranking sums into `h`,
+  [§4.2–4.3](primitive/feed-ranking.md)) and `A_π` the set of
+  distinct authors of every edge and content node on π. Equal
+  split *is* exact Shapley because `h` is **linear** over paths:
+  each path is a unanimity requirement of its authors (the kill
+  rule makes every author on it equally necessary — drop one and
+  the path dies), Shapley splits a unanimity game equally, and
+  linearity sums those splits. Conservation: `Σ_i φ_i = h`.
+- **Why the conduit earns without a special rule.** A node many
+  paths route through appears in many `A_π`, collecting a share
+  from each — no conduit-specific term. Equally, a node on a single
+  path through a weak edge still earns its `1/|A_π|` of that path,
+  because without it the path would not exist at all.
+- **No gain/baseline/cut-off split.** `[settled]` Attribution runs
+  on the absolute, time-decayed `h` at `t*`. `f(Δt)` already fades
+  stale contributions to near-zero (a 1-year reactor edge ≈
+  `2×10⁻⁴` of fresh at the 30-day half-life), so recent reach
+  dominates without separate "new path" machinery. One unified
+  game keeps the computation clean and lets conduit credit fall
+  out naturally.
+- **Players, target, anchor, non-actor nodes.** `[settled]` Player
+  = author (wallet). `A_π` dedupes by author across edges and
+  content nodes; a non-actor node is never paid, its author is.
+  Target excluded (it is the advertiser). Anchor is a full player.
+- **Sign and floor.** `[settled]` Signed multiplication carries
+  through `w_π` (even count of negatives → positive contribution,
+  credited; forced by conservation). `φ_i < 0` floored to 0, no
+  clawback; positives renormalize to the pool `0.95·P`.
+- **Cost.** `[settled]` Streaming branch-and-bound enumeration;
+  `O(players)` memory, `O(P·L̄)` time, co-extensive with computing
+  `h`. Full scaling treatment and backstops in the *Computation*
+  bullet under *Settled decisions*.
+- **Parked follow-ups.** Bot-cluster detection rule (needs
+  path/topology signals, not just floats) and the
+  root-concentration dampener (optional reactor-tilt) — see
+  *Deliberately deferred*.
 
 ### D — Ledger & on-chain mechanics
 
@@ -675,6 +763,27 @@ sketches; needs full formalization.
 - Stake-gated governance quorum (Q19 reopen).
 - Specific chain choice and mint schedule (implementation).
 - Wallet UX / claim escrow mechanism.
+- **Bot-cluster detection rule for campaign settlement** (Topic-4
+  tail). The payout floats alone don't reveal a closed delta-
+  funnel (many bots → one neck → conduit → target, with almost no
+  other entry points); detection is topological. The settlement
+  traversal already enumerates every path, so the signals come
+  free in that pass: entry-point concentration per conduit,
+  articulation/bridge "neck" detection (one cut zeroes a whole
+  sub-cluster's `φ`), and cluster cohesion vs. external reach.
+  Needs a detection rule + thresholds and a tie-in to the existing
+  severance / zero-jail machinery
+  ([feed-ranking.md §3.6–3.7](primitive/feed-ranking.md)).
+- **Root-concentration dampener** (Topic-4 tail). Under a decay-
+  dominated `d(R)`, the anchor + her direct connections take ~90%
+  of the pool (the anchor sits on every path; `f(Δt)`/`d(R)`
+  concentrate weight in short paths where she is most of the few
+  authors). An optional within-path "reactor-tilt" — shifting
+  credit toward target-proximate authors (the actual stance-givers
+  on the target) instead of the equal `1/|A_π|` — can dampen this.
+  Decide its presence and strength alongside the `d(R)` calibration
+  at `economics.md`/`token.md` authoring, since the two jointly set
+  the earnings-by-distance profile.
 
 ---
 
