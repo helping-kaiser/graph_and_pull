@@ -70,8 +70,10 @@ until the design is fully settled.
    so the 2ⁿ coalition blowup collapses to per-path arithmetic.
    Target excluded; anchor a full player; signed multiplication
    carries through; net-negatives floored. Streaming settlement,
-   O(players) memory. Bot-detection rule + root-concentration
-   dampener parked as follow-ups.*
+   O(players) memory. Bot-cluster flagging folded into
+   feed-ranking §3.8.2 (advisory at settlement, no auto-action);
+   earnings-by-distance governed by an advertiser-chosen `d(R)`
+   base, exact-Shapley preserved.*
 5. Action gating specifics (which actions; quota shapes; CGT
    prices; how the soft-quota threshold gets set).
 6. Wallet onboarding & claim-escrow policy.
@@ -92,11 +94,14 @@ per-path equal split among distinct authors,
 linear sum over paths. See *Settled decisions* and the
 *C — Attribution math* section.
 
-Two Topic-4 tails parked as follow-ups (see *Deliberately
-deferred*): the bot-cluster detection rule (needs path/topology
-signals, not just the payout floats) and the root-concentration
-dampener (optional reactor-tilt, decided alongside `d(R)`
-calibration).
+Both Topic-4 tails are now closed. Bot-cluster flagging folds
+into the existing §3.8.2 delta-funnel auto-detection — advisory
+at settlement, manual `(0,0)` severance only, no auto-cut. The
+root-concentration dampener resolves into the `d(R)` base `g`:
+advertiser-chosen per campaign (default `0.1`), steep concentrates
+on the anchor, soft spreads to target-proximate contributors,
+exact-Shapley preserved; the within-path reactor-tilt is rejected.
+See *Settled decisions* and *C — Attribution math*.
 
 ---
 
@@ -375,7 +380,9 @@ calibration).
   node is excluded — it is the advertiser, and a direct transfer
   is the alternative if they want to pay it. The anchor is a full
   player, typically the largest share (the influencer-marketing
-  outcome), subject to the parked root-concentration dampener.
+  outcome); the anchor-vs-periphery share is set by the
+  advertiser-chosen `d(R)` base (see the earnings-by-distance
+  bullet below).
 - **Sign carries through; net-negatives floored.** `[settled]`
   Signed multiplication rides through `w_π` unchanged (an even
   count of negative `dim1` → positive contribution; "enemy of my
@@ -409,6 +416,41 @@ calibration).
   per-campaign compute budget, and a logged sampling fallback
   (never silent). Async/background; campaigns independent →
   trivially parallel.
+- **Bot-cluster flagging at settlement = advisory only.**
+  `[settled]` No campaign-specific bot detector and no automatic
+  payout zeroing. The §3.8.2 delta-funnel auto-detection already
+  surfaces bot bridges from path structure; the settlement
+  traversal enumerates the same paths, so the advertiser's
+  settlement view surfaces that signal as evidence for the
+  discretionary `settle(P)` decision. Action stays manual — a
+  cluster's `(0, 0)` severance gesture (feed-ranking §3.6–3.7),
+  never an auto-cut at settlement, preserving §3.8.2's
+  no-automatic-action rule. Bots are already handled structurally:
+  severed accounts contribute 0, and the advertiser can decline,
+  extend, or post a public call to sever.
+- **Earnings-by-distance = advertiser-chosen `d(R)` base; no
+  within-path tilt.** `[settled]` The anchor-vs-periphery payout
+  profile is governed by `x = b·g·μ` (forward branching × `d(R)`
+  base × mean per-edge magnitude); the only protocol-side lever is
+  `g`, the `d(R)` decay base. The advertiser sets `g` per campaign
+  (default = the canonical feed default `0.1`, chosen at settlement
+  alongside `P`; auto-settle uses the default): steep `g`
+  concentrates payout on the anchor (the influencer-marketing
+  outcome), soft `g` spreads it toward target-proximate
+  contributors. Any fixed `g` keeps `φ_i = Σ w_π/|A_π|` exact
+  Shapley — it only rescales each `w_π`, conservation `Σφ = h`
+  holds. The within-path reactor-tilt is rejected: it is the sole
+  option that breaks exact Shapley and is redundant, since `g`
+  already controls the same profile. Scope: `g` reshapes the split
+  only — the success metric / `achieved_h_gain` uses the canonical
+  `g`, so reach is measured on one objective ruler. `g` is public
+  on-chain; a stingy steep `g` is as visible as a stingy `P` and
+  carries the same reputational cost. Mechanical safety unchanged:
+  `g` redistributes the fixed `0.95·P` pool, never its size, so the
+  strict cap binds for any `g`. At realistic effective branching
+  `b ≈ 20–40` the anchor lands at ~15–37% of the pool as a single
+  wallet under the default `g` — the influencer-as-main-benefactor
+  outcome, far from the ~90% sparse-graph case.
 
 ---
 
@@ -672,10 +714,17 @@ calibration).
   `O(players)` memory, `O(P·L̄)` time, co-extensive with computing
   `h`. Full scaling treatment and backstops in the *Computation*
   bullet under *Settled decisions*.
-- **Parked follow-ups.** Bot-cluster detection rule (needs
-  path/topology signals, not just floats) and the
-  root-concentration dampener (optional reactor-tilt) — see
-  *Deliberately deferred*.
+- **Bot-cluster flagging = advisory at settlement.** `[settled]`
+  No campaign-specific detector; §3.8.2 delta-funnel auto-detection
+  surfaces bot bridges, the settlement view shows it to the
+  advertiser as evidence for `settle(P)`, and action stays the
+  manual `(0, 0)` severance gesture. See *Settled decisions*.
+- **Earnings-by-distance = advertiser-chosen `d(R)` base.**
+  `[settled]` Profile set by `g` (default `0.1`, advertiser-tunable
+  per campaign); steep concentrates on the anchor, soft spreads to
+  target-proximate. Exact-Shapley preserved (per-path reweight);
+  the within-path tilt is rejected as redundant and
+  Shapley-breaking. See *Settled decisions*.
 
 ### D — Ledger & on-chain mechanics
 
@@ -763,27 +812,6 @@ calibration).
 - Stake-gated governance quorum (Q19 reopen).
 - Specific chain choice and mint schedule (implementation).
 - Wallet UX / claim escrow mechanism.
-- **Bot-cluster detection rule for campaign settlement** (Topic-4
-  tail). The payout floats alone don't reveal a closed delta-
-  funnel (many bots → one neck → conduit → target, with almost no
-  other entry points); detection is topological. The settlement
-  traversal already enumerates every path, so the signals come
-  free in that pass: entry-point concentration per conduit,
-  articulation/bridge "neck" detection (one cut zeroes a whole
-  sub-cluster's `φ`), and cluster cohesion vs. external reach.
-  Needs a detection rule + thresholds and a tie-in to the existing
-  severance / zero-jail machinery
-  ([feed-ranking.md §3.6–3.7](primitive/feed-ranking.md)).
-- **Root-concentration dampener** (Topic-4 tail). Under a decay-
-  dominated `d(R)`, the anchor + her direct connections take ~90%
-  of the pool (the anchor sits on every path; `f(Δt)`/`d(R)`
-  concentrate weight in short paths where she is most of the few
-  authors). An optional within-path "reactor-tilt" — shifting
-  credit toward target-proximate authors (the actual stance-givers
-  on the target) instead of the equal `1/|A_π|` — can dampen this.
-  Decide its presence and strength alongside the `d(R)` calibration
-  at `economics.md`/`token.md` authoring, since the two jointly set
-  the earnings-by-distance profile.
 
 ---
 
